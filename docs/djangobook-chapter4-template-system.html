@@ -1,0 +1,1854 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+
+  
+    <meta http-equiv="Content-type" content="text/html; charset=UTF-8">
+    <title>Chapter 4: The Django template system</title>
+    <link rel="stylesheet" href="djangobook-chapter4-template-system_files/reset-min.css" type="text/css">
+    <link rel="stylesheet" href="djangobook-chapter4-template-system_files/grids-min.css" type="text/css">
+    <link rel="stylesheet" href="djangobook-chapter4-template-system_files/djangobook.css" type="text/css">
+    
+  <link href="djangobook-chapter4-template-system_files/container.css" type="text/css" media="screen" rel="stylesheet">
+  <link href="djangobook-chapter4-template-system_files/tabs.css" type="text/css" media="screen" rel="stylesheet">
+  <link href="djangobook-chapter4-template-system_files/resizable.css" type="text/css" media="screen" rel="stylesheet">
+
+  </head><body><div class="yresizable-proxy" id="comments-rzproxy"></div>
+    <div id="doc" class="yui-t7">
+      <div id="hd">
+        <h1><a href="http://www.djangobook.com/">The Django Book</a></h1>
+        <div id="global-nav">
+            <a class="about" href="http://www.djangobook.com/about/">About</a>
+          |
+            <a class="comment-help" href="http://www.djangobook.com/about/comments/">Comment help</a>
+          |
+            <a class="contact" href="http://www.djangobook.com/contact/">Contact us</a>
+          |
+            <a class="errata" href="http://www.djangobook.com/errata/">Errata</a>
+          |
+            <a class="buy" href="http://www.amazon.com/gp/product/1590597257?ie=UTF8&amp;tag=djangoproject-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=1590597257">
+                Buy the print version on Amazon.com</a>
+        </div>
+        <div class="nav">
+	
+		<a href="http://www.djangobook.com/en/beta/chapter03/">« previous</a> ◊
+	
+	<a href="http://www.djangobook.com/en/beta/">table of contents</a>
+	
+		◊ <a href="http://www.djangobook.com/en/beta/chapter05/">next »</a>
+	
+</div>
+
+      </div>
+      <div id="bd">
+        <div id="yui-main">
+          <div class="yui-b">
+            
+  
+  
+    <div class="newer-version">
+      You're reading an outdated version of this book; a 
+      <a href="http://www.djangobook.com/en/1.0/">newer version</a>
+      is available.
+    </div>
+  
+  <h2 id="chapter-title">Chapter 4: The Django template system</h2>
+  
+  <div id="chapter-body">
+    <p class="cn" id="cn0">In the previous chapter, you may have noticed something peculiar in how we
+returned the HTML in our example views. Namely, the HTML was hard-coded
+directly in our Python code!<div style="height: 37px;" id="b0" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn1">This arrangement leads to several problems:<div style="height: 19px;" id="b1" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn2">Obviously, any change to the design of the page would require a change to
+the Python code. The design of a site tends to change far more frequently
+than the underlying Python code, so it would be convenient if the
+frequency of HTML changes were separated from changes to Python code.<div style="height: 54px;" id="b2" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn3">Second, writing backend Python code and designing/coding HTML are two
+different disciplines, and most professional Web development environments
+split these responsibilities across separate people (or even separate
+departments). Designers and HTML/CSS coders shouldn’t have to edit Python
+code to get their job done; they should deal with HTML.<div style="height: 72px;" id="b3" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn4">Similarly, it’s most efficient if programmers can work on Python code and
+designers can work on templates at the same time, rather than one person
+waiting for the other to finish editing a single file that contains both
+Python and HTML.<div style="height: 54px;" id="b4" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn5">For these reasons, it’s much cleaner and more maintainable to separate the
+design of the page from the Python code itself. We can do this with Django’s
+<strong>template system</strong>.<div style="height: 37px;" id="b5" class="comment-indicator has-comments"><span>1</span></div></p>
+<div class="section" id="s-template-system-basics">
+<h3 class="cn" id="cn6">Template system basics<div style="height: 22px;" id="b6" class="comment-indicator"><span></span></div></h3>
+<p class="cn" id="cn7">A Django template is a string of text that is intended to separate the
+presentation of a document from its data. A template defines placeholders and
+various bits of basic logic — <strong>tags</strong> — that regulate how the document
+should be displayed. Usually, templates are used for outputting HTML, but
+Django templates are equally capable of generating any text-based format.<div style="height: 73px;" id="b7" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn8">Let’s dive in with a simple example template. This template describes an HTML
+page that thanks a person for making an order from a company. Think of it as a
+form letter:<div style="height: 37px;" id="b8" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn9">&lt;html&gt;
+&lt;head&gt;&lt;title&gt;Ordering notice&lt;/title&gt;&lt;/head&gt;
+
+&lt;body&gt;
+
+&lt;p&gt;Dear {{ person_name }},&lt;/p&gt;
+
+&lt;p&gt;Thanks for placing an order from {{ company }}. It's scheduled to
+ship on {{ ship_date|date:"F j, Y" }}.&lt;/p&gt;
+
+&lt;p&gt;Here are the items you've ordered:&lt;/p&gt;
+
+&lt;ul&gt;
+{% for item in item_list %}
+&lt;li&gt;{{ item }}&lt;/li&gt;
+{% endfor %}
+&lt;/ul&gt;
+
+{% if ordered_warranty %}
+&lt;p&gt;Your warranty information will be included in the packaging.&lt;/p&gt;
+{% endif %}
+
+&lt;p&gt;Sincerely,&lt;br /&gt;{{ company }}&lt;/p&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 517px;" id="b9" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn10">This template is basic HTML with some <strong>variables</strong> and <strong>template tags</strong>
+thrown in. Let’s step through it:<div style="height: 19px;" id="b10" class="comment-indicator"><span></span></div></p>
+<ul>
+<li class="cn" id="cn11"><p class="first cn" id="cn12">Any text surrounded by a pair of braces — e.g., <tt class="docutils literal"><span class="pre">{{</span> <span class="pre">person_name</span> <span class="pre">}}</span></tt>
+— is a <strong>variable</strong>. This means “insert the
+value of the variable with the given name.” (How do we specify the
+values of the variables? We’ll get to that in a moment.)<div style="height: 57px;" id="b12" class="comment-indicator has-comments"><span>3</span></div></p>
+<div style="height: 57px;" id="b11" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn13"><p class="first cn" id="cn14">Any text that’s surrounded by curly braces and percent signs — e.g.,
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">ordered_warranty</span> <span class="pre">%}</span></tt> — is a <strong>block tag</strong>. The definition
+of a block tag is quite broad: A block tag just tells the template system
+to <em>do something</em>.<div style="height: 57px;" id="b14" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn15">This example template contains two block tags — the
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">item</span> <span class="pre">in</span> <span class="pre">item_list</span> <span class="pre">%}</span></tt> tag (a “for” tag) and the
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">ordered_warranty</span> <span class="pre">%}</span></tt> tag (an “if” tag). A “for” tag acts as a
+simple loop construct, letting you loop over each item in a sequence. An
+“if” tag, as you may expect, acts as a logical “if” statement. In this
+particular case, the tag checks whether the value of the <tt class="docutils literal"><span class="pre">ordered_warranty</span></tt>
+variable evaluates to <tt class="docutils literal"><span class="pre">True</span></tt>. If it does, the template system will
+display everything between the <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">ordered_warranty</span> <span class="pre">%}</span></tt> and
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">endif</span> <span class="pre">%}</span></tt>. If not, the template system won’t display it. The
+template system also supports <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">else</span> <span class="pre">%}</span></tt> and other various logic
+statements.<div style="height: 135px;" id="b15" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn16">Each Django template has access to several built-in block tags. In
+addition, you can write your own tags.<div style="height: 19px;" id="b16" class="comment-indicator has-comments"><span>2</span></div></p>
+<div style="height: 235px;" id="b13" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn17"><p class="first cn" id="cn18">Finally, the second paragraph of this template has an example of a
+<strong>filter</strong>. Filters are a way to alter the display of a variable. In this
+example — <tt class="docutils literal"><span class="pre">{{</span> <span class="pre">ship_date|date:"F</span> <span class="pre">j,</span> <span class="pre">Y"</span> <span class="pre">}}</span></tt> — we’re passing the
+<tt class="docutils literal"><span class="pre">ship_date</span></tt> variable to the <tt class="docutils literal"><span class="pre">date</span></tt> filter, giving the <tt class="docutils literal"><span class="pre">date</span></tt> filter
+an argument <tt class="docutils literal"><span class="pre">"F</span> <span class="pre">j,</span> <span class="pre">Y"</span></tt>. The <tt class="docutils literal"><span class="pre">date</span></tt> filter formats dates in a given
+format, as specified by that argument. Filters are attached using a pipe
+character (<tt class="docutils literal"><span class="pre">|</span></tt>), as a reference to Unix pipes.<div style="height: 96px;" id="b18" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn19">Each Django template has access to several built-in filters. In addition,
+you can write your own filters.<div style="height: 19px;" id="b19" class="comment-indicator has-comments"><span>3</span></div></p>
+<div style="height: 127px;" id="b17" class="comment-indicator"><span></span></div></li>
+</ul>
+</div>
+<div class="section" id="s-using-the-template-system">
+<h3 class="cn" id="cn20">Using the template system<div style="height: 22px;" id="b20" class="comment-indicator"><span></span></div></h3>
+<p class="cn" id="cn21">To use the template system in Python code, just follow these two steps:<div style="height: 19px;" id="b21" class="comment-indicator has-comments"><span>2</span></div></p>
+<ul class="simple">
+<li class="cn" id="cn22">First, create a <tt class="docutils literal"><span class="pre">Template</span></tt> object by providing the raw template code
+as a string. Django also offers a way to create <tt class="docutils literal"><span class="pre">Template</span></tt> objects by
+designating the path to a template file on the filesystem; we’ll see that
+in a bit.<div style="height: 39px;" id="b22" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn23">Then, call the <tt class="docutils literal"><span class="pre">render()</span></tt> method of the <tt class="docutils literal"><span class="pre">Template</span></tt> object with a
+given set of variables — the context. This returns a fully rendered
+template, as a string, with all of the variables and block tags
+evaluated according to the context.<div style="height: 56px;" id="b23" class="comment-indicator"><span></span></div></li>
+</ul>
+<div class="section" id="s-creating-template-objects">
+<h4 class="cn" id="cn24">Creating template objects<div style="height: 23px;" id="b24" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn25">The easiest way to create a <tt class="docutils literal"><span class="pre">Template</span></tt> object is to instantiate it
+directly. The <tt class="docutils literal"><span class="pre">Template</span></tt> class lives in the <tt class="docutils literal"><span class="pre">django.template</span></tt> module, and
+the constructor takes one argument, the raw template code. Let’s dip into the
+Python interactive interpreter to see how this works in code. (Type <tt class="docutils literal"><span class="pre">python</span></tt>
+at the command line to start the interactive interpreter.) Here’s a basic
+walkthrough:<div style="height: 78px;" id="b25" class="comment-indicator has-comments"><span>3</span></div></p>
+<pre class="cn literal-block" id="cn26">&gt;&gt;&gt; from django.template import Template
+&gt;&gt;&gt; t = Template("My name is {{ my_name }}.")
+&gt;&gt;&gt; print t
+<div style="height: 68px;" id="b26" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn27">If you’re following along interactively, you’ll see something like this after
+typing <tt class="docutils literal"><span class="pre">print</span> <span class="pre">t</span></tt>:<div style="height: 21px;" id="b27" class="comment-indicator has-comments"><span>18</span></div></p>
+<pre class="cn literal-block" id="cn28">&lt;django.template.Template object at 0xb7d5f24c&gt;
+<div style="height: 29px;" id="b28" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn29">That <tt class="docutils literal"><span class="pre">0xb7d5f24c</span></tt> will be different every time, and it doesn’t really matter;
+it’s simply the Python “identity” of the <tt class="docutils literal"><span class="pre">Template</span></tt> object.<div style="height: 40px;" id="b29" class="comment-indicator"><span></span></div></p>
+<div class="admonition-interactive-interpreter-examples admonition cn admonition" id="cn30">
+<p class="first admonition-title">Interactive interpreter examples</p>
+<p>Throughout this book, we’ll feature example Python interactive interpreter
+sessions. You can recognize these examples by spotting the triple
+greater-than signs (<tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span></tt>), which designate the interpreter’s prompt. If
+you’re copying examples from this book, don’t copy those greater-than signs.</p>
+<p>Multiline statements in the interactive interpreter are padded with three
+dots (<tt class="docutils literal"><span class="pre">...</span></tt>). For example:</p>
+<pre class="literal-block">&gt;&gt;&gt; print """This is a
+... string that spans
+... three lines."""
+This is a
+string that spans
+three lines.
+&gt;&gt;&gt; def my_function(value):
+...     print value
+&gt;&gt;&gt; my_function('hello')
+hello
+</pre>
+<p class="last">Those three dots at the start of the additional lines are inserted by the
+Python shell — they’re not part of our input. We include them here to be
+faithful to the actual output of the interpreter. If you copy our examples
+to follow along, don’t copy those dots.</p>
+<div style="height: 441px;" id="b30" class="comment-indicator has-comments"><span>4</span></div></div>
+<p class="cn" id="cn31">When you create a <tt class="docutils literal"><span class="pre">Template</span></tt> object, the template system compiles the raw
+template code into an internal, optimized form, ready for rendering. But if
+your template code includes any syntax errors, the call to <tt class="docutils literal"><span class="pre">Template()</span></tt> will
+cause a <tt class="docutils literal"><span class="pre">TemplateSyntaxError</span></tt> exception:<div style="height: 58px;" id="b31" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn32">&gt;&gt;&gt; from django.template import Template
+&gt;&gt;&gt; t = Template('{% notatag %} ')
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in ?
+  ...
+  django.template.TemplateSyntaxError: Invalid block tag: 'notatag'
+<div style="height: 127px;" id="b32" class="comment-indicator has-comments"><span>4</span></div></pre>
+<p class="cn" id="cn33">The system raises a <tt class="docutils literal"><span class="pre">TemplateSyntaxError</span></tt> exception for any of the following
+cases:<div style="height: 21px;" id="b33" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn34">Invalid block tags<div style="height: 18px;" id="b34" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn35">Invalid arguments to valid block tags<div style="height: 18px;" id="b35" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn36">Invalid filters<div style="height: 18px;" id="b36" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn37">Invalid arguments to valid filters<div style="height: 18px;" id="b37" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn38">Invalid template syntax<div style="height: 18px;" id="b38" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn39">Unclosed block tags (for block tags that require closing tags)<div style="height: 18px;" id="b39" class="comment-indicator"><span></span></div></li>
+</ul>
+</div>
+<div class="section" id="s-rendering-a-template">
+<h4 class="cn" id="cn40">Rendering a template<div style="height: 23px;" id="b40" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn41">Once you have a <tt class="docutils literal"><span class="pre">Template</span></tt> object, you can pass it data by giving it a
+<strong>context</strong>. A context is simply a set of variables and their associated
+values. A template uses this to populate its variable tags and evaluate its
+block tags.<div style="height: 57px;" id="b41" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn42">A context is represented in Python by the <tt class="docutils literal"><span class="pre">Context</span></tt> class, which lives in the
+<tt class="docutils literal"><span class="pre">django.template</span></tt> module. Its constructor takes one optional argument: a
+dictionary mapping variable names to variable values. Call the <tt class="docutils literal"><span class="pre">Template</span></tt>
+object’s <tt class="docutils literal"><span class="pre">render()</span></tt> method with the context to “fill” the template. For
+example:<div style="height: 58px;" id="b42" class="comment-indicator has-comments"><span>4</span></div></p>
+<pre class="cn literal-block" id="cn43">&gt;&gt;&gt; from django.template import Context, Template
+&gt;&gt;&gt; t = Template("My name is {{ name }}.")
+&gt;&gt;&gt; c = Context({"name": "Stephane"})
+&gt;&gt;&gt; t.render(c)
+'My name is Stephane.'
+<div style="height: 107px;" id="b43" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn44">Variable names must begin with a letter (A-Z or a-z) and may contain digits,
+underscores and dots. (Dots are a special case we’ll get to in a moment.)
+Variable names are case sensitive.<div style="height: 37px;" id="b44" class="comment-indicator has-comments"><span>5</span></div></p>
+<p class="cn" id="cn45">Here’s an example of template compilation and rendering, using the sample
+template from the beginning of this chapter:<div style="height: 37px;" id="b45" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn46">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; raw_template = """&lt;p&gt;Dear {{ person_name }},&lt;/p&gt;
+...
+... &lt;p&gt;Thanks for ordering {{ product }} from {{ company }}. It's scheduled to
+... ship on {{ ship_date|date:"F j, Y" }}.&lt;/p&gt;
+...
+... {% if ordered_warranty %}
+... &lt;p&gt;Your warranty information will be included in the packaging.&lt;/p&gt;
+... {% endif %}
+...
+... &lt;p&gt;Sincerely,&lt;br /&gt;{{ company }}&lt;/p&gt;"""
+&gt;&gt;&gt; t = Template(raw_template)
+&gt;&gt;&gt; import datetime
+&gt;&gt;&gt; c = Context({'person_name': 'John Smith',
+...     'product': 'Super Lawn Mower',
+...     'company': 'Outdoor Equipment',
+...     'ship_date': datetime.date(2009, 4, 2),
+...     'ordered_warranty': True})
+&gt;&gt;&gt; t.render(c)
+"&lt;p&gt;Dear John Smith,&lt;/p&gt;\n\n&lt;p&gt;Thanks for ordering Super Lawn Mower from Outdoor Equipment.
+It's scheduled to ship on April 2, 2009.&lt;/p&gt;\n\n&lt;p&gt;Your warranty information will be included
+in the packaging.&lt;/p&gt;\n\n\n&lt;p&gt;Sincerely,&lt;br /&gt;Outdoor Equipment&lt;/p&gt;"
+<div style="height: 439px;" id="b46" class="comment-indicator has-comments"><span>2</span></div></pre>
+<p class="cn" id="cn47">Let’s step through this one statement at a time:<div style="height: 19px;" id="b47" class="comment-indicator"><span></span></div></p>
+<ul>
+<li class="cn" id="cn48"><p class="first cn" id="cn49">First, we import the classes <tt class="docutils literal"><span class="pre">Template</span></tt> and <tt class="docutils literal"><span class="pre">Context</span></tt>, which both
+live in the module <tt class="docutils literal"><span class="pre">django.template</span></tt>.<div style="height: 21px;" id="b49" class="comment-indicator"><span></span></div></p>
+<div style="height: 21px;" id="b48" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn50"><p class="first cn" id="cn51">Next, we save the raw text of our template into the variable
+<tt class="docutils literal"><span class="pre">raw_template</span></tt>. Note that we use a triple quote marks to designate the
+string, because it wraps over multiple lines; strings designated with
+single quote marks cannot be wrapped over multiple lines.<div style="height: 57px;" id="b51" class="comment-indicator"><span></span></div></p>
+<div style="height: 57px;" id="b50" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn52"><p class="first cn" id="cn53">Next, we create a template object <tt class="docutils literal"><span class="pre">t</span></tt> by passing <tt class="docutils literal"><span class="pre">raw_template</span></tt> to
+the <tt class="docutils literal"><span class="pre">Template</span></tt> class constructor.<div style="height: 21px;" id="b53" class="comment-indicator"><span></span></div></p>
+<div style="height: 21px;" id="b52" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn54"><p class="first cn" id="cn55">Then we import the <tt class="docutils literal"><span class="pre">datetime</span></tt> module from Python’s standard library,
+because we’ll need it in the following statement.<div style="height: 39px;" id="b55" class="comment-indicator"><span></span></div></p>
+<div style="height: 39px;" id="b54" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn56"><p class="first cn" id="cn57">Next, we create a context object <tt class="docutils literal"><span class="pre">c</span></tt>. The <tt class="docutils literal"><span class="pre">Context</span></tt> constructor takes
+a Python dictionary mapping variable names to values. Here, for example,
+we specify that the <tt class="docutils literal"><span class="pre">person_name</span></tt> is <tt class="docutils literal"><span class="pre">'John</span> <span class="pre">Smith'</span></tt>, <tt class="docutils literal"><span class="pre">product</span></tt> is
+<tt class="docutils literal"><span class="pre">'Super</span> <span class="pre">Lawn</span> <span class="pre">Mower'</span></tt>, etc.<div style="height: 60px;" id="b57" class="comment-indicator has-comments"><span>1</span></div></p>
+<div style="height: 60px;" id="b56" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn58"><p class="first cn" id="cn59">Finally, we call the <tt class="docutils literal"><span class="pre">render()</span></tt> method on our template object, passing
+it the context. This returns the rendered template — that is, it
+replaces template variables with the actual values of the variables, and
+it executes any block tags.<div style="height: 57px;" id="b59" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn60">Note that the warranty paragraph was displayed because the
+<tt class="docutils literal"><span class="pre">ordered_warranty</span></tt> variable evaluated to <tt class="docutils literal"><span class="pre">True</span></tt>. Also note the
+date, <tt class="docutils literal"><span class="pre">April</span> <span class="pre">2,</span> <span class="pre">2009</span></tt>, which is displayed according to the format
+string <tt class="docutils literal"><span class="pre">'F</span> <span class="pre">j,</span> <span class="pre">Y'</span></tt>. (We’ll explain format strings for the <tt class="docutils literal"><span class="pre">date</span></tt>
+filter shortly.)<div style="height: 60px;" id="b60" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn61">If you’re new to Python, you may wonder why this output includes
+newline characters (<tt class="docutils literal"><span class="pre">'\n'</span></tt>) rather than displaying the line breaks.
+That’s happening because of a subtlety in the Python interactive
+interpreter: The call to <tt class="docutils literal"><span class="pre">t.render(c)</span></tt> returns a string, and by default
+the interactive interpreter displays the <em>representation</em> of the string,
+rather than the printed value of the string. If you want to see the
+string with line breaks displayed as true line breaks rather than <tt class="docutils literal"><span class="pre">'\n'</span></tt>
+characters, use the <tt class="docutils literal"><span class="pre">print</span></tt> statement: <tt class="docutils literal"><span class="pre">print</span> <span class="pre">t.render(c)</span></tt>.<div style="height: 96px;" id="b61" class="comment-indicator"><span></span></div></p>
+<div style="height: 236px;" id="b58" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn62">Those are the fundamentals of using the Django template system — just write a
+template, create a template object, create a context and call the <tt class="docutils literal"><span class="pre">render()</span></tt>
+method.<div style="height: 39px;" id="b62" class="comment-indicator"><span></span></div></p>
+<div class="section" id="s-multiple-contexts-same-template">
+<h5 class="cn" id="cn63">Multiple contexts, same template<div style="height: 18px;" id="b63" class="comment-indicator"><span></span></div></h5>
+<p class="cn" id="cn64">Once you have a template object, you can render multiple contexts through it.
+For example:<div style="height: 19px;" id="b64" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn65">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; t = Template('Hello, {{ name }}')
+&gt;&gt;&gt; print t.render(Context({'name': 'John'}))
+Hello, John
+&gt;&gt;&gt; print t.render(Context({'name': 'Julie'}))
+Hello, Julie
+&gt;&gt;&gt; print t.render(Context({'name': 'Pat'}))
+Hello, Pat
+<div style="height: 166px;" id="b65" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn66">Whenever you’re using the same template to render multiple contexts like this,
+it’s most efficient to create the <tt class="docutils literal"><span class="pre">Template</span></tt> object <em>once</em>, then call
+<tt class="docutils literal"><span class="pre">render()</span></tt> on it multiple times. For example:<div style="height: 39px;" id="b66" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn67"># Bad
+for name in ('John', 'Julie', 'Pat'):
+    t = Template('Hello, {{ name }}')
+    print t.render(Context({'name': name}))
+
+# Good
+t = Template('Hello, {{ name }}')
+for name in ('John', 'Julie', 'Pat'):
+    print t.render(Context({'name': name}))
+<div style="height: 185px;" id="b67" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn68">Django’s template parsing is quite fast. Behind the scenes, most of the parsing
+happens via a single call to a short regular expression. This is a stark
+contrast to XML-based templating engines, which incur the overhead of an XML
+parser and tend to be orders of magnitude slower than Django’s template
+rendering engine.<div style="height: 55px;" id="b68" class="comment-indicator has-comments"><span>2</span></div></p>
+</div>
+</div>
+<div class="section" id="s-context-variable-lookup">
+<h4 class="cn" id="cn69">Context variable lookup<div style="height: 23px;" id="b69" class="comment-indicator has-comments"><span>5</span></div></h4>
+<p class="cn" id="cn70">In the examples so far, we’ve passed simple values in the template contexts —
+mostly strings, plus a <tt class="docutils literal"><span class="pre">datetime.date</span></tt> example. However, the template system
+elegantly handles more complex data structures, such as lists, dictionaries and
+custom objects.<div style="height: 57px;" id="b70" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn71">The key to traversing complex data structures in Django templates is the dot
+(<tt class="docutils literal"><span class="pre">.</span></tt>) character. Use a dot to access dictionary keys, attributes, indices or
+methods of an object.<div style="height: 39px;" id="b71" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn72">This is best illustrated with a few examples. First, say you’re passing a
+Python dictionary to a template. To access the values of that dictionary by
+dictionary key, use a dot:<div style="height: 37px;" id="b72" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn73">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; person = {'name': 'Sally', 'age': '43'}
+&gt;&gt;&gt; t = Template('{{ person.name }} is {{ person.age }} years old.')
+&gt;&gt;&gt; c = Context({'person': person})
+&gt;&gt;&gt; t.render(c)
+'Sally is 43 years old.'
+<div style="height: 127px;" id="b73" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn74">Similarly, dots also allow access of object attributes. For example, a Python
+<tt class="docutils literal"><span class="pre">datetime.date</span></tt> object has <tt class="docutils literal"><span class="pre">year</span></tt>, <tt class="docutils literal"><span class="pre">month</span></tt> and <tt class="docutils literal"><span class="pre">day</span></tt> attributes, and
+you can use a dot to access those attributes in a Django template:<div style="height: 40px;" id="b74" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn75">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; import datetime
+&gt;&gt;&gt; d = datetime.date(1993, 5, 2)
+&gt;&gt;&gt; d.year
+1993
+&gt;&gt;&gt; d.month
+5
+&gt;&gt;&gt; d.day
+2
+&gt;&gt;&gt; t = Template('The month is {{ date.month }} and the year is {{ date.year }}.')
+&gt;&gt;&gt; c = Context({'date': d})
+&gt;&gt;&gt; t.render(c)
+'The month is 5 and the year is 1993.'
+<div style="height: 263px;" id="b75" class="comment-indicator has-comments"><span>3</span></div></pre>
+<p class="cn" id="cn76">This example uses a custom class:<div style="height: 19px;" id="b76" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn77">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; class Person(object):
+...     def __init__(self, first_name, last_name):
+...         self.first_name, self.last_name = first_name, last_name
+&gt;&gt;&gt; t = Template('Hello, {{ person.first_name }} {{ person.last_name }}.')
+&gt;&gt;&gt; c = Context({'person': Person('John', 'Smith')})
+&gt;&gt;&gt; t.render(c)
+'Hello, John Smith.'
+<div style="height: 166px;" id="b77" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn78">Dots are also used to access list indices. For example:<div style="height: 19px;" id="b78" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn79">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; t = Template('Item 2 is {{ items.2 }}.')
+&gt;&gt;&gt; c = Context({'items': ['apples', 'bananas', 'carrots']})
+&gt;&gt;&gt; t.render(c)
+'Item 2 is carrots.'
+<div style="height: 107px;" id="b79" class="comment-indicator has-comments"><span>2</span></div></pre>
+<p class="cn" id="cn80">Negative list indices are not allowed. For example, the template variable
+<tt class="docutils literal"><span class="pre">{{</span> <span class="pre">items.-1</span> <span class="pre">}}</span></tt> would cause a <tt class="docutils literal"><span class="pre">TemplateSyntaxError</span></tt>.<div style="height: 40px;" id="b80" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn81">Finally, dots are also used to call methods on objects. For example, each
+Python string has the methods <tt class="docutils literal"><span class="pre">upper()</span></tt> and <tt class="docutils literal"><span class="pre">isdigit()</span></tt>, and you can call
+those in Django templates using the same dot syntax:<div style="height: 39px;" id="b81" class="comment-indicator has-comments"><span>2</span></div></p>
+<pre class="cn literal-block" id="cn82">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; t = Template('{{ var }} -- {{ var.upper }} -- {{ var.isdigit }}')
+&gt;&gt;&gt; t.render(Context({'var': 'hello'}))
+'hello -- HELLO -- False'
+&gt;&gt;&gt; t.render(Context({'var': '123'}))
+'123 -- 123 -- True'
+<div style="height: 127px;" id="b82" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn83">Note that, in the method calls, you don’t include parentheses. Also, it’s not
+possible to pass arguments to the methods; you can only call methods that have
+no required arguments. (We’ll explain this philosophy later in this chapter.)<div style="height: 55px;" id="b83" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn84">The dot lookups can be summarized like this: When the template system
+encounters a dot in a variable name, it tries the following lookups, in this
+order:<div style="height: 37px;" id="b84" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn85">Dictionary lookup. Example: <tt class="docutils literal"><span class="pre">foo["bar"]</span></tt><div style="height: 20px;" id="b85" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn86">Attribute lookup. Example: <tt class="docutils literal"><span class="pre">foo.bar</span></tt><div style="height: 20px;" id="b86" class="comment-indicator has-comments"><span>4</span></div></li>
+<li class="cn" id="cn87">Method call. Example: <tt class="docutils literal"><span class="pre">foo.bar()</span></tt><div style="height: 20px;" id="b87" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn88">List-index lookup. Example: <tt class="docutils literal"><span class="pre">foo[bar]</span></tt><div style="height: 20px;" id="b88" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn89">The system uses the first lookup type that works. It’s short-circuit logic.<div style="height: 19px;" id="b89" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn90">Dot lookups can be nested multiple levels deep. For instance, the following
+example uses <tt class="docutils literal"><span class="pre">{{</span> <span class="pre">person.name.upper</span> <span class="pre">}}</span></tt>, which translates into a dictionary
+lookup (<tt class="docutils literal"><span class="pre">person['name']</span></tt>), then a method call (<tt class="docutils literal"><span class="pre">upper()</span></tt>):<div style="height: 58px;" id="b90" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn91">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; person = {'name': 'Sally', 'age': '43'}
+&gt;&gt;&gt; t = Template('{{ person.name.upper }} is {{ person.age }} years old.')
+&gt;&gt;&gt; c = Context({'person': person})
+&gt;&gt;&gt; t.render(c)
+'SALLY is 43 years old.'
+<div style="height: 127px;" id="b91" class="comment-indicator has-comments"><span>2</span></div></pre>
+<div class="section" id="s-a-word-about-method-calls">
+<h5 class="cn" id="cn92">A word about method calls<div style="height: 18px;" id="b92" class="comment-indicator has-comments"><span>1</span></div></h5>
+<p class="cn" id="cn93">Method calls are slightly more complex than the other lookup types. Here are
+some things to keep in mind:<div style="height: 19px;" id="b93" class="comment-indicator"><span></span></div></p>
+<ul>
+<li class="cn" id="cn94"><p class="first cn" id="cn95">If, during the method lookup, a method raises an exception, the exception
+will be propagated, unless the exception has an attribute
+<tt class="docutils literal"><span class="pre">silent_variable_failure</span></tt> whose value is <tt class="docutils literal"><span class="pre">True</span></tt>. If the exception
+<em>does</em> have a <tt class="docutils literal"><span class="pre">silent_variable_failure</span></tt> attribute, the variable will
+render as an empty string. For example:<div style="height: 58px;" id="b95" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn96">&gt;&gt;&gt; t = Template("My name is {{ person.first_name }}.")
+&gt;&gt;&gt; class PersonClass3:
+...     def first_name(self):
+...         raise AssertionError, "foo"
+&gt;&gt;&gt; p = PersonClass3()
+&gt;&gt;&gt; t.render(Context({"person": p}))
+Traceback (most recent call last):
+...
+AssertionError: foo
+
+&gt;&gt;&gt; class SilentAssertionError(AssertionError):
+...     silent_variable_failure = True
+&gt;&gt;&gt; class PersonClass4:
+...     def first_name(self):
+...         raise SilentAssertionError
+&gt;&gt;&gt; p = PersonClass4()
+&gt;&gt;&gt; t.render(Context({"person": p}))
+"My name is ."
+<div style="height: 361px;" id="b96" class="comment-indicator has-comments"><span>1</span></div></pre>
+<div style="height: 432px;" id="b94" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn97"><p class="first cn" id="cn98">A method call will only work if the method has no required arguments.
+Otherwise, the system will move to the next lookup type (list-index
+lookup).<div style="height: 37px;" id="b98" class="comment-indicator"><span></span></div></p>
+<div style="height: 37px;" id="b97" class="comment-indicator has-comments"><span>2</span></div></li>
+<li class="cn" id="cn99"><p class="first cn" id="cn100">Obviously, some methods have side effects, and it’d be foolish at best,
+and possibly even a security hole, to allow the template system to access
+them.<div style="height: 37px;" id="b100" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn101">Say, for instance, you have a <tt class="docutils literal"><span class="pre">BankAccount</span></tt> object that has a
+<tt class="docutils literal"><span class="pre">delete()</span></tt> method. The template system shouldn’t be allowed to do
+something like this:<div style="height: 39px;" id="b101" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn102">I will now delete this valuable data. {{ account.delete }}
+<div style="height: 29px;" id="b102" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn103">To prevent this, set a function attribute <tt class="docutils literal"><span class="pre">alters_data</span></tt> on the method.
+The template system won’t execute a method if the method has
+<tt class="docutils literal"><span class="pre">alters_data=True</span></tt> set. For example:<div style="height: 40px;" id="b103" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn104">def delete(self):
+    # Delete the account
+delete.alters_data = True
+<div style="height: 68px;" id="b104" class="comment-indicator has-comments"><span>2</span></div></pre>
+<div style="height: 265px;" id="b99" class="comment-indicator"><span></span></div></li>
+</ul>
+</div>
+<div class="section" id="s-how-invalid-variables-are-handled">
+<h5 class="cn" id="cn105">How invalid variables are handled<div style="height: 18px;" id="b105" class="comment-indicator"><span></span></div></h5>
+<p class="cn" id="cn106">By default, if a variable doesn’t exist, the template system renders it as an
+empty string, failing silently. For example:<div style="height: 37px;" id="b106" class="comment-indicator has-comments"><span>2</span></div></p>
+<pre class="cn literal-block" id="cn107">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; t = Template('Your name is {{ name }}.')
+&gt;&gt;&gt; t.render(Context())
+'Your name is .'
+&gt;&gt;&gt; t.render(Context({'var': 'hello'}))
+'Your name is .'
+&gt;&gt;&gt; t.render(Context({'NAME': 'hello'}))
+'Your name is .'
+&gt;&gt;&gt; t.render(Context({'Name': 'hello'}))
+'Your name is .'
+<div style="height: 205px;" id="b107" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn108">The system fails silently rather than raising an exception because it’s
+intended to be resilient to human error. In the real world, it’s unacceptable
+for a Web site to become inaccessible due to a small template syntax error.<div style="height: 37px;" id="b108" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn109">Note that it’s possible to change Django’s default behavior in this regard, by
+tweaking a setting in your Django configuration. We’ll discuss this in Chapter
+10, “Extending the template engine.”<div style="height: 37px;" id="b109" class="comment-indicator has-comments"><span>1</span></div></p>
+</div>
+</div>
+<div class="section" id="s-playing-with-context-objects">
+<h4 class="cn" id="cn110">Playing with Context objects<div style="height: 23px;" id="b110" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn111">Most of the time, you’ll instantiate <tt class="docutils literal"><span class="pre">Context</span></tt> objects by passing in a
+fully-populated dictionary to <tt class="docutils literal"><span class="pre">Context()</span></tt>. But you can add and delete items
+from a <tt class="docutils literal"><span class="pre">Context</span></tt> object once it’s been instantiated, too, using standard
+Python dictionary syntax:<div style="height: 58px;" id="b111" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn112">&gt;&gt;&gt; from django.template import Context
+&gt;&gt;&gt; c = Context({"foo": "bar"})
+&gt;&gt;&gt; c['foo']
+'bar'
+&gt;&gt;&gt; del c['foo']
+&gt;&gt;&gt; c['foo']
+''
+&gt;&gt;&gt; c['newvariable'] = 'hello'
+&gt;&gt;&gt; c['newvariable']
+'hello'
+<div style="height: 205px;" id="b112" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn113">A <tt class="docutils literal"><span class="pre">Context</span></tt> object is a stack. That is, you can <tt class="docutils literal"><span class="pre">push()</span></tt> and <tt class="docutils literal"><span class="pre">pop()</span></tt> it.
+If you <tt class="docutils literal"><span class="pre">pop()</span></tt> too much, it’ll raise <tt class="docutils literal"><span class="pre">django.template.ContextPopException</span></tt>:<div style="height: 40px;" id="b113" class="comment-indicator has-comments"><span>2</span></div></p>
+<pre class="cn literal-block" id="cn114">&gt;&gt;&gt; c = Context()
+&gt;&gt;&gt; c['foo'] = 'first level'
+&gt;&gt;&gt; c.push()
+&gt;&gt;&gt; c['foo'] = 'second level'
+&gt;&gt;&gt; c['foo']
+'second level'
+&gt;&gt;&gt; c.pop()
+&gt;&gt;&gt; c['foo']
+'first level'
+&gt;&gt;&gt; c['foo'] = 'overwritten'
+&gt;&gt;&gt; c['foo']
+'overwritten'
+&gt;&gt;&gt; c.pop()
+Traceback (most recent call last):
+...
+django.template.ContextPopException
+<div style="height: 322px;" id="b114" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn115">Using a <tt class="docutils literal"><span class="pre">Context</span></tt> as a stack comes in handy in some custom template tags, as
+you’ll see in Chapter 10.<div style="height: 21px;" id="b115" class="comment-indicator has-comments"><span>6</span></div></p>
+</div>
+</div>
+<div class="section" id="s-basic-template-tags-and-filters">
+<h3 class="cn" id="cn116">Basic template tags and filters<div style="height: 22px;" id="b116" class="comment-indicator"><span></span></div></h3>
+<p class="cn" id="cn117">As we’ve mentioned already, the template system ships with built-in tags and
+filters. Here’s a rundown of the most common ones. Appendix 6 includes a full
+list of all built-in tags and filters, and it’s a good idea to familiarize
+yourself with that list to have an idea of what’s possible.<div style="height: 55px;" id="b117" class="comment-indicator"><span></span></div></p>
+<div class="section" id="s-if-else">
+<h4 class="cn" id="cn118">if/else<div style="height: 23px;" id="b118" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn119">The <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt> tag evaluates a variable, and if that variable is “true”
+(i.e., it exists, is not empty, and is not a false boolean value), the system
+will display everything between <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt> and <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">endif</span> <span class="pre">%}</span></tt>. For example:<div style="height: 40px;" id="b119" class="comment-indicator has-comments"><span>2</span></div></p>
+<pre class="cn literal-block" id="cn120">{% if today_is_weekend %}
+    &lt;p&gt;Welcome to the weekend!&lt;/p&gt;
+{% endif %}
+<div style="height: 68px;" id="b120" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn121">An <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">else</span> <span class="pre">%}</span></tt> tag is optional:<div style="height: 21px;" id="b121" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn122">{% if today_is_weekend %}
+    &lt;p&gt;Welcome to the weekend!&lt;/p&gt;
+{% else %}
+    &lt;p&gt;Get back to work.&lt;/p&gt;
+{% endif %}
+<div style="height: 107px;" id="b122" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn123">The <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt> tag accepts <tt class="docutils literal"><span class="pre">and</span></tt>, <tt class="docutils literal"><span class="pre">or</span></tt> or <tt class="docutils literal"><span class="pre">not</span></tt> for testing multiple
+variables, or to negate a given variable. For example:<div style="height: 39px;" id="b123" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn124">{% if athlete_list and coach_list %}
+    Both athletes and coaches are available.
+{% endif %}
+
+{% if not athlete_list %}
+    There are no athletes.
+{% endif %}
+
+{% if athlete_list or coach_list %}
+    There are some athletes or some coaches.
+{% endif %}
+
+{% if not athlete_list or coach_list %}
+    There are no athletes or there are some coaches (OK, so
+    writing English translations of boolean logic sounds
+    stupid; it's not our fault).
+{% endif %}
+
+{% if athlete_list and not coach_list %}
+    There are some athletes and absolutely no coaches.
+{% endif %}
+<div style="height: 419px;" id="b124" class="comment-indicator has-comments"><span>2</span></div></pre>
+<p class="cn" id="cn125"><tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt> tags don’t allow <tt class="docutils literal"><span class="pre">and</span></tt> and <tt class="docutils literal"><span class="pre">or</span></tt> clauses within the same tag,
+because the order of logic would be ambiguous. For example, this is invalid:<div style="height: 39px;" id="b125" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn126">{% if athlete_list and coach_list or cheerleader_list %}
+<div style="height: 29px;" id="b126" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn127">If you need to combine <tt class="docutils literal"><span class="pre">and</span></tt> and <tt class="docutils literal"><span class="pre">or</span></tt> to do advanced logic, just use nested
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt> tags. For example:<div style="height: 21px;" id="b127" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn128">{% if athlete_list %}
+    {% if coach_list or cheerleader_list %}
+        We have athletes, and either coaches or cheerleaders!
+    {% endif %}
+{% endif %}
+<div style="height: 107px;" id="b128" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn129">Multiple uses of the same logical operator are fine, as long as you use the
+same operator. For example, this is valid:<div style="height: 37px;" id="b129" class="comment-indicator has-comments"><span>5</span></div></p>
+<pre class="cn literal-block" id="cn130">{% if athlete_list or coach_list or parent_list or teacher_list %}
+<div style="height: 29px;" id="b130" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn131">There is no <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">elif</span> <span class="pre">%}</span></tt> tag. Use nested <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt> tags to accomplish
+the same thing:<div style="height: 21px;" id="b131" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn132">{% if athlete_list %}
+    &lt;p&gt;Here are the athletes: {{ athlete_list }}.&lt;/p&gt;
+{% else %}
+    &lt;p&gt;No athletes are available.&lt;/p&gt;
+    {% if coach_list %}
+        &lt;p&gt;Here are the coaches: {{ coach_list }}.&lt;/p&gt;
+    {% endif %}
+{% endif %}
+<div style="height: 166px;" id="b132" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn133">Make sure to close each <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt> with an <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">endif</span> <span class="pre">%}</span></tt>. Otherwise, Django
+will throw a <tt class="docutils literal"><span class="pre">TemplateSyntaxError</span></tt>.<div style="height: 21px;" id="b133" class="comment-indicator"><span></span></div></p>
+</div>
+<div class="section" id="s-for">
+<h4 class="cn" id="cn134">for<div style="height: 23px;" id="b134" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn135">The <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">%}</span></tt> tag allows you to loop over each item in a sequence. As in
+Python’s <tt class="docutils literal"><span class="pre">for</span></tt> statement, the syntax is <tt class="docutils literal"><span class="pre">for</span> <span class="pre">X</span> <span class="pre">in</span> <span class="pre">Y</span></tt>, where <tt class="docutils literal"><span class="pre">Y</span></tt> is the
+sequence to loop over and <tt class="docutils literal"><span class="pre">X</span></tt> is the name of the variable to use for a
+particular cycle of the loop. Each time through the loop, the template system
+will render everything between <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">%}</span></tt> and <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">endfor</span> <span class="pre">%}</span></tt>.<div style="height: 79px;" id="b135" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn136">For example, to display a list of athletes given a variable <tt class="docutils literal"><span class="pre">athlete_list</span></tt>:<div style="height: 21px;" id="b136" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn137">&lt;ul&gt;
+{% for athlete in athlete_list %}
+    &lt;li&gt;{{ athlete.name }}&lt;/li&gt;
+{% endfor %}
+&lt;/ul&gt;
+<div style="height: 107px;" id="b137" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn138">Add <tt class="docutils literal"><span class="pre">reversed</span></tt> to the tag to loop over the list in reverse:<div style="height: 21px;" id="b138" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn139">{% for athlete in athlete_list reversed %}
+...
+{% endfor %}
+<div style="height: 68px;" id="b139" class="comment-indicator has-comments"><span>5</span></div></pre>
+<p class="cn" id="cn140">It’s possible to nest <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">%}</span></tt> tags:<div style="height: 21px;" id="b140" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn141">{% for country in countries %}
+    &lt;h1&gt;{{ country.name }}&lt;/h1&gt;
+    &lt;ul&gt;
+    {% for city in country.city_list %}
+        &lt;li&gt;{{ city }}&lt;/li&gt;
+    {% endfor %}
+    &lt;/ul&gt;
+{% endfor %}
+<div style="height: 166px;" id="b141" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn142">There is no support for “breaking” out of a loop before the loop is finished.
+If you want to accomplish this, change the variable you’re looping over so that
+it only includes the values you want to loop over. Similarly, there is no
+support for a “continue” statement that would instruct the loop processor to
+return immediately to the front of the loop. (See “Philosophies and limitations”
+later in this chapter for the reasoning behind this design decision.)<div style="height: 91px;" id="b142" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn143">The <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">%}</span></tt> tag sets a magic <tt class="docutils literal"><span class="pre">forloop</span></tt> template variable within the
+loop. This variable has a few attributes that give you information about the
+progress of the loop:<div style="height: 39px;" id="b143" class="comment-indicator"><span></span></div></p>
+<ul>
+<li class="cn" id="cn144"><p class="first cn" id="cn145"><tt class="docutils literal"><span class="pre">forloop.counter</span></tt> is always set to an integer representing the number
+of times the loop has been entered. This is one-indexed, so the first
+time through the loop, <tt class="docutils literal"><span class="pre">forloop.counter</span></tt> will be set to <tt class="docutils literal"><span class="pre">1</span></tt>.
+Example:<div style="height: 40px;" id="b145" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn146">{% for item in todo_list %}
+    &lt;p&gt;{{ forloop.counter }}: {{ item }}&lt;/p&gt;
+{% endfor %}
+<div style="height: 68px;" id="b146" class="comment-indicator"><span></span></div></pre>
+<div style="height: 122px;" id="b144" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn147"><p class="first cn" id="cn148"><tt class="docutils literal"><span class="pre">forloop.counter0</span></tt> is like <tt class="docutils literal"><span class="pre">forloop.counter</span></tt>, except it’s
+zero-indexed. Its value will be set to <tt class="docutils literal"><span class="pre">0</span></tt> the first time through the
+loop.<div style="height: 39px;" id="b148" class="comment-indicator"><span></span></div></p>
+<div style="height: 39px;" id="b147" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn149"><p class="first cn" id="cn150"><tt class="docutils literal"><span class="pre">forloop.revcounter</span></tt> is always set to an integer representing the
+number of remaining items in the loop. The first time through the loop,
+<tt class="docutils literal"><span class="pre">forloop.revcounter</span></tt> will be set to the total number of items in the
+sequence you’re traversing. The last time through the loop,
+<tt class="docutils literal"><span class="pre">forloop.revcounter</span></tt> will be set to <tt class="docutils literal"><span class="pre">1</span></tt>.<div style="height: 60px;" id="b150" class="comment-indicator has-comments"><span>2</span></div></p>
+<div style="height: 60px;" id="b149" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn151"><p class="first cn" id="cn152"><tt class="docutils literal"><span class="pre">forloop.revcounter0</span></tt> is like <tt class="docutils literal"><span class="pre">forloop.revcounter</span></tt>, except it’s
+zero-indexed. The first time through the loop, <tt class="docutils literal"><span class="pre">forloop.revcounter0</span></tt>
+will be set to the number of elements in the sequence minus one. The last
+time through the loop, it will be set to <tt class="docutils literal"><span class="pre">0</span></tt>.<div style="height: 60px;" id="b152" class="comment-indicator has-comments"><span>2</span></div></p>
+<div style="height: 60px;" id="b151" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn153"><p class="first cn" id="cn154"><tt class="docutils literal"><span class="pre">forloop.first</span></tt> is a boolean value set to <tt class="docutils literal"><span class="pre">True</span></tt> if this is the first
+time through the loop. This is convenient for special-casing:<div style="height: 39px;" id="b154" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn155">{% for object in objects %}
+    {% if forloop.first %}&lt;li class="first"&gt;{% else %}&lt;li&gt;{% endif %}
+    {{ object }}
+    &lt;/li&gt;
+{% endfor %}
+<div style="height: 107px;" id="b155" class="comment-indicator"><span></span></div></pre>
+<div style="height: 159px;" id="b153" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn156"><p class="first cn" id="cn157"><tt class="docutils literal"><span class="pre">forloop.last</span></tt> is a boolean value set to <tt class="docutils literal"><span class="pre">True</span></tt> if this is the last
+time through the loop. An example use for this would be to put pipe
+characters between a list of links:<div style="height: 39px;" id="b157" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn158">{% for link in links %}{{ link }}{% if not forloop.last %} | {% endif %}{% endfor %}
+<div style="height: 29px;" id="b158" class="comment-indicator"><span></span></div></pre>
+<div style="height: 81px;" id="b156" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn159"><p class="first cn" id="cn160"><tt class="docutils literal"><span class="pre">forloop.parentloop</span></tt> is a reference to the <tt class="docutils literal"><span class="pre">forloop</span></tt> object for the
+<em>parent</em> loop, in case of nested loops. For example:<div style="height: 39px;" id="b160" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn161">{% for country in countries %}
+    &lt;table&gt;
+    {% for city in country.city_list %}
+        &lt;tr&gt;
+        &lt;td&gt;Country #{{ forloop.parentloop.counter }}&lt;/td&gt;
+        &lt;td&gt;City #{{ forloop.counter }}&lt;/td&gt;
+        &lt;td&gt;{{ city }}&lt;/td&gt;
+        &lt;/tr&gt;
+    {% endfor %}
+    &lt;/table&gt;
+{% endfor %}
+<div style="height: 224px;" id="b161" class="comment-indicator"><span></span></div></pre>
+<div style="height: 276px;" id="b159" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn162">The magic <tt class="docutils literal"><span class="pre">forloop</span></tt> variable is only available within loops. After the
+template parser has reached <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">endfor</span> <span class="pre">%}</span></tt>, <tt class="docutils literal"><span class="pre">forloop</span></tt> disappears.<div style="height: 40px;" id="b162" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn163">If your template context already contains a variable called <tt class="docutils literal"><span class="pre">forloop</span></tt>, Django
+will override it within <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">%}</span></tt> tags. In other, non-loop parts of the
+template, your <tt class="docutils literal"><span class="pre">forloop</span></tt> will still be available and unchanged. We advise
+against setting template variables with the name <tt class="docutils literal"><span class="pre">forloop</span></tt>, but if you need
+to do this and want to access your custom <tt class="docutils literal"><span class="pre">forloop</span></tt> from within a
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">%}</span></tt> tag, you can use <tt class="docutils literal"><span class="pre">forloop.parentloop</span></tt>, described above.<div style="height: 79px;" id="b163" class="comment-indicator has-comments"><span>3</span></div></p>
+</div>
+<div class="section" id="s-ifequal-ifnotequal">
+<h4 class="cn" id="cn164">ifequal/ifnotequal<div style="height: 23px;" id="b164" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn165">The Django template system deliberately is not a full-fledged programming
+language and, thus, does not allow you to execute arbitrary Python statements.
+(More on this in “Philosophies and limitations” below.) However, it’s quite
+a common template requirement to compare two values and display something if
+they’re equal — and Django provides an <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt> tag for that purpose.<div style="height: 75px;" id="b165" class="comment-indicator has-comments"><span>3</span></div></p>
+<p class="cn" id="cn166">The <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt> tag compares two values and displays everything between
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt> and <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">endifequal</span> <span class="pre">%}</span></tt> if the values are equal.<div style="height: 40px;" id="b166" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn167">This example compares the template variables <tt class="docutils literal"><span class="pre">user</span></tt> and <tt class="docutils literal"><span class="pre">currentuser</span></tt>:<div style="height: 21px;" id="b167" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn168">{% ifequal user currentuser %}
+    &lt;h1&gt;Welcome!&lt;/h1&gt;
+{% endifequal %}
+<div style="height: 68px;" id="b168" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn169">The arguments can be hard-coded strings, with either single or double quotes,
+so the following is valid:<div style="height: 19px;" id="b169" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn170">{% ifequal section 'sitenews' %}
+    &lt;h1&gt;Site News&lt;/h1&gt;
+{% endifequal %}
+
+{% ifequal section "community" %}
+    &lt;h1&gt;Community&lt;/h1&gt;
+{% endifequal %}
+<div style="height: 146px;" id="b170" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn171">Just like <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt>, the <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt> tag supports an optional
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">else</span> <span class="pre">%}</span></tt>:<div style="height: 21px;" id="b171" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn172">{% ifequal section 'sitenews' %}
+    &lt;h1&gt;Site News&lt;/h1&gt;
+{% else %}
+    &lt;h1&gt;No News Here&lt;/h1&gt;
+{% endifequal %}
+<div style="height: 107px;" id="b172" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn173">Only template variables, strings, integers and decimal numbers are allowed as
+arguments to <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt>. These are valid examples:<div style="height: 39px;" id="b173" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn174">{% ifequal variable 1 %}
+{% ifequal variable 1.23 %}
+{% ifequal variable 'foo' %}
+{% ifequal variable "foo" %}
+<div style="height: 88px;" id="b174" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn175">Any other types of variables, such as Python dictionaries, lists or booleans,
+can not be hard-coded in <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt>. These are invalid examples:<div style="height: 39px;" id="b175" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn176">{% ifequal variable True %}
+{% ifequal variable [1, 2, 3] %}
+{% ifequal variable {'key': 'value'} %}
+<div style="height: 68px;" id="b176" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn177">If you need to test whether something is true or false, use the <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">if</span> <span class="pre">%}</span></tt>
+tags instead of <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt>.<div style="height: 21px;" id="b177" class="comment-indicator"><span></span></div></p>
+</div>
+<div class="section" id="s-comments">
+<h4 class="cn" id="cn178">Comments<div style="height: 23px;" id="b178" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn179">Just as in HTML or in a programming language such as Python, the Django
+template language allows for comments. To designate a comment, use <tt class="docutils literal"><span class="pre">{#</span> <span class="pre">#}</span></tt>.
+For example:<div style="height: 39px;" id="b179" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn180">{# This is a comment #}
+<div style="height: 29px;" id="b180" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn181">Comment will not be output when the template is rendered.<div style="height: 19px;" id="b181" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn182">A comment cannot span multiple lines. In the following template, the rendered
+output will look exactly the same as the template (i.e., the comment tag will
+not be parsed as a comment):<div style="height: 37px;" id="b182" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn183">This is a {# comment goes here
+and spans another line #}
+test.
+<div style="height: 68px;" id="b183" class="comment-indicator"><span></span></div></pre>
+</div>
+<div class="section" id="s-filters">
+<h4 class="cn" id="cn184">Filters<div style="height: 23px;" id="b184" class="comment-indicator has-comments"><span>2</span></div></h4>
+<p class="cn" id="cn185">As explained earlier in this chapter, template filters are simple ways of
+altering the value of variables before they’re displayed.<div style="height: 37px;" id="b185" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn186">Filters look like this:<div style="height: 19px;" id="b186" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn187">{{ name|lower }}
+<div style="height: 29px;" id="b187" class="comment-indicator has-comments"><span>2</span></div></pre>
+<p class="cn" id="cn188">This displays the value of the <tt class="docutils literal"><span class="pre">{{</span> <span class="pre">name</span> <span class="pre">}}</span></tt> variable after being filtered
+through the <tt class="docutils literal"><span class="pre">lower</span></tt> filter, which converts text to lowercase. Use a pipe
+(<tt class="docutils literal"><span class="pre">|</span></tt>) to apply a filter.<div style="height: 40px;" id="b188" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn189">Filters can be chained — that is, the output of one filter is applied to the
+next. Here’s a common idiom for escaping text contents, then converting line
+breaks to <tt class="docutils literal"><span class="pre">&lt;p&gt;</span></tt> tags:<div style="height: 39px;" id="b189" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn190">{{ my_text|escape|linebreaks }}
+<div style="height: 29px;" id="b190" class="comment-indicator has-comments"><span>3</span></div></pre>
+<p class="cn" id="cn191">Some filters take arguments. A filter argument looks like this:<div style="height: 19px;" id="b191" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn192">{{ bio|truncatewords:"30" }}
+<div style="height: 29px;" id="b192" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn193">This displays the first 30 words of the <tt class="docutils literal"><span class="pre">bio</span></tt> variable. Filter arguments
+always are in double quotes.<div style="height: 21px;" id="b193" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn194">Here are a few of the most important filters:<div style="height: 19px;" id="b194" class="comment-indicator has-comments"><span>1</span></div></p>
+<ul>
+<li class="cn" id="cn195"><p class="first cn" id="cn196"><tt class="docutils literal"><span class="pre">addslashes</span></tt> — Adds a backslash before any backslash, single quote or
+double quote. This is useful if you’re outputting some text into
+a JavaScript string.<div style="height: 39px;" id="b196" class="comment-indicator has-comments"><span>3</span></div></p>
+<div style="height: 39px;" id="b195" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn197"><p class="first cn" id="cn198"><tt class="docutils literal"><span class="pre">date</span></tt> — Formats a <tt class="docutils literal"><span class="pre">date</span></tt> or <tt class="docutils literal"><span class="pre">datetime</span></tt> object according to a
+format string given in the parameter. For example:<div style="height: 39px;" id="b198" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn199">{{ pub_date|date:"F j, Y" }}
+<div style="height: 29px;" id="b199" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn200">Format strings are defined in Appendix 6.<div style="height: 19px;" id="b200" class="comment-indicator"><span></span></div></p>
+<div style="height: 113px;" id="b197" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn201"><p class="first cn" id="cn202"><tt class="docutils literal"><span class="pre">escape</span></tt> — Escapes ampersands, quotes and angle brackets in the given
+string. This is useful for sanitizing user-submitted data and for
+ensuring data is valid XML or XHTML. Specifically, <tt class="docutils literal"><span class="pre">escape</span></tt> makes these
+conversions:<div style="height: 58px;" id="b202" class="comment-indicator has-comments"><span>1</span></div></p>
+<ul class="simple">
+<li class="cn" id="cn203">Converts <tt class="docutils literal"><span class="pre">&amp;</span></tt> to <tt class="docutils literal"><span class="pre">&amp;amp;</span></tt><div style="height: 20px;" id="b203" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn204">Converts <tt class="docutils literal"><span class="pre">&lt;</span></tt> to <tt class="docutils literal"><span class="pre">&amp;lt;</span></tt><div style="height: 20px;" id="b204" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn205">Converts <tt class="docutils literal"><span class="pre">&gt;</span></tt> to <tt class="docutils literal"><span class="pre">&amp;gt;</span></tt><div style="height: 20px;" id="b205" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn206">Converts <tt class="docutils literal"><span class="pre">"</span></tt> (double quote) to <tt class="docutils literal"><span class="pre">&amp;quot;</span></tt><div style="height: 20px;" id="b206" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn207">Converts <tt class="docutils literal"><span class="pre">'</span></tt> (single quote) to <tt class="docutils literal"><span class="pre">&amp;#39;</span></tt><div style="height: 20px;" id="b207" class="comment-indicator"><span></span></div></li>
+</ul>
+<div style="height: 193px;" id="b201" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn208"><p class="first cn" id="cn209"><tt class="docutils literal"><span class="pre">length</span></tt> — Returns the length of the value. You can use this on a list
+or a string, or any Python object that knows how to determine its length
+(i.e., any object that has a <tt class="docutils literal"><span class="pre">__len__()</span></tt> method).<div style="height: 40px;" id="b209" class="comment-indicator"><span></span></div></p>
+<div style="height: 40px;" id="b208" class="comment-indicator"><span></span></div></li>
+</ul>
+</div>
+</div>
+<div class="section" id="s-philosophies-and-limitations">
+<h3 class="cn" id="cn210">Philosophies and limitations<div style="height: 22px;" id="b210" class="comment-indicator"><span></span></div></h3>
+<p class="cn" id="cn211">Now that you’ve gotten a feel for the Django template language, we should point
+out some of its intentional limitations, along with some philosophies on why it
+works the way it works.<div style="height: 37px;" id="b211" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn212">More than any other component of Web applications, programmer opinions on
+template systems vary wildly — a statement supported by the fact that Python
+alone has dozens, if not hundreds, of open-source template-language
+implementations, each inevitably created because its developer deemed all
+existing template languages inadequate. (In fact, it is said to be a rite of
+passage for a Python developer to write his or her own template language! And
+if you haven’t done this yet, consider it. It’s a fun exercise.)<div style="height: 91px;" id="b212" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn213">With that in mind, the first Django philosophy to point out is that Django
+doesn’t require that you use its template language. Because Django is intended
+to be a full-stack Web framework that provides all the pieces necessary to be a
+productive Web developer, many times it’s <em>more convenient</em> to use Django’s
+template system than other Python template libraries, but it’s not a strict
+requirement in any sense. As we’ll see in the section “Using templates in views”
+below, it’s very easy to use another template language with Django — almost
+as easy as to use Django’s template language.<div style="height: 109px;" id="b213" class="comment-indicator has-comments"><span>3</span></div></p>
+<p class="cn" id="cn214">Still, it’s clear we have a strong preference for the way Django’s template
+language works. The template system has roots in how Web development is done at
+World Online and the combined experience of Django’s creators. Here are a few
+of those philosophies:<div style="height: 55px;" id="b214" class="comment-indicator has-comments"><span>1</span></div></p>
+<ul>
+<li class="cn" id="cn215"><p class="first cn" id="cn216"><strong>Business logic should be separated from presentation logic.</strong> We see a
+template system as a tool that controls presentation and
+presentation-related logic — and that’s it. The template system
+shouldn’t support functionality that goes beyond this basic goal.<div style="height: 55px;" id="b216" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn217">For that reason, it’s impossible to call Python code directly within
+Django templates. All “programming” is fundamentally limited to the scope
+of what template tags can do. It <em>is</em> possible to write custom template
+tags that do arbitrary things, but the out-of-the-box Django template
+tags intentionally do not allow for arbitrary Python code execution.<div style="height: 73px;" id="b217" class="comment-indicator"><span></span></div></p>
+<div style="height: 140px;" id="b215" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn218"><p class="first cn" id="cn219"><strong>Syntax should be decoupled from HTML/XML.</strong> Although Django’s template
+system is used primarily to output HTML, it’s intended to be just as
+usable for non-HTML formats, such as plain text. Some other template
+languages are XML-based, placing all template logic within XML tags or
+attributes, but Django deliberately avoids this limitation. Requiring
+valid XML to write templates introduces a world of human mistakes and
+hard-to-understand error messages, and using an XML engine to parse
+templates incurs an unacceptable level of overhead in template
+processing.<div style="height: 109px;" id="b219" class="comment-indicator has-comments"><span>1</span></div></p>
+<div style="height: 109px;" id="b218" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn220"><p class="first cn" id="cn221"><strong>Designers are assumed to be comfortable with HTML code.</strong> The template
+system isn’t designed so that templates necessarily are displayed nicely
+in WYSIWYG editors such as Dreamweaver. That is too severe of a
+limitation and wouldn’t allow the syntax to be as nice as it is. Django
+expects template authors are comfortable editing HTML directly.<div style="height: 73px;" id="b221" class="comment-indicator has-comments"><span>4</span></div></p>
+<div style="height: 73px;" id="b220" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn222"><p class="first cn" id="cn223"><strong>Designers are assumed not to be Python programmers.</strong> The template
+system authors recognize that Web page templates are most often written
+by <em>designers</em>, not <em>programmers</em>, and therefore should not assume Python
+knowledge.<div style="height: 55px;" id="b223" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn224">However, the system also intends to accomodate small teams in which the
+templates <em>are</em> created by Python programmers. It offers a way to extend
+the system’s syntax by writing raw Python code. (More on this in Chapter
+10.)<div style="height: 55px;" id="b224" class="comment-indicator"><span></span></div></p>
+<div style="height: 122px;" id="b222" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn225"><p class="first cn" id="cn226"><strong>The goal is not to invent a programming language.</strong> The goal is to
+offer just enough programming-esque functionality, such as branching and
+looping, that is essential for making presentation-related decisions.<div style="height: 55px;" id="b226" class="comment-indicator has-comments"><span>1</span></div></p>
+<div style="height: 55px;" id="b225" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn227">As a result of these design philosophies, the Django template language has
+the following limitations:<div style="height: 19px;" id="b227" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn228"><strong>A template cannot set a variable or change the value of a variable.</strong>
+It’s possible to write custom template tags that accomplish these goals
+(see Chapter 10), but the stock Django template tags do not allow it.<div style="height: 54px;" id="b228" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn229"><strong>A template cannot call raw Python code.</strong> There’s no way to “drop into
+Python mode” or use raw Python constructs. Again, it’s possible to write
+custom template tags to do this, but the stock Django template tags don’t
+allow it.<div style="height: 54px;" id="b229" class="comment-indicator"><span></span></div></li>
+</ul>
+</div>
+<div class="section" id="s-using-templates-in-views">
+<h3 class="cn" id="cn230">Using templates in views<div style="height: 22px;" id="b230" class="comment-indicator"><span></span></div></h3>
+<p class="cn" id="cn231">We’ve learned the basics of using the template system; now, let’s integrate
+this into a view. Recall the <tt class="docutils literal"><span class="pre">current_datetime</span></tt> view from the previous
+chapter. Here’s what it looked like:<div style="height: 39px;" id="b231" class="comment-indicator has-comments"><span>2</span></div></p>
+<pre class="cn literal-block" id="cn232">from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    html = "&lt;html&gt;&lt;body&gt;It is now %s.&lt;/body&gt;&lt;/html&gt;" % now
+    return HttpResponse(html)
+<div style="height: 146px;" id="b232" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn233">Let’s change this view to use Django’s template system. At first, you might
+think to do something like this:<div style="height: 19px;" id="b233" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn234">from django.template import Template, Context
+from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    t = Template("&lt;html&gt;&lt;body&gt;It is now {{ current_date }}.&lt;/body&gt;&lt;/html&gt;")
+    html = t.render(Context({'current_date': now}))
+    return HttpResponse(html)
+<div style="height: 185px;" id="b234" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn235">Sure, that uses the template system, but it doesn’t solve the problems we
+pointed out in the introduction of this chapter. Namely, the template is still
+embedded in the Python code. Let’s fix that by putting the template in a
+<em>separate file</em>, which this view will load.<div style="height: 55px;" id="b235" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn236">The simple, “dumb” way to do this would be to save your template somewhere on
+your filesystem and use Python’s built-in file-opening functionality to read
+the contents of the template. Here’s what that might look like, assuming the
+template was saved as the file <tt class="docutils literal"><span class="pre">/home/djangouser/templates/mytemplate.html</span></tt>:<div style="height: 57px;" id="b236" class="comment-indicator has-comments"><span>2</span></div></p>
+<pre class="cn literal-block" id="cn237">from django.template import Template, Context
+from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    # Simple, "dumb" way of saving templates on the filesystem.
+    # This doesn't account for missing files!
+    fp = open('/home/djangouser/templates/mytemplate.html')
+    t = Template(fp.read())
+    fp.close()
+    html = t.render(Context({'current_date': now}))
+    return HttpResponse(html)
+<div style="height: 263px;" id="b237" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn238">This approach, however, is inelegant for these reasons:<div style="height: 19px;" id="b238" class="comment-indicator has-comments"><span>7</span></div></p>
+<ul class="simple">
+<li class="cn" id="cn239">For one, it doesn’t handle the case of a missing file. If the file
+<tt class="docutils literal"><span class="pre">mytemplate.html</span></tt> doesn’t exist or isn’t readable, the <tt class="docutils literal"><span class="pre">open()</span></tt> call
+would raise an <tt class="docutils literal"><span class="pre">IOError</span></tt> exception.<div style="height: 39px;" id="b239" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn240">Second, it hard-codes your template location. If you were to use this
+technique for every view function, you’d be duplicating the template
+locations. Not to mention that’s a lot of typing!<div style="height: 36px;" id="b240" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn241">Third, it includes a lot of boring boilerplate code. The calls to
+<tt class="docutils literal"><span class="pre">open()</span></tt>, <tt class="docutils literal"><span class="pre">fp.read()</span></tt> and <tt class="docutils literal"><span class="pre">fp.close()</span></tt> require a lot of typing and
+not much creativity.<div style="height: 38px;" id="b241" class="comment-indicator has-comments"><span>1</span></div></li>
+</ul>
+<p class="cn" id="cn242">To solve these issues, we’ll use <em>template loading</em> and <em>template directories</em>.<div style="height: 19px;" id="b242" class="comment-indicator"><span></span></div></p>
+</div>
+<div class="section" id="s-template-loading">
+<h3 class="cn" id="cn243">Template loading<div style="height: 22px;" id="b243" class="comment-indicator has-comments"><span>4</span></div></h3>
+<p class="cn" id="cn244">Django provides a convenient and powerful API for loading templates from disk,
+with the goal of removing redundancy both in your template-loading calls and in
+your templates themselves.<div style="height: 37px;" id="b244" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn245">In order to use this template-loading API, first you’ll need to tell the
+framework where you store your templates. The place to do this is in your
+<strong>settings file</strong>.<div style="height: 37px;" id="b245" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn246">A Django settings file is the place to put configuration for your Django
+instance (aka your Django project). It’s a simple Python module with
+module-level variables, one for each setting.<div style="height: 37px;" id="b246" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn247">When you ran <tt class="docutils literal"><span class="pre">django-admin.py</span> <span class="pre">startproject</span> <span class="pre">mysite</span></tt> in Chapter 2, the script
+created a default settings file for you, aptly named <tt class="docutils literal"><span class="pre">settings.py</span></tt>. Have a
+look at the file’s contents. It contains variables that look like this (though
+not necessarily in this order):<div style="height: 58px;" id="b247" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn248">DEBUG = True
+TIME_ZONE = 'America/Chicago'
+USE_I18N = True
+ROOT_URLCONF = 'mysite.urls'
+<div style="height: 88px;" id="b248" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn249">This is pretty self-explanatory; the settings and their respective values are
+simple Python variables. And because the settings file is just a plain Python
+module, you can do dynamic things such as checking the value of one variable
+before setting another. (This also means that you should avoid Python syntax
+errors in your settings file.)<div style="height: 73px;" id="b249" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn250">We’ll cover settings files in depth later in this book, but for now, have a
+look at the <tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> setting. This setting tells Django’s template
+loading mechanism where to look for templates. By default, it’s an empty tuple.
+Pick a directory where you’d like to store your templates, and add it to
+<tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt>, like so:<div style="height: 58px;" id="b250" class="comment-indicator has-comments"><span>2</span></div></p>
+<pre class="cn literal-block" id="cn251">TEMPLATE_DIRS = (
+    '/home/django/mysite/templates',
+)
+<div style="height: 68px;" id="b251" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn252">A few things to note:<div style="height: 19px;" id="b252" class="comment-indicator"><span></span></div></p>
+<ul>
+<li class="cn" id="cn253"><p class="first cn" id="cn254">You can specify any directory you want, as long as the directory and
+templates within that directory are readable by the user account under
+which your Web server runs. If you can’t think of an obvious place to
+put your templates, we recommend creating a <tt class="docutils literal"><span class="pre">templates</span></tt> directory
+within your Django project (i.e., within the <tt class="docutils literal"><span class="pre">mysite</span></tt> directory you
+created in Chapter 2, if you’ve been following along with our examples).<div style="height: 76px;" id="b254" class="comment-indicator"><span></span></div></p>
+<div style="height: 76px;" id="b253" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn255"><p class="first cn" id="cn256">Don’t forget the comma at the end of the template-directory string!
+Python requires commas within single-element tuples to disambiguate the
+tuple from a parenthetical statement. This is a common newbie gotcha.<div style="height: 37px;" id="b256" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn257">If you want to avoid this error, you can make <tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> a list
+instead of a tuple, because single-element lists don’t require a trailing
+comma:<div style="height: 39px;" id="b257" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn258">TEMPLATE_DIRS = [
+    '/home/django/mysite/templates'
+]
+<div style="height: 68px;" id="b258" class="comment-indicator has-comments"><span>2</span></div></pre>
+<p class="cn" id="cn259">A tuple is slightly more efficient than a list, though, so we recommend
+using a tuple for your <tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> setting.<div style="height: 39px;" id="b259" class="comment-indicator has-comments"><span>2</span></div></p>
+<div style="height: 221px;" id="b255" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn260"><p class="first cn" id="cn261">It’s simplest to use absolute paths, i.e. directory paths that start at
+the root of the filesystem. If you want to be a bit more flexible and
+decoupled, though, you can take advantage of the fact that Django
+settings files are just Python code by constructing the contents of
+<tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> dynamically. For example:<div style="height: 57px;" id="b261" class="comment-indicator has-comments"><span>4</span></div></p>
+<pre class="cn literal-block" id="cn262">import os.path
+
+TEMPLATE_DIRS = (
+    os.path.join(os.path.basename(__file__), 'templates'),
+)
+<div style="height: 107px;" id="b262" class="comment-indicator has-comments"><span>6</span></div></pre>
+<p class="cn" id="cn263">This example uses the “magic” Python variable <tt class="docutils literal"><span class="pre">__file__</span></tt>, which is
+automatically set to the filename of the Python module in which the code
+lives.<div style="height: 39px;" id="b263" class="comment-indicator"><span></span></div></p>
+<div style="height: 229px;" id="b260" class="comment-indicator has-comments"><span>5</span></div></li>
+<li class="cn" id="cn264"><p class="first cn" id="cn265">If you’re on Windows, include your drive letter and use Unix-style
+forward slashes rather than backslashes. For example:<div style="height: 37px;" id="b265" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn266">TEMPLATE_DIRS = (
+    'C:/www/django/templates',
+)
+<div style="height: 68px;" id="b266" class="comment-indicator"><span></span></div></pre>
+<div style="height: 119px;" id="b264" class="comment-indicator has-comments"><span>9</span></div></li>
+</ul>
+<p class="cn" id="cn267">With <tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> set, the next step is to change the view code to
+use Django’s template-loading functionality rather than hard-coding the
+template paths. Returning to our <tt class="docutils literal"><span class="pre">current_datetime</span></tt> view, let’s change it
+like so:<div style="height: 58px;" id="b267" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn268">from django.template.loader import get_template
+from django.template import Context
+from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    t = get_template('current_datetime.html')
+    html = t.render(Context({'current_date': now}))
+    return HttpResponse(html)
+<div style="height: 205px;" id="b268" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn269">In this example, we’re using the function <tt class="docutils literal"><span class="pre">django.template.loader.get_template()</span></tt>
+rather than loading the template from the filesystem manually. The
+<tt class="docutils literal"><span class="pre">get_template()</span></tt> function takes a template name as its argument, figures out
+where the template lives on the filesystem, opens that file and returns a
+compiled <tt class="docutils literal"><span class="pre">Template</span></tt> object.<div style="height: 60px;" id="b269" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn270">If <tt class="docutils literal"><span class="pre">get_template()</span></tt> cannot find the template with the given name, it raises
+a <tt class="docutils literal"><span class="pre">TemplateDoesNotExist</span></tt> exception. To see what that looks like, fire up the
+Django development server again, as in Chapter 3, by running
+<tt class="docutils literal"><span class="pre">python</span> <span class="pre">manage.py</span> <span class="pre">runserver</span></tt> within your Django project’s directory. Then,
+point your browser at the page that activates the <tt class="docutils literal"><span class="pre">current_datetime</span></tt> view
+(e.g., <tt class="docutils literal"><span class="pre">http://127.0.0.1:8000/now/</span></tt>). Assuming your <tt class="docutils literal"><span class="pre">DEBUG</span></tt> setting is set
+to <tt class="docutils literal"><span class="pre">True</span></tt> and you haven’t yet created a <tt class="docutils literal"><span class="pre">current_datetime.html</span></tt> template,
+you should see a Django error page highlighting the <tt class="docutils literal"><span class="pre">TemplateDoesNotExist</span></tt>
+error.<div style="height: 117px;" id="b270" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn271">(We’ll have a screenshot here.)<div style="height: 19px;" id="b271" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn272">This error page is similar to the one we explained in Chapter 3, with one
+additional piece of debugging information: a “Template-loader postmortem”
+section. This section tells you which templates Django tried to load, along
+with the reason each attempt failed (e.g., “File does not exist”). This
+information is invaluable when you’re trying to debug template-loading errors.<div style="height: 73px;" id="b272" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn273">As you can probably tell by looking at the error messages, Django attempted to
+look for a template by combining the directory in your <tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt>
+setting with the template name you passed to <tt class="docutils literal"><span class="pre">get_template()</span></tt>. So if your
+<tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> contained <tt class="docutils literal"><span class="pre">'/home/django/templates'</span></tt>, it would look for
+the file <tt class="docutils literal"><span class="pre">'/home/django/templates/current_datetime.html'</span></tt>.<div style="height: 78px;" id="b273" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn274">Moving along, create the <tt class="docutils literal"><span class="pre">current_datetime.html</span></tt> file within your template
+directory, using the following template code:<div style="height: 39px;" id="b274" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn275">&lt;html&gt;&lt;body&gt;It is now {{ current_date }}.&lt;/body&gt;&lt;/html&gt;
+<div style="height: 29px;" id="b275" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn276">Refresh the page in your Web browser, and you should see the fully rendered
+page.<div style="height: 19px;" id="b276" class="comment-indicator has-comments"><span>1</span></div></p>
+<div class="section" id="s-render-to-response">
+<h4 class="cn" id="cn277">render_to_response()<div style="height: 23px;" id="b277" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn278">Because it’s such a common idiom to load a template, fill a <tt class="docutils literal"><span class="pre">Context</span></tt> and
+return an <tt class="docutils literal"><span class="pre">HttpResponse</span></tt> object with the result of the rendered template,
+Django provides a shortcut that lets you do those things in one line of code.
+This shortcut is a function called <tt class="docutils literal"><span class="pre">render_to_response()</span></tt>, which lives in the
+module <tt class="docutils literal"><span class="pre">django.shortcuts</span></tt>. Most of the time, you’ll be using
+<tt class="docutils literal"><span class="pre">render_to_response()</span></tt> rather than loading templates and creating <tt class="docutils literal"><span class="pre">Context</span></tt>
+and <tt class="docutils literal"><span class="pre">HttpResponse</span></tt> objects manually.<div style="height: 97px;" id="b278" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn279">Here’s the ongoing <tt class="docutils literal"><span class="pre">current_datetime</span></tt> example rewritten to use
+<tt class="docutils literal"><span class="pre">render_to_response()</span></tt>:<div style="height: 21px;" id="b279" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn280">from django.shortcuts import render_to_response
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    return render_to_response('current_datetime.html', {'current_date': now})
+<div style="height: 127px;" id="b280" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn281">What a difference! Let’s step through the code changes:<div style="height: 19px;" id="b281" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn282">We no longer have to import <tt class="docutils literal"><span class="pre">get_template</span></tt>, <tt class="docutils literal"><span class="pre">Template</span></tt>, <tt class="docutils literal"><span class="pre">Context</span></tt>
+or <tt class="docutils literal"><span class="pre">HttpResponse</span></tt>. Instead, we import
+<tt class="docutils literal"><span class="pre">django.shortcuts.render_to_response</span></tt>. The <tt class="docutils literal"><span class="pre">import</span> <span class="pre">datetime</span></tt> remains.<div style="height: 39px;" id="b282" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn283">Within the <tt class="docutils literal"><span class="pre">current_datetime</span></tt> function, we still calculate <tt class="docutils literal"><span class="pre">now</span></tt>, but
+the template loading, context creation, template rendering and
+<tt class="docutils literal"><span class="pre">HttpResponse</span></tt> creation is all taken care of by the
+<tt class="docutils literal"><span class="pre">render_to_response()</span></tt> call. Because <tt class="docutils literal"><span class="pre">render_to_response()</span></tt> returns
+an <tt class="docutils literal"><span class="pre">HttpResponse</span></tt> object, we can simply <tt class="docutils literal"><span class="pre">return</span></tt> that value in the
+view.<div style="height: 77px;" id="b283" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn284">The first argument to <tt class="docutils literal"><span class="pre">render_to_response()</span></tt> should be the name of the
+template to use, relative to your template directory. The second argument, if
+given, should be a dictionary to use in creating a <tt class="docutils literal"><span class="pre">Context</span></tt> for that
+template. If you don’t provide a second argument, <tt class="docutils literal"><span class="pre">render_to_response()</span></tt> will
+use an empty dictionary.<div style="height: 60px;" id="b284" class="comment-indicator"><span></span></div></p>
+</div>
+<div class="section" id="s-the-locals-trick">
+<h4 class="cn" id="cn285">The locals() trick<div style="height: 23px;" id="b285" class="comment-indicator has-comments"><span>1</span></div></h4>
+<p class="cn" id="cn286">Consider our latest incarnation of <tt class="docutils literal"><span class="pre">current_datetime</span></tt>:<div style="height: 21px;" id="b286" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn287">def current_datetime(request):
+    now = datetime.datetime.now()
+    return render_to_response('current_datetime.html', {'current_date': now})
+<div style="height: 68px;" id="b287" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn288">Many times, as in this example, you’ll find yourself calculating some values,
+storing them in variables (e.g., <tt class="docutils literal"><span class="pre">now</span></tt> above) and sending those variables to
+the template. Particularly lazy programmers would note that it’s slightly
+redundant to have to give names for temporary variables <em>and</em> give names for
+the template variables. Not only is it redundant; it’s extra typing.<div style="height: 75px;" id="b288" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn289">So if you’re one of those lazy programmers and you like keeping code
+particularly concise, you can take advantage of a built-in Python function
+called <tt class="docutils literal"><span class="pre">locals()</span></tt>. <tt class="docutils literal"><span class="pre">locals()</span></tt> returns a dictionary of all variables defined
+within the local scope, along with their values. Thus, the above view could be
+rewritten like so:<div style="height: 57px;" id="b289" class="comment-indicator has-comments"><span>3</span></div></p>
+<pre class="cn literal-block" id="cn290">def current_datetime(request):
+    current_date = datetime.datetime.now()
+    return render_to_response('current_datetime.html', locals())
+<div style="height: 68px;" id="b290" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn291">Here, instead of manually specifying the context dictionary as before, we
+instead pass the value of <tt class="docutils literal"><span class="pre">locals()</span></tt>, which will include all variables
+defined at that point in the function’s execution. As a consequence, we’ve
+renamed the <tt class="docutils literal"><span class="pre">now</span></tt> variable to <tt class="docutils literal"><span class="pre">current_date</span></tt>, because that’s the variable
+name that the template expects. In this example, <tt class="docutils literal"><span class="pre">locals()</span></tt> doesn’t offer a
+<em>huge</em> improvement, but this technique can save you some typing if you’ve got
+several template variables to define — or if you’re lazy.<div style="height: 96px;" id="b291" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn292">One thing to watch out for when using <tt class="docutils literal"><span class="pre">locals()</span></tt> is that it includes <em>every</em>
+local variable, which may comprise more variables than you actually want your
+template to have access to. In the above example, <tt class="docutils literal"><span class="pre">locals()</span></tt> will also
+include <tt class="docutils literal"><span class="pre">request</span></tt>. Whether this matters to you depends on your application.<div style="height: 60px;" id="b292" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn293">A final thing to consider is that <tt class="docutils literal"><span class="pre">locals()</span></tt> incurs a small bit of overhead,
+because when you call it, Python has to create the dictionary dynamically. If
+you specify the context dictionary manually, you avoid this overhead.<div style="height: 39px;" id="b293" class="comment-indicator"><span></span></div></p>
+</div>
+<div class="section" id="s-subdirectories-in-get-template">
+<h4 class="cn" id="cn294">Subdirectories in get_template()<div style="height: 23px;" id="b294" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn295">It can get unwieldy to store all of your templates in a single directory. You
+might like to store templates in subdirectories of your template directory, and
+that’s fine. (In fact, we’d recommend it, and some more advanced Django
+features, such as the generic views system we’ll cover in Chapter 9, expect
+this template layout as a default convention.)<div style="height: 73px;" id="b295" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn296">Accomplishing that is easy. In your calls to <tt class="docutils literal"><span class="pre">get_template()</span></tt>, just include
+the subdirectory name and a slash before the template name, like so:<div style="height: 39px;" id="b296" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn297">t = get_template('dateapp/current_datetime.html')
+<div style="height: 29px;" id="b297" class="comment-indicator has-comments"><span>2</span></div></pre>
+<p class="cn" id="cn298">Because <tt class="docutils literal"><span class="pre">render_to_response()</span></tt> is a small wrapper around <tt class="docutils literal"><span class="pre">get_template()</span></tt>,
+you can do the same thing with the first argument to <tt class="docutils literal"><span class="pre">render_to_response()</span></tt>.<div style="height: 40px;" id="b298" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn299">There’s no limit to the depth of your subdirectory tree. Feel free to use
+subdirectories of subdirectories of subdirectories.<div style="height: 37px;" id="b299" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn300">Windows users, note: Make sure to use forward slashes rather than backslashes.
+<tt class="docutils literal"><span class="pre">get_template()</span></tt> assumes a Unix-style filename designation.<div style="height: 39px;" id="b300" class="comment-indicator"><span></span></div></p>
+</div>
+<div class="section" id="s-the-include-template-tag">
+<h4 class="cn" id="cn301">The include template tag<div style="height: 23px;" id="b301" class="comment-indicator"><span></span></div></h4>
+<p class="cn" id="cn302">Now that we’ve covered the template loading mechanism, we can introduce a
+built-in template tag that takes advantage of it: <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">include</span> <span class="pre">%}</span></tt>. This tag
+allows you to include the contents of another template. The argument to the tag
+should be the name of the template to include, and the template name can be
+either a variable or a hard-coded (quoted) string, in either single or double
+quotes.<div style="height: 75px;" id="b302" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn303">These two examples include the contents of the template <tt class="docutils literal"><span class="pre">nav.html</span></tt>. The
+examples are equivalent and illustrate that either single or double quotes
+are allowed:<div style="height: 39px;" id="b303" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn304">{% include 'nav.html' %}
+{% include "nav.html" %}
+<div style="height: 49px;" id="b304" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn305">This example includes the contents of the template <tt class="docutils literal"><span class="pre">includes/nav.html</span></tt>:<div style="height: 21px;" id="b305" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn306">{% include 'includes/nav.html' %}
+<div style="height: 29px;" id="b306" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn307">This example includes the contents of the template whose name is contained in
+the variable <tt class="docutils literal"><span class="pre">template_name</span></tt>:<div style="height: 21px;" id="b307" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn308">{% include template_name %}
+<div style="height: 29px;" id="b308" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn309">As in <tt class="docutils literal"><span class="pre">get_template()</span></tt>, the filename of the template is determined by adding
+the template directory from <tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> to the requested template name.<div style="height: 40px;" id="b309" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn310">If an included template contains any template code — such as tags or variables
+— then it will get evaluated with the context of the template that’s including
+it.<div style="height: 37px;" id="b310" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn311">If a template with the given name isn’t found, Django will do one of two
+things:<div style="height: 19px;" id="b311" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn312">If your <tt class="docutils literal"><span class="pre">DEBUG</span></tt> setting is set to <tt class="docutils literal"><span class="pre">True</span></tt>, you’ll see the
+<tt class="docutils literal"><span class="pre">TemplateDoesNotExist</span></tt> exception on a Django error page.<div style="height: 38px;" id="b312" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn313">If your <tt class="docutils literal"><span class="pre">DEBUG</span></tt> setting is set to <tt class="docutils literal"><span class="pre">False</span></tt>, the tag will fail
+silently, displaying nothing in the place of the tag.<div style="height: 20px;" id="b313" class="comment-indicator"><span></span></div></li>
+</ul>
+</div>
+</div>
+<div class="section" id="s-template-inheritance">
+<h3 class="cn" id="cn314">Template inheritance<div style="height: 22px;" id="b314" class="comment-indicator"><span></span></div></h3>
+<p class="cn" id="cn315">Our template examples so far have been tiny HTML snippets, but in the real
+world, you’ll be using Django’s template system to output entire HTML pages.
+This leads to a common Web development problem: Across a Web site, how does
+one reduce the duplication and redundancy of common page areas, such as
+sitewide navigation?<div style="height: 73px;" id="b315" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn316">A classic way of solving this problem is to use server-side includes,
+directives you can embed within your HTML pages to “include” one Web page
+inside another. Indeed, Django supports that approach, with the
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">include</span> <span class="pre">%}</span></tt> template tag we described above. But the preferred way of
+solving this problem with Django is to use a more elegant strategy called
+<strong>template inheritance</strong>.<div style="height: 75px;" id="b316" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn317">In essence, template inheritance lets you build a base “skeleton” template that
+contains all the common parts of your site and defines “blocks” that child
+templates can override.<div style="height: 37px;" id="b317" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn318">Let’s see an example of this by creating a more complete template for our
+<tt class="docutils literal"><span class="pre">current_datetime</span></tt> view, by editing the <tt class="docutils literal"><span class="pre">current_datetime.html</span></tt> file:<div style="height: 40px;" id="b318" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn319">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;title&gt;The current time&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;My helpful timestamp site&lt;/h1&gt;
+    &lt;p&gt;It is now {{ current_date }}.&lt;/p&gt;
+
+    &lt;hr&gt;
+    &lt;p&gt;Thanks for visiting my site.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 263px;" id="b319" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn320">That looks just fine, but what happens when we want to create a template for
+another view — say, the <tt class="docutils literal"><span class="pre">hours_ahead</span></tt> view from Chapter 3? If we want again
+to make a nice, valid, full HTML template, we’d create something like:<div style="height: 57px;" id="b320" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn321">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;title&gt;Future time&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;My helpful timestamp site&lt;/h1&gt;
+    &lt;p&gt;In {{ hour_offset }} hour(s), it will be {{ next_time }}.&lt;/p&gt;
+
+    &lt;hr&gt;
+    &lt;p&gt;Thanks for visiting my site.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 263px;" id="b321" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn322">Clearly, we’ve just duplicated a lot of HTML. Imagine if we had a few
+stylesheets included on every page, maybe a navigation bar, perhaps some
+JavaScript… We’d end up putting all sorts of redundant HTML into each
+template.<div style="height: 55px;" id="b322" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn323">The server-side include solution to this problem would be to factor out the
+common bits in both templates and save them in separate template snippets,
+which would then be included in each template. Perhaps you’d store the top
+bit of the template in a file called <tt class="docutils literal"><span class="pre">header.html</span></tt>:<div style="height: 57px;" id="b323" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn324">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+<div style="height: 68px;" id="b324" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn325">And perhaps you’d store the bottom bit in a file called <tt class="docutils literal"><span class="pre">footer.html</span></tt>:<div style="height: 21px;" id="b325" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn326">    &lt;hr&gt;
+    &lt;p&gt;Thanks for visiting my site.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 88px;" id="b326" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn327">With an include-based strategy, headers and footers are easy. But it’s the
+middle ground that’s messy. In this example, both pages feature a title —
+<tt class="docutils literal"><span class="pre">&lt;h1&gt;My</span> <span class="pre">helpful</span> <span class="pre">timestamp</span> <span class="pre">site&lt;/h1&gt;</span></tt> — but that title can’t fit into
+<tt class="docutils literal"><span class="pre">header.html</span></tt> because the <tt class="docutils literal"><span class="pre">&lt;title&gt;</span></tt> on both pages is different. If we
+included the <tt class="docutils literal"><span class="pre">&lt;h1&gt;</span></tt> in the header, we’d have to include the <tt class="docutils literal"><span class="pre">&lt;title&gt;</span></tt>,
+which wouldn’t allow us to customize it per page. See where this is going?<div style="height: 78px;" id="b327" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn328">Django’s template inheritance system solves these problems. You can think of it
+as an “inside out” version of server-side includes. Instead of defining the
+snippets that are <em>common</em>, you define the snippets that are <em>different</em>.<div style="height: 55px;" id="b328" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn329">The first step is to define a <strong>base template</strong> — a skeleton of your page that
+<strong>child templates</strong> will later fill in. Here’s a base template for our ongoing
+example:<div style="height: 37px;" id="b329" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn330">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;title&gt;{% block title %}{% endblock %}&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;My helpful timestamp site&lt;/h1&gt;
+    {% block content %}{% endblock %}
+    {% block footer %}
+    &lt;hr&gt;
+    &lt;p&gt;Thanks for visiting my site.&lt;/p&gt;
+    {% endblock %}
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 283px;" id="b330" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn331">This template, which we’ll call <tt class="docutils literal"><span class="pre">base.html</span></tt>, defines a simple HTML skeleton
+document that we’ll use for all the pages on the site. It’s the job of child
+templates to override, or add to, or leave alone the contents of the blocks.
+(If you’re following along at home, save this file to your template directory.)<div style="height: 57px;" id="b331" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn332">We’re using a template tag here that you haven’t seen before — the
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tag. All the <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tags do is to tell the template
+engine that a child template may override those portions of the template.<div style="height: 39px;" id="b332" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn333">Now that we’ve got this base template, we can modify our existing
+<tt class="docutils literal"><span class="pre">current_datetime.html</span></tt> template to use it:<div style="height: 21px;" id="b333" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn334">{% extends "base.html" %}
+
+{% block title %}The current time{% endblock %}
+
+{% block content %}
+&lt;p&gt;It is now {{ current_date }}.&lt;/p&gt;
+{% endblock %}
+<div style="height: 146px;" id="b334" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn335">While we’re at it, let’s create a template for the <tt class="docutils literal"><span class="pre">hours_ahead</span></tt> view from
+Chapter 3. (If you’re following along with code, we’ll leave it up to you to
+change <tt class="docutils literal"><span class="pre">hours_ahead</span></tt> to use the template system.) Here’s what that would
+look like:<div style="height: 58px;" id="b335" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn336">{% extends "base.html" %}
+
+{% block title %}Future time{% endblock %}
+
+{% block content %}
+&lt;p&gt;In {{ hour_offset }} hour(s), it will be {{ next_time }}.&lt;/p&gt;
+{% endblock %}
+<div style="height: 146px;" id="b336" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn337">Isn’t this beautiful? Each template contains only the code that’s <em>unique</em> to
+that template. No redundancy needed. If you need to make a sitewide design
+change, just make the change to <tt class="docutils literal"><span class="pre">base.html</span></tt>, and all of the other templates
+will immediately reflect the change.<div style="height: 57px;" id="b337" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn338">Here’s how it works:<div style="height: 19px;" id="b338" class="comment-indicator"><span></span></div></p>
+<ul>
+<li class="cn" id="cn339"><p class="first cn" id="cn340">When you load the template <tt class="docutils literal"><span class="pre">current_datetime.html</span></tt>, the template engine
+sees the <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">extends</span> <span class="pre">%}</span></tt> tag, noting that this template is a child
+template. The engine immediately loads the parent template — in this
+case, <tt class="docutils literal"><span class="pre">base.html</span></tt>.<div style="height: 58px;" id="b340" class="comment-indicator"><span></span></div></p>
+<div style="height: 58px;" id="b339" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn341"><p class="first cn" id="cn342">At that point, the template engine notices the three <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tags
+in <tt class="docutils literal"><span class="pre">base.html</span></tt> and replaces those blocks with the contents of the child
+template. So, the title we’ve defined in <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">title</span> <span class="pre">%}</span></tt> will be
+used, as will the <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">content</span> <span class="pre">%}</span></tt>.<div style="height: 60px;" id="b342" class="comment-indicator has-comments"><span>2</span></div></p>
+<p class="cn" id="cn343">Note that since the child template doesn’t define the <tt class="docutils literal"><span class="pre">footer</span></tt> block,
+the template system uses the value from the parent template instead.
+Content within a <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tag in a parent template is always used
+as a fallback.<div style="height: 58px;" id="b343" class="comment-indicator has-comments"><span>1</span></div></p>
+<div style="height: 130px;" id="b341" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn344">You can use as many levels of inheritance as needed. One common way of using
+inheritance is the following three-level approach:<div style="height: 37px;" id="b344" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn345">Create a <tt class="docutils literal"><span class="pre">base.html</span></tt> template that holds the main look-and-feel of
+your site. This is the stuff that rarely, if ever, changes.<div style="height: 38px;" id="b345" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn346">Create a <tt class="docutils literal"><span class="pre">base_SECTION.html</span></tt> template for each “section” of your site.
+For example, <tt class="docutils literal"><span class="pre">base_photos.html</span></tt>, <tt class="docutils literal"><span class="pre">base_forum.html</span></tt>. These templates
+all extend <tt class="docutils literal"><span class="pre">base.html</span></tt> and include section-specific styles/design.<div style="height: 39px;" id="b346" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn347">Create individual templates for each type of page, such as a forum page
+or a photo gallery. These templates extend the appropriate section
+template.<div style="height: 36px;" id="b347" class="comment-indicator"><span></span></div></li>
+</ul>
+<p class="cn" id="cn348">This approach maximizes code reuse and makes it easy to add items to shared
+areas, such as section-wide navigation.<div style="height: 37px;" id="b348" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn349">Here are some tips for working with template inheritance:<div style="height: 19px;" id="b349" class="comment-indicator"><span></span></div></p>
+<ul class="simple">
+<li class="cn" id="cn350">If you use <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">extends</span> <span class="pre">%}</span></tt> in a template, it must be the first
+template tag in that template. Otherwise, template inheritance won’t
+work.<div style="height: 38px;" id="b350" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn351">Generally, the more <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tags in your base templates, the
+better. Remember, child templates don’t have to define all parent blocks,
+so you can fill in reasonable defaults in a number of blocks, then only
+define the ones you need in the child templates. It’s better to have more
+hooks than fewer hooks.<div style="height: 56px;" id="b351" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn352">If you find yourself duplicating code in a number of templates, it
+probably means you should move that code to a <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> in a
+parent template.<div style="height: 38px;" id="b352" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn353">If you need to get the content of the block from the parent template,
+the <tt class="docutils literal"><span class="pre">{{</span> <span class="pre">block.super</span> <span class="pre">}}</span></tt> variable will do the trick. This is useful if
+you want to add to the contents of a parent block instead of completely
+overriding it.<div style="height: 56px;" id="b353" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn354">You may not define multiple <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tags with the same name in
+the same template. This limitation exists because a block tag works in
+“both” directions. That is, a block tag doesn’t just provide a hole to
+fill — it also defines the content that fills the hole in the <em>parent</em>.
+If there were two similarly-named <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tags in a template,
+that template’s parent wouldn’t know which one of the blocks’ content to
+use.<div style="height: 93px;" id="b354" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn355">The template name you pass to <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">extends</span> <span class="pre">%}</span></tt> is loaded using the same
+method that <tt class="docutils literal"><span class="pre">get_template()</span></tt> uses. That is, the template name is
+appended to your <tt class="docutils literal"><span class="pre">TEMPLATE_DIRS</span></tt> setting.<div style="height: 39px;" id="b355" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn356">In most cases, the argument to <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">extends</span> <span class="pre">%}</span></tt> will be a string, but it
+can also be a variable, if you don’t know the name of the parent template
+until runtime. This lets you do some cool, dynamic stuff.<div style="height: 38px;" id="b356" class="comment-indicator"><span></span></div></li>
+</ul>
+</div>
+<div class="section" id="s-exercises">
+<h3 class="cn" id="cn357">Exercises<div style="height: 22px;" id="b357" class="comment-indicator"><span></span></div></h3>
+<p class="cn" id="cn358">Here are a few exercises that will solidify some of the things you learned in
+this chapter. (Hint: Even if you think you understood everything, at least
+give these exercises, and their respective answers, a read. We introduce a
+couple of new tricks here.)<div style="height: 55px;" id="b358" class="comment-indicator"><span></span></div></p>
+<ol class="arabic">
+<li class="cn" id="cn359"><p class="first cn" id="cn360">You’ve got a list of musicians and the genre of music each one plays.
+This data is stored as a list of dictionaries, which will be hard-coded
+in your view module. (Usually we’d use a database for this, but we
+haven’t yet covered Django’s database layer.) The list looks like this:<div style="height: 55px;" id="b360" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn361">MUSICIANS = [
+    {'name': 'Django Reinhardt', 'genre': 'jazz'},
+    {'name': 'Jimi Hendrix',     'genre': 'rock'},
+    {'name': 'Louis Armstrong',  'genre': 'jazz'},
+    {'name': 'Pete Townsend',    'genre': 'rock'},
+    {'name': 'Yanni',            'genre': 'new age'},
+    {'name': 'Ella Fitzgerald',  'genre': 'jazz'},
+    {'name': 'Wesley Willis',    'genre': 'casio'},
+    {'name': 'John Lennon',      'genre': 'rock'},
+    {'name': 'Bono',             'genre': 'rock'},
+    {'name': 'Garth Brooks',     'genre': 'country'},
+    {'name': 'Duke Ellington',   'genre': 'jazz'},
+    {'name': 'William Shatner',  'genre': 'spoken word'},
+    {'name': 'Madonna',          'genre': 'pop'},
+]
+<div style="height: 302px;" id="b361" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn362">Write a Django view and corresponding template(s) that display an HTML
+<tt class="docutils literal"><span class="pre">&lt;table&gt;</span></tt> with a row for each musician in this list, in order. Each
+row should have two columns: the musician’s name and the type of music
+he/she plays.<div style="height: 57px;" id="b362" class="comment-indicator"><span></span></div></p>
+<div style="height: 440px;" id="b359" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn363"><p class="first cn" id="cn364">Once you’ve done that: For all the musicians who play jazz or rock
+— but <em>not</em> the others — bold their names by applying a
+<tt class="docutils literal"><span class="pre">style="font-weight:</span> <span class="pre">bold;"</span></tt> to their <tt class="docutils literal"><span class="pre">&lt;td&gt;</span></tt> cells.<div style="height: 39px;" id="b364" class="comment-indicator"><span></span></div></p>
+<div style="height: 39px;" id="b363" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn365"><p class="first cn" id="cn366">Once you’ve done that: For all the musicians who have a one-word name —
+but <em>not</em> the others — display an asterisk after their name. Add a
+footnote to the page that says “* Pretentious.” Maintain the
+<tt class="docutils literal"><span class="pre">style="font-weight</span> <span class="pre">bold;"</span></tt> from the previous exercise.<div style="height: 57px;" id="b366" class="comment-indicator"><span></span></div></p>
+<div style="height: 57px;" id="b365" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn367"><p class="first cn" id="cn368">Given the following three templates, devise a template-inheritance scheme
+that removes as much redundancy as possible.<div style="height: 37px;" id="b368" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn369">Template 1:<div style="height: 19px;" id="b369" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn370">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;link rel="stylesheet" href="default.css" type="text/css"&gt;
+    &lt;title&gt;My to-do list&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1 id="top"&gt;Latest tasks&lt;/h1&gt;
+    {% if task_list %}
+        &lt;ul&gt;
+        {% for task in task_list %}&lt;li&gt;{{ task }}&lt;/li&gt;{% endfor %}
+        &lt;/ul&gt;
+    {% else %}
+        &lt;p&gt;You have no tasks.&lt;/p&gt;
+    {% endif %}
+    &lt;hr&gt;
+    &lt;p&gt;&lt;a href="#top"&gt;Back to top&lt;/a&gt;.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 380px;" id="b370" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn371">Template 2:<div style="height: 19px;" id="b371" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn372">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;title&gt;Task: {{ task.title }} | To-do list&lt;/title&gt;
+    &lt;link rel="stylesheet" href="default.css" type="text/css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1 id="top"&gt;{{ task.title }}&lt;/h1&gt;
+    &lt;p&gt;{{ task.description }}&lt;/p&gt;
+    &lt;hr&gt;
+    &lt;p&gt;&lt;a href="#top"&gt;Back to top&lt;/a&gt;.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 263px;" id="b372" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn373">Template 3:<div style="height: 19px;" id="b373" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn374">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;title&gt;Completed tasks | To-do list&lt;/title&gt;
+    &lt;link rel="stylesheet" href="default.css" type="text/css"&gt;
+    &lt;script type="text/javascript" src="completed.js"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1 id="top"&gt;{{ task.title }}&lt;/h1&gt;
+    &lt;p&gt;{{ task.description }}&lt;/p&gt;
+    &lt;hr&gt;
+    &lt;p&gt;&lt;a href="#top"&gt;Back to top&lt;/a&gt;.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 283px;" id="b374" class="comment-indicator"><span></span></div></pre>
+<div style="height: 1098px;" id="b367" class="comment-indicator"><span></span></div></li>
+</ol>
+</div>
+<div class="section" id="s-answers-to-exercises">
+<h3 class="cn" id="cn375">Answers to exercises<div style="height: 22px;" id="b375" class="comment-indicator"><span></span></div></h3>
+<ol class="arabic">
+<li class="cn" id="cn376"><p class="first cn" id="cn377">Here’s one possible implementation of the view:<div style="height: 19px;" id="b377" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn378">from django.shortcuts import render_to_response
+
+MUSICIANS = [
+    # ...
+]
+
+def musician_list(request):
+    return render_to_response('musician_list.html', {'musicians': MUSICIANS})
+<div style="height: 166px;" id="b378" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn379">And here’s the template:<div style="height: 19px;" id="b379" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn380">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;title&gt;Musician list&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;table&gt;
+    &lt;tr&gt;&lt;th&gt;Musician&lt;/th&gt;&lt;th&gt;Genre&lt;/th&gt;&lt;/tr&gt;
+    {% for musician in musicians %}
+        &lt;tr&gt;
+        &lt;td&gt;{{ musician.name }}&lt;/td&gt;
+        &lt;td&gt;{{ musician.genre }}&lt;/td&gt;
+        &lt;/tr&gt;
+    {% endfor %}
+    &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<div style="height: 341px;" id="b380" class="comment-indicator"><span></span></div></pre>
+<div style="height: 585px;" id="b376" class="comment-indicator"><span></span></div></li>
+<li class="cn" id="cn381"><p class="first cn" id="cn382">A rather clumsy way to do this would be to use <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">ifequal</span> <span class="pre">%}</span></tt> in the
+template. The view would stay the same as in the answer to the last
+exercise, and the template’s <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">for</span> <span class="pre">%}</span></tt> loop would change to
+something like this:<div style="height: 58px;" id="b382" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn383">{% for musician in musicians %}
+    &lt;tr&gt;
+    &lt;td {% ifequal musician.genre 'jazz' %}style="font-weight: bold;"{% endifequal %}
+        {% ifequal musician.genre 'rock' %}style="font-weight: bold;"{% endifequal %}&gt;
+      {{ musician.name }}
+    &lt;/td&gt;
+    &lt;td&gt;{{ musician.genre }}&lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}
+<div style="height: 185px;" id="b383" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn384">This is overly verbose, repetitive and error-prone — and it illustrates
+an important point. A key to mastering Django’s template system is to
+know <em>what to pass</em> to the template. Because templates do not have the
+full programming-language power of an environment you might be used to,
+it’s more important in a Django environment to do as much <em>business logic</em>
+(as opposed to <em>presentation logic</em>) as possible in your view.<div style="height: 91px;" id="b384" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn385">In this case, a cleaner way of solving the problem would be to have the
+view precalculate whether a musician’s name is bolded. After all, this
+is business logic, not presentation logic. The presentation logic dictates
+<em>how</em> the special-case genres should be displayed, not <em>which</em> genres
+are special-cased. This is an important distinction.<div style="height: 73px;" id="b385" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn386">Here’s one way to code the view:<div style="height: 19px;" id="b386" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn387">def musician_list(request):
+    musicians = []
+    for m in MUSICIANS:
+        musicians.append({
+            'name': m['name'],
+            'genre': m['genre'],
+            'is_important': m['genre'] in ('rock', 'jazz'),
+        })
+    return render_to_response('musician_list.html', {'musicians': musicians})
+<div style="height: 185px;" id="b387" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn388">And with that view, you could use this template code:<div style="height: 19px;" id="b388" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn389">{% for musician in musicians %}
+    &lt;tr&gt;
+    &lt;td{% if musician.is_important %} style="font-weight: bold;"{% endif %}&gt;
+      {{ musician.name }}
+    &lt;/td&gt;
+    &lt;td&gt;{{ musician.genre }}&lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}
+<div style="height: 166px;" id="b389" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn390">See how much cleaner that is in the template? Even this is more complex
+than it usually will be, because usually you’ll be dealing with database
+objects, and database objects can have custom methods (such as
+<tt class="docutils literal"><span class="pre">is_important()</span></tt>). We’ll cover database objects in the next chapter.<div style="height: 57px;" id="b390" class="comment-indicator"><span></span></div></p>
+<div style="height: 956px;" id="b381" class="comment-indicator has-comments"><span>2</span></div></li>
+<li class="cn" id="cn391"><p class="first cn" id="cn392">This is a similar problem to the previous exercise, and the solution is
+also similar. The key is to precalculate whether a musician deserves an
+asterisk next to his or her name. Because that’s business logic, it
+belongs in the view.<div style="height: 55px;" id="b392" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn393">Here’s one possible view implementation:<div style="height: 19px;" id="b393" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn394">def musician_list(request):
+    musicians = []
+    for m in MUSICIANS:
+        musicians.append({
+            'name': m['name'],
+            'genre': m['genre'],
+            'is_important': m['genre'] in ('rock', 'jazz'),
+            'is_pretentious': ' ' not in m['name'],
+        })
+    return render_to_response('musician_list.html', {'musicians': musicians})
+<div style="height: 205px;" id="b394" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn395">We’re using the expression <tt class="docutils literal"><span class="pre">'</span> <span class="pre">'</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">m['name']</span></tt>, which returns
+<tt class="docutils literal"><span class="pre">True</span></tt> if <tt class="docutils literal"><span class="pre">m['name']</span></tt> doesn’t include a space. You could also use the
+<tt class="docutils literal"><span class="pre">.find()</span></tt> method, like this:<div style="height: 40px;" id="b395" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn396">'is_pretentious': m['name'].find(' ') == -1
+<div style="height: 29px;" id="b396" class="comment-indicator has-comments"><span>1</span></div></pre>
+<p class="cn" id="cn397">Note that we’re calling this variable <tt class="docutils literal"><span class="pre">is_pretentious</span></tt> rather than
+<tt class="docutils literal"><span class="pre">has_asterisk</span></tt>, because the fact that we’re using asterisks is a
+presentation decision.<div style="height: 39px;" id="b397" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn398">With the above view, you could use this template code:<div style="height: 19px;" id="b398" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn399">{% for musician in musicians %}
+    &lt;tr&gt;
+    &lt;td{% if musician.is_important %} style="font-weight: bold;"{% endif %}&gt;
+      {% if musician.is_pretentious %}* {% endif %}{{ musician.name }}
+    &lt;/td&gt;
+    &lt;td&gt;{{ musician.genre }}&lt;/td&gt;
+    &lt;/tr&gt;
+{% endfor %}
+<div style="height: 166px;" id="b399" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn400">Don’t forget the “* Pretentious.” at the bottom of the template.<div style="height: 19px;" id="b400" class="comment-indicator has-comments"><span>1</span></div></p>
+<p class="cn" id="cn401">For bonus points, be a perfectionist and only display the
+“* Pretentious” footnote if there’s at least one pretentious musician.
+Determine the presence of a pretentious musician in the view, like so:<div style="height: 37px;" id="b401" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn402">def musician_list(request):
+    musicians = []
+    has_pretentious = False
+    for m in MUSICIANS:
+        if ' ' not in m['name']:
+            has_pretentious = True
+        musicians.append({
+            'name': m['name'],
+            'genre': m['genre'],
+            'is_important': m['genre'] in ('rock', 'jazz'),
+            'is_pretentious': ' ' not in m['name'],
+        })
+    return render_to_response('musician_list.html', {
+        'musicians': musicians,
+        'has_pretentious': has_pretentious,
+    })
+<div style="height: 322px;" id="b402" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn403">In this implementation, we pass an extra template variable,
+<tt class="docutils literal"><span class="pre">has_pretentious</span></tt>, to the template. Then use it in the template like
+so:<div style="height: 39px;" id="b403" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn404">{% if has_pretentious %}* Pretentious{% endif %}
+<div style="height: 29px;" id="b404" class="comment-indicator"><span></span></div></pre>
+<div style="height: 1172px;" id="b391" class="comment-indicator has-comments"><span>1</span></div></li>
+<li class="cn" id="cn405"><p class="first cn" id="cn406">Here’s one way to write the base template:<div style="height: 19px;" id="b406" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn407">&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"&gt;
+    &lt;html lang="en"&gt;
+    &lt;head&gt;
+        &lt;link rel="stylesheet" href="default.css" type="text/css"&gt;
+        &lt;title&gt;{% block title %}{% endblock %}&lt;/title&gt;
+        {% block extrahead %}{% endblock %}
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;h1 id="top"&gt;{% block headline %}{% endblock %}&lt;/h1&gt;
+        {% block content %}{% endblock %}
+        &lt;hr&gt;
+        &lt;p&gt;&lt;a href="#top"&gt;Back to top&lt;/a&gt;.&lt;/p&gt;
+    &lt;/body&gt;
+    &lt;/html&gt;
+<div style="height: 283px;" id="b407" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn408">And, with that base template, here’s how the child templates might look.<div style="height: 19px;" id="b408" class="comment-indicator"><span></span></div></p>
+<p class="cn" id="cn409">Template 1:<div style="height: 19px;" id="b409" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn410">{% extends "base.html" %}
+
+{% block title %}My to-do list{% endblock %}
+
+{% block headline %}Latest tasks{% endblock %}
+
+{% block content %}
+{% if task_list %}
+    &lt;ul&gt;
+    {% for task in task_list %}&lt;li&gt;{{ task }}&lt;/li&gt;{% endfor %}
+    &lt;/ul&gt;
+{% else %}
+    &lt;p&gt;You have no tasks.&lt;/p&gt;
+{% endif %}
+{% endblock %}
+<div style="height: 302px;" id="b410" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn411">Template 2:<div style="height: 19px;" id="b411" class="comment-indicator"><span></span></div></p>
+<pre class="cn literal-block" id="cn412">{% extends "base.html" %}
+
+{% block title %}Task: {{ task.title }} | To-do list{% endblock %}
+
+{% block headline %}{{ task.title }}{% endblock %}
+
+{% block content %}&lt;p&gt;{{ task.description }}&lt;/p&gt;{% endblock %}
+<div style="height: 146px;" id="b412" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn413">Template 3:<div style="height: 19px;" id="b413" class="comment-indicator has-comments"><span>1</span></div></p>
+<pre class="cn literal-block" id="cn414">{% extends "base.html" %}
+
+{% block title %}Completed tasks | To-do list{% endblock %}
+
+{% block extrahead %}&lt;script type="text/javascript" src="completed.js"&gt;{% endblock %}
+
+{% block headline %}{{ task.title }}{% endblock %}
+
+{% block content %}&lt;p&gt;{{ task.description }}&lt;/p&gt;{% endblock %}
+<div style="height: 185px;" id="b414" class="comment-indicator"><span></span></div></pre>
+<p class="cn" id="cn415">Note that we like to put an empty line of space between <tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt>
+sections, but that’s just our personal style. Any text outside of
+<tt class="docutils literal"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">%}</span></tt> tags in child templates will not be rendered.<div style="height: 40px;" id="b415" class="comment-indicator"><span></span></div></p>
+<div style="height: 1169px;" id="b405" class="comment-indicator"><span></span></div></li>
+</ol>
+</div>
+
+  </div>
+            
+          </div>
+        </div>
+      </div>
+      <div id="ft">
+        <div class="nav">
+	
+		<a href="http://www.djangobook.com/en/beta/chapter03/">« previous</a> ◊
+	
+	<a href="http://www.djangobook.com/en/beta/">table of contents</a>
+	
+		◊ <a href="http://www.djangobook.com/en/beta/chapter05/">next »</a>
+	
+</div>
+
+        Copyright 2006, 2007, 2008, 2009 Adrian Holovaty and Jacob Kaplan-Moss.<br>This
+        work is licensed under the <a href="http://www.djangobook.com/license/">GNU Free Document
+        License</a>.
+        <br>
+        Hosting graciously provided by <a href="http://mediatemple.net/">
+        <img style="vertical-align: middle; position: relative; top: -1px;" src="djangobook-chapter4-template-system_files/mt.png" alt="media temple"></a>
+      </div>
+    </div>
+    <!--
+    <script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script>
+    <script type="text/javascript">_uacct = "UA-848611-1"; urchinTracker();</script>
+    --> 
+  
+  <div style="visibility: hidden; opacity: 0.3; width: 730px;" id="highlight-floater"></div>
+  <!-- comment dialog -->
+  <div style="display: none; width: 498px; height: 398px;" id="comments" class="yresizable-pinned">
+    <div class="hd" id="comments-head">
+      Comments <span class="close" onclick="Comments.close();">X</span>
+    </div>
+    <div class="bd">
+      <div id="comment-tabs">
+        
+        <!-- comment form -->
+        
+        
+        <!-- comments on this node tab: filled in dynamically -->
+        
+        
+        <!-- all comments tab: also dynamic -->
+        
+        
+        <!-- help -->
+        
+
+      <div class=" tabset"><div class=" hd" id="tab-strip0"><ul id="tab-strip-list1"><li style="display: none;" id="elgen-4"><a><em>Post a comment</em></a></li><li id="elgen-3" style="display: inline;" class=" on"><a><strong><em>Post a comment</em></strong></a></li><li id="elgen-6"><a><em>Comments on this block</em></a></li><li id="elgen-5" style="display: none;" class=" on"><a><strong><em>Comments on this block</em></strong></a></li><li id="elgen-8"><a><em>All comments</em></a></li><li id="elgen-7" style="display: none;" class=" on"><a><strong><em>All comments</em></strong></a></li><li id="elgen-10"><a><em>Help</em></a></li><li id="elgen-9" style="display: none;" class=" on"><a><strong><em>Help</em></strong></a></li></ul></div></div><div class=" yui-ext-tabbody" id="tab-body2"><div style="display: block;" id="comment-tabs-form" class="tab yui-ext-tabitembody">
+          
+            <h4>Comments are closed on this chapter.</h4>
+            <p>
+              We're no longer accepting comments on this version of this
+              chapter.
+            </p>
+            <p>
+              Many thanks to all those who commented.
+            </p>
+          
+        </div><div style="display: none;" id="comment-tabs-current" class="tab yui-ext-tabitembody">
+          <ol id="current-comments-list"></ol>
+        </div><div style="display: none;" id="comment-tabs-all" class="tab yui-ext-tabitembody">
+          <ol id="all-comments-list"></ol>
+        </div><div style="display: none;" id="comment-tabs-help" class="tab yui-ext-tabitembody">
+          <h4>About this comment system</h4>
+          <p>
+            This site is using a contextual comment system to help us gather
+            targeted feedback about the book.  Instead of commenting on an
+            entire chapter, you can leave comments on any indivdual "block"
+            in the chapter. A "block" with comments looks like this:
+          </p>
+          <p class="image">
+            <img src="djangobook-chapter4-template-system_files/comments1.png" height="100" width="350">
+          </p>
+          <p>
+            A "block" is a paragraph, list item, code sample, or other small
+            chunk of content.  It'll get highlighted when you select it:
+          </p>
+          <p class="image">
+            <img src="djangobook-chapter4-template-system_files/comments2.png" height="100" width="350">
+          </p>
+          <p>
+            To post a comment on a block, just click in the gutter next to the
+            bit you want to comment on:
+          </p>
+          <p class="image">
+            <img src="djangobook-chapter4-template-system_files/comments3.png" height="100" width="350">
+          </p>
+          <p>
+            As we edit the book, we'll review everyone's comments and roll them into
+            a future version of the book. We'll mark reviewed comments with a little
+            checkmark:
+          </p>
+          <p>
+            Please make sure to leave a full name (and not a nickname or
+            screenname) if you'd like your contributions acknowledged in print.
+          </p>
+          <p class="image">
+            <img src="djangobook-chapter4-template-system_files/comments4.png" height="100" width="350">
+          </p>
+          <p>
+            Many, many thanks to <a href="http://www.jackslocum.com/yui/">Jack Slocum</a>;
+            the inspiration and much of the code for the comment system comes from Jack's
+            blog, and this site couldn't have been built without his wonderful 
+            <code>YAHOO.ext</code> library.  Thanks also to Yahoo for YUI itself.
+          </p>
+        </div></div></div>
+    </div>
+    <div class="ft">
+       <div style="visibility: hidden;" class="" id="comments-message"></div>
+       <div id="comments-submit-wrapper">
+        <input style="visibility: visible;" id="comment-submit" value="Post comment" onclick="Comments.submitComment();" type="button">
+        <input id="comment-close" value="Close" onclick="Comments.close();" type="button">
+      </div>
+    </div>
+  <div id="elgen-11" class="yresizable-handle yresizable-handle-east">&nbsp;</div><div id="elgen-12" class="yresizable-handle yresizable-handle-south">&nbsp;</div><div id="elgen-13" class="yresizable-handle yresizable-handle-southeast">&nbsp;</div></div>
+  
+    <script type="text/javascript" src="djangobook-chapter4-template-system_files/djangobook-min-all.js"></script>
+  
+
+  </body></html>
