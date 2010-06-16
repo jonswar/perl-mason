@@ -48,18 +48,18 @@ sub _build_parser_id {
 sub escape_flag_regex { qr/[[:alpha:]_]\w*/ }
 
 sub compile {
-    my ( $self, $source_file, $comp_root ) = @_;
+    my ( $self, $source_file, $path ) = @_;
 
     my $compilation = $self->compilation_class->new(
         source_file => $source_file,
-        comp_root   => $comp_root,
+        path => $path,
         parser      => $self,
     );
     return $compilation->compile();
 }
 
 sub compile_to_file {
-    my ( $self, $source_file, $comp_root, $dest_file ) = @_;
+    my ( $self, $source_file, $path, $dest_file ) = @_;
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not
@@ -74,7 +74,7 @@ sub compile_to_file {
         }
         rmtree($dest_file) if ( -d $dest_file );
     }
-    write_file( $dest_file, $self->compile( $source_file, $comp_root ) );
+    write_file( $dest_file, $self->compile( $source_file, $path ) );
 }
 
 1;
