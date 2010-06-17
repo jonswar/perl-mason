@@ -12,9 +12,10 @@ _build*
 bench
 blib*
 cp.yml
+data
 dist
 inc
 localcpan*
 pm_to_blib*
 tmp
-
+z-backup
