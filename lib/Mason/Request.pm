@@ -1,76 +1,63 @@
 package Mason::Request;
 use autodie qw(:all);
+use Guard;
 use Log::Any qw($log);
+use Mason::Request::TieHandle;
+use Mason::Util qw(isa_mason_exception);
 use Moose;
 use strict;
 use warnings;
 
-has 'buffer' => ( default  => '' );
-has 'interp' => ( required => 1 );
-has 'output' => ();
+# Passed attributes
+has 'interp' => ( is => 'ro', required => 1, weak_ref => 1 );
 
-sub determine_request_component {
-    my ( $self, $path ) = @_;
+# Derived attributes
+has 'buffer_stack' => ( is => 'ro', init_arg => undef );
+has 'request_comp' => ( is => 'ro', init_arg => undef );
 
-    my $request_comp_class = $self->interp->load($path);
-    unless ($request_comp_class) {
-        if ( $request_comp_class =
-            $self->interp->find_comp_upwards( $path, $self->dhandler_name ) )
-        {
-            my $parent_path = $request_comp_class->dir_path;
-            ( $self->{dhandler_arg} = $self->{top_path} ) =~
-              s{^$parent_path/?}{};
-            $log->debugf( "found dhandler '%s', dhandler_arg '%s'",
-                $parent_path, $self->{dhandler_arg} )
-              if $log->is_debug;
-        }
-    }
+# Class attributes
+our $current_request;
+sub current_request { $current_request }
 
-    return $request_comp_class;
+sub BUILD {
+    my ( $self, $params ) = @_;
+    $self->push_buffer();
 }
 
-sub exec {
+sub run {
+    my $self      = shift;
     my $path      = shift;
     my $wantarray = wantarray();
+
+    # Make this the current request.
+    #
+    local $current_request = $self;
 
     # Check the static_source touch file, if it exists, before the
     # first component is loaded.
     #
     $self->interp->check_static_source_touch_file();
 
-    # Determine request component.
+    # Fetch request component.
     #
-    my $request_comp_class = $self->determine_request_component($path);
-    unless ( defined($request_comp_class) ) {
-        top_level_not_found_error(
-            sprintf(
-                "could not find component for initial path '%s' (component roots are: %s)",
-                $path, $self->interp->comp_root_array_as_string()
-            )
-        );
-    }
-    my $request_comp = $request_comp_class->new(@_);
-
-    $log->debugf( "starting request for '%s'", $request_comp_class->title )
+    my $request_comp = $self->fetch_comp_or_die( $path, @_ );
+    $self->{request_comp} = $request_comp;
+    $log->debugf( "starting request for '%s'", $request_comp->title )
       if $log->is_debug;
 
-    my $retval;
+    my ( $retval, $err );
     {
-        local *SELECTED;
-        tie *SELECTED, 'Tie::Handle::Mason';
-        my $old = select SELECTED;
+        local *TH;
+        tie *TH, 'Mason::Request::TieHandle';
+        my $old = select TH;
         scope_guard { select $old };
 
-        $retval = eval { $self->enter_comp( $request_comp, 'render' ) };
+        $retval = eval { $request_comp->render() };
         $err = $@;
     }
     die $err if $err && !$self->_aborted_or_declined($err);
 
-    # If there's anything in the output buffer, send it to output().
-    #
-    if ( length( $self->{buffer} ) > 0 ) {
-        $self->output->( $self->{buffer} );
-    }
+    $self->flush_buffer;
 
     # Return aborted value or result.
     #
@@ -123,14 +110,14 @@ sub _aborted_or_declined {
 sub cache {
     my ( $self, %options ) = @_;
 
-    my $chi_root_class = $self->chi_root_class;
+    my $chi_root_class = $self->interp->chi_root_class;
     load_class($chi_root_class);
     if ( !exists( $options{namespace} ) ) {
         $options{namespace} = $self->current_comp->comp_id;
     }
     if ( !exists( $options{driver} ) && !exists( $options{driver_class} ) ) {
         $options{driver} = 'File';
-        $options{root_dir} ||= $self->interp->cache_dir;
+        $options{root_dir} ||= catdir( $self->interp->data_dir, "cache" );
     }
     return $chi_root_class->new(%options);
 }
@@ -138,7 +125,7 @@ sub cache {
 sub comp_exists {
     my ( $self, $path ) = @_;
 
-    return $self->fetch_comp($path) ? 1 : 0;
+    return $self->load($path) ? 1 : 0;
 }
 
 sub decline {
@@ -147,27 +134,35 @@ sub decline {
 }
 
 sub fetch_comp {
-    my ( $self, $path ) = @_;
+    my $self = shift;
+    my $path = shift;
 
     return undef unless defined($path);
-    my $abs_path = (
-        substr( $path, 0, 1 ) eq '/'
-        ? $path
-        : join( "/", $self->current_comp->comp_dir_path, $path )
-    );
 
-    # TODO: fetch_comp_cache
-    my $canon_path = mason_canon_path($abs_path);
-    my $comp_class = $self->interp->load($canon_path);
-    return $comp_class;
+    # Make absolute based on current component path
+    #
+    $path = join( "/", $self->current_comp->comp_dir_path, $path )
+      unless substr( $path, 0, 1 ) eq '/';
+
+    my $compc = $self->interp->load($path);
+    my $comp = $compc->new( @_, comp_request => $self );
+
+    return $comp;
+}
+
+sub fetch_comp_or_die {
+    my $self = shift;
+    my $comp = $self->fetch_comp(@_)
+      or die "could not find component for path '$_[0]'";
+    return $comp;
 }
 
 sub print {
     my $self = shift;
 
-    my $bufref = $self->{buffer};
-    for ( @_ ) {
-        $$bufref .= $_ if defined;
+    my $buffer = $self->{current_buffer};
+    for (@_) {
+        $buffer .= $_ if defined;
     }
 }
 
@@ -176,65 +171,39 @@ sub print {
 sub comp {
     my $self = shift;
 
-    my $path       = shift(@_);
-    my $comp_class = $self->fetch_comp($path)
-      or die "could not find component for path '$path'";
-    my $comp = $comp_class->new(@_);
-
-    $self->enter_comp( $comp_class, 'main', @_ );
+    $self->fetch_comp_or_die(@_)->main();
 }
 
 # Like comp, but return component output.
 #
 sub scomp {
     my $self = shift;
-    my $buf;
-    local $self->{buffer} = \$buf;
-    $self->comp(@_);
+    my ($buf) = $self->capture( sub { $self->comp(@_) } );
     return $buf;
-}
-
-sub enter_comp {
-    my ( $self, $comp, $method ) = @_;
-
-    local $self->{current_comp}          = $comp;
-    local *{ $comp_class . "::m" }       = $self;
-    local *{ $comp_class . "::_buffer" } = $self->{buffer};
-    $comp->$method();
 }
 
 sub notes {
     my $self = shift;
     return $self->{notes} unless @_;
-
     my $key = shift;
-    return $self->{notes}{$key} unless @_;
-
-    return $self->{notes}{$key} = shift;
+    return $self->{notes}->{$key} unless @_;
+    return $self->{notes}->{$key} = shift;
 }
 
 sub clear_buffer {
     my $self = shift;
-
-    # TODO
+    foreach my $buffer ( $self->buffer_stack ) {
+        $$buffer = '';
+    }
 }
 
 sub flush_buffer {
     my $self = shift;
 
-    $self->out_method->( $self->{request_buffer} )
-      if length $self->{request_buffer};
-    $self->{request_buffer} = '';
-}
-
-sub request_args {
-    my ($self) = @_;
-    if (wantarray) {
-        return @{ $self->{request_args} };
-    }
-    else {
-        return { @{ $self->{request_args} } };
-    }
+    my $request_buffer = $self->request_buffer;
+    $self->interp->out_method->($$request_buffer)
+      if length $$request_buffer;
+    $$request_buffer = '';
 }
 
 #
@@ -250,33 +219,18 @@ sub log {
     return $self->current_comp->comp_logger();
 }
 
-package Tie::Handle::Mason;
+# Buffer stack
+#
+sub push_buffer { my $s = ''; push( @{ $_[0]->{buffer_stack} }, \$s ) }
+sub pop_buffer { pop( @{ $_[0]->{buffer_stack} } ) }
+sub request_buffer { $_[0]->{buffer_stack}->[0] }
+sub current_buffer { $_[0]->{buffer_stack}->[-1] }
 
-sub TIEHANDLE {
-    my $class = shift;
-
-    return bless {}, $class;
-}
-
-sub PRINT {
-    my $self = shift;
-
-    # TODO - why do we need to select STDOUT here?
-    my $old = select STDOUT;
-
-    # Use direct $m access instead of Request->instance() to optimize common case
-    my $m = ${Mason::Commands::m};
-    $m->print(@_);
-
-    select $old;
-}
-
-sub PRINTF {
-    my $self = shift;
-
-    # apparently sprintf(@_) won't work, it needs to be a scalar
-    # followed by a list
-    $self->PRINT( sprintf( shift, @_ ) );
+sub capture {
+    my ( $self, $code ) = @_;
+    $self->push_buffer;
+    scope_guard { $self->pop_buffer };
+    return $code->();
 }
 
 1;

@@ -1,24 +1,33 @@
 package Mason::Interp;
-use autodie qw(:all);
+use File::Spec::Functions qw(canonpath catdir catfile);
+use Mason::Compiler;
+use Mason::Request;
+use Mason::Util;
+use Moose::Util::TypeConstraints;
 use Moose;
+use autodie qw(:all);
+use d;
 use strict;
 use warnings;
 
-subtype 'Mason::Types::CompRoot' => as 'ArrayRef' => where {
-    ref($_) eq 'ARRAY' && all { ref($_) eq 'ARRAY' && @$_ == 2 } @$_;
-};
-coerce 'Mason::Types::CompRoot' => from 'Str' => via { [ 'MAIN', $_ ] };
+subtype 'Mason::Types::CompRoot' => as 'ArrayRef[Str]';
+coerce 'Mason::Types::CompRoot' => from 'Str' => via { [$_] };
 
-has 'autohandler_name' => ( default => 'autohandler' );
-has 'comp_root'        => ( isa     => 'Mason::Types::CompRoot' );
-has 'compiler'         => ();
-has 'chi_root_class'   => ();
-has 'data_dir'         => ();
-has 'dhandler_name'    => ();
-has 'max_recurse'      => ();
-has 'resolver'         => ();
-has 'static_source'    => ();
-has 'static_source_touch_file' => ();
+my $default_out = sub { print( $_[0] ) };
+
+has 'autohandler_name' => ( is => 'ro', default    => 'autohandler' );
+has 'comp_root'        => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
+has 'compiler'         => ( is => 'ro', lazy_build => 1 );
+has 'chi_root_class'        => ( is => 'ro' );
+has 'data_dir'              => ( is => 'ro' );
+has 'dhandler_name'         => ( is => 'ro' );
+has 'max_recurse'           => ( is => 'ro' );
+has 'object_file_extension' => ( is => 'ro', default => '.obj' );
+has 'out_method'            => ( is => 'ro', default => sub { $default_out } );
+has 'request_class' => ( is => 'ro', default => 'Mason::Request' );
+has 'resolver'      => ( is => 'ro' );
+has 'static_source' => ( is => 'ro' );
+has 'static_source_touch_file' => ( is => 'ro' );
 
 __PACKAGE__->meta->make_immutable();
 
@@ -29,68 +38,62 @@ sub BUILD {
 
     if ( $self->{static_source} ) {
         $self->{static_source_touch_file_lastmod} = 0;
-        $self->{static_source_touch_file} ||=
-          catfile( $self->data_dir, 'purge.dat' );
+        $self->{static_source_touch_file} ||= catfile( $self->data_dir, 'purge.dat' );
         $self->{use_internal_component_caches} = 1;
     }
-
-    $self->_initialize_comp_root( $self->{comp_root} );
 }
 
-sub exec {
+sub _build_compiler {
+    return Mason::Compiler->new();
+}
+
+sub run {
+    my $self    = shift;
+    my $path    = shift;
+    my $request = $self->build_request();
+    $request->run( $path, @_ );
+}
+
+sub build_request {
     my $self = shift;
-    my $comp = shift;
-    $self->make_request->exec( $comp, @_ );
+    return $self->request_class->new( interp => $self );
 }
 
-sub make_request {
-    my ($self) = @_;
-
-    return $self->request_class->new( interp => $interp );
-}
-
+# Loads the component in $path; returns a component class, or undef if
+# not found.
+#
 sub load {
     my ( $self, $path ) = @_;
 
-    # Path must be absolute.
+    # Ensure path is absolute, and canonicalize
     #
-    unless ( substr( $path, 0, 1 ) eq '/' ) {
-        error
-          "Component path given to Interp->load must be absolute (was given $path)";
-    }
+    die "path '$path' is not absolute" unless ( substr( $path, 0, 1 ) eq '/' );
+    $path = Mason::Util::mason_canon_path($path);
 
-    # Get source info from resolver; return if cannot be found.
+    # Resolve path to source file
     #
-    my $source = $self->resolve_comp_path_to_source($path)
+    my $source_file = $self->source_file_for_path($path)
       or return;
-    my $srcmod = $source->last_modified;
+    my $source_lastmod = ( stat($source_file) )[9];
 
-    # comp_id is the unique name for the component, used for cache key
-    # and object file name.
-    #
-    my $comp_id = $source->comp_id;
-
-    # If code cache contains an entry for this path, and it is up to date
-    # or we are in static_source_mode, return the cached comp.
+    # If code cache contains an entry for this source file and it is up to
+    # date, return the cached comp.
     #
     my $code_cache = $self->{code_cache};
-    if (
-        exists $code_cache->{$comp_id}
-        && (   $self->static_source
-            || $code_cache->{$comp_id}->{lastmod} >= $srcmod )
-      )
+    if ( exists $code_cache->{$source_file}
+        && $code_cache->{$source_file}->{source_lastmod} >= $source_lastmod )
     {
-        return $code_cache->{$comp_id}->{comp_class};
+        return $code_cache->{$source_file}->{compc};
     }
 
     # Determine object file and its last modified time
     #
-    my $objfile = $self->comp_id_to_objfile($comp_id);
-    my @stat    = stat $objfile;
+    my $object_file = $self->object_file_for_path($path);
+    my @stat        = stat $object_file;
     if ( @stat && !-f _ ) {
-        error "The object file '$objfile' exists but it is not a file!";
+        die "The object file '$object_file' exists but it is not a file!";
     }
-    my $objfilemod = @stat ? $stat[9] : 0;
+    my $object_lastmod = @stat ? $stat[9] : 0;
 
     # Load from object file. If loading the object file generates an error,
     # or results in a non-component object, try regenerating the object file
@@ -100,43 +103,56 @@ sub load {
     # be added to %INC and the error will not occur the second time - RT
     # #39803).
     #
-    for my $try (1..2) {
-        if ( ($objfilemod < $srcmod && !$self->static_source) || $try == 2 ) {
-            $self->compile_to_file( $source, $objfile );
-        }
-        $comp_class = eval { $self->eval_object_code( $objfile ) };
-        if (   ( !blessed($comp_class) || !$comp_class->isa('Mason::ComponentClass') )
-               && ( !defined($@) || $@ !~ /failed in require/ ) )
+    my $compc;
+    for my $try ( 1 .. 2 ) {
+        if ( ( $object_lastmod < $source_lastmod && !$self->static_source )
+            || $try == 2 )
         {
-            next if $try == 1;
-            my $error =
-                $@
-                ? $@
-                : "Could not get Mason::ComponentClass from object file '$objfile'";
-            $self->_compilation_error( $source->friendly_name, $error );
+            $self->compiler->compile_to_file( $source_file, $path, $object_file );
+        }
+        $compc = do($object_file);
+        if ( !$self->is_valid_compc($compc)
+            && ( $try == 2 || $@ !~ /failed in require/ ) )
+        {
+            my $error = $@
+              || "Could not get component class from object file '$object_file'";
+            die $error;
         }
     }
 
-    # Save component in the cache.
+    # Save component class in the cache.
     #
-    $code_cache->{$comp_id} = { lastmod => $srcmod, comp_class => $comp_class };
+    $code_cache->{$source_file} = { source_lastmod => $source_lastmod, compc => $compc };
 
-    return $comp_class;
+    return $compc;
 }
 
-sub resolve_comp_path_to_source {
+sub is_valid_compc {
+    my ( $self, $compc ) = @_;
+
+    return defined($compc) && $compc =~ /^Mason::Component/ && $compc->isa('Mason::Component');
+}
+
+sub source_file_for_path {
     my ( $self, $path ) = @_;
 
-    my $resolver = $self->{resolver};
-    foreach my $pair ( $self->comp_root_array ) {
-        last if $source = $resolver->get_info( $path, @$pair );
+    foreach my $root_path ( @{ $self->comp_root } ) {
+        my $source_file = $root_path . $path;
+        return $source_file if -f $source_file;
     }
-    return $source;
+    return undef;
 }
 
 sub object_dir {
     my $self = shift;
     return catdir( $self->data_dir, 'obj' );
+}
+
+sub object_file_for_path {
+    my ( $self, $path ) = @_;
+
+    return catfile( $self->object_dir, $self->compiler->compiler_id, ( split /\//, $path ), )
+      . $self->object_file_extension;
 }
 
 sub object_create_marker_file {
@@ -174,11 +190,9 @@ sub check_static_source_touch_file {
             # or if the marker doesn't exist.
             #
             if ( $self->use_object_files ) {
-                my $object_create_marker_file =
-                  $self->object_create_marker_file;
+                my $object_create_marker_file = $self->object_create_marker_file;
                 if ( !-e $object_create_marker_file
-                    || ( stat($object_create_marker_file) )[9] <
-                    $touch_file_lastmod )
+                    || ( stat($object_create_marker_file) )[9] < $touch_file_lastmod )
                 {
                     $self->remove_object_files;
                 }
@@ -209,13 +223,6 @@ sub find_comp_upwards {
     } while $startpath =~ s{/+[^/]*$}{};
 
     return;    # Nothing found
-}
-
-sub comp_root_array_as_string {
-    my ($self) = @_;
-
-    return join( ", ", map { "'$_->[1]'" } $self->comp_root_array )
-
 }
 
 1;

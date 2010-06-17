@@ -13,15 +13,13 @@ use warnings;
 
 # Passed attributes
 has 'base_class'  => ( is => 'ro', lazy_build => 1 );
-has 'parser'      => ( is => 'ro', required   => 1, weak_ref => 1 );
-has 'comp_root'   => ( is => 'ro', required   => 1 );
+has 'compiler'    => ( is => 'ro', required   => 1, weak_ref => 1 );
+has 'path'        => ( is => 'ro', required   => 1 );
 has 'source_file' => ( is => 'ro', required   => 1 );
 
 # Derived attributes
 has 'classname' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 has 'dir_path'  => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'id'        => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'path'      => ( is => 'ro', lazy_build => 1, init_arg => undef );
 
 sub BUILD {
     my $self = shift;
@@ -39,7 +37,7 @@ sub BUILD {
 
 sub _build_base_class {
     my $self = shift;
-    return $self->parser->default_base_class;
+    return $self->compiler->default_base_class;
 }
 
 sub _build_classname {
@@ -47,8 +45,7 @@ sub _build_classname {
     my $classname = substr( $self->path, 1 );
     $classname =~ s/\//::/g;
     $classname =~ s/[^:\w]/_/g;
-    my $unique_id =
-      join( "", map { chr( int( rand(26) ) + ord('a') ) } ( 0 .. 4 ) );
+    my $unique_id = join( "", map { chr( int( rand(26) ) + ord('a') ) } ( 0 .. 4 ) );
     $classname = "Mason::Component::${classname}::${unique_id}";
     return $classname;
 }
@@ -56,16 +53,6 @@ sub _build_classname {
 sub _build_dir_path {
     my $self = shift;
     return dirname( $self->path );
-}
-
-sub _build_id {
-    my $self = shift;
-    return $self->source_file;
-}
-
-sub _build_path {
-    my $self = shift;
-    return substr( $self->source_file, length( $self->comp_root ) );
 }
 
 # Parse the component source, or a single method block body
@@ -85,15 +72,15 @@ sub parse {
         $self->_match_perl_line      && next;
         $self->_match_plain_text     && next;
 
-        $self->throw_syntax_error( "could not parse next element at position "
-              . pos( $self->{source} ) );
+        $self->throw_syntax_error(
+            "could not parse next element at position " . pos( $self->{source} ) );
     }
 }
 
 sub _match_unnamed_block {
     my ($self) = @_;
 
-    my $block_regex = $self->parser->block_regex;
+    my $block_regex = $self->compiler->block_regex;
     $self->_match_block( qr/\G<%($block_regex)>/, 0 );
 }
 
@@ -106,7 +93,7 @@ sub _match_named_block {
 sub _match_block {
     my ( $self, $regex, $named ) = @_;
 
-    my $block_regex = $self->parser->block_regex;
+    my $block_regex = $self->compiler->block_regex;
 
     if ( $self->{source} =~ /$regex/gcs ) {
         my ( $block_type, $name ) = ( $1, $2 );
@@ -153,7 +140,7 @@ sub _match_substitution {
 
     return 0 unless $self->{source} =~ /\G<%/gcs;
 
-    my $flag = $self->parser->escape_flag_regex();
+    my $flag = $self->compiler->escape_flag_regex();
     if (
         $self->{source} =~ m{
            \G
@@ -283,17 +270,17 @@ sub output_compiled_component {
             $self->_output_methods,
             $self->_output_class_footer,
         )
-    );
+    ) . "\n";
 }
 
 sub _output_package_header {
     my ($self) = @_;
-    return printf( "package %s", $self->classname );
+    return sprintf( "package %s;", $self->classname );
 }
 
 sub _output_use_vars {
     my ($self) = @_;
-    my @allow_globals = @{ $self->parser->allow_globals };
+    my @allow_globals = @{ $self->compiler->allow_globals };
     return @allow_globals
       ? sprintf( "use vars qw(%s);", join( ' ', @allow_globals ) )
       : "";
@@ -301,7 +288,7 @@ sub _output_use_vars {
 
 sub _output_use_base {
     my ($self) = @_;
-    return sprintf( "use base qw(%s)", $self->base_class );
+    return sprintf( "use base qw(%s);", $self->base_class );
 }
 
 sub _output_strictures {
@@ -313,13 +300,14 @@ sub _output_comp_info {
     my ($self) = @_;
 
     my %info = (
-        comp_id       => $self->id,
-        comp_path     => $self->path,
+        comp_class    => $self->classname,
         comp_dir_path => $self->dir_path,
+        comp_path     => $self->path,
     );
-    return join( "\n",
-        map { sprintf( 'sub %s { "%s" }', $_, $info{$_} ) }
-        sort( keys(%info) ) );
+    return join(
+        "\n", map { sprintf( 'sub %s { "%s" }', $_, $info{$_} ) }
+          sort( keys(%info) )
+    );
 }
 
 sub _output_class_block {
@@ -336,9 +324,10 @@ sub _output_class_footer {
 sub _output_methods {
     my ($self) = @_;
 
-    return join( "\n",
-        map { $self->_output_method($_) }
-        sort( keys( %{ $self->{methods} } ) ) );
+    return join(
+        "\n", map { $self->_output_method($_) }
+          sort( keys( %{ $self->{methods} } ) )
+    );
 }
 
 sub _output_method {
@@ -346,12 +335,16 @@ sub _output_method {
     my $path = $self->path;
 
     my $method = $self->{methods}->{$method_name};
-    my $contents = join( "\n", $method->{init}, $method->{body} );
+    my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
 
     return join(
         "\n",
         "sub $method_name {",
-        "\$m->debug_hook( '$path', '$method_name' ) if ( Mason::Util::in_perl_db() );\n\n",
+        "my \$self = shift;",
+        "my \$m = \$Mason::Request::current_request;",
+        "local \$m->{current_comp} = \$self;",
+        "my \$_buffer = \$m->current_buffer;",
+        "\$m->debug_hook( '$path', '$method_name' ) if ( Mason::Util::in_perl_db() );",
 
         # do not add a block around this, it introduces
         # a separate scope and might break cleanup
@@ -368,9 +361,7 @@ sub _output_method {
 sub _output_line_number_comment {
     my ($self) = @_;
 
-    if ( my $line =
-        $self->{line_number} && !$self->parser->no_source_line_numbers )
-    {
+    if ( my $line = $self->{line_number} && !$self->compiler->no_source_line_numbers ) {
         return sprintf( qq{#line %s "%s"\n}, $line, $self->source_file );
     }
     else {
@@ -388,8 +379,7 @@ sub _handle_class_block {
 sub _handle_init_block {
     my ( $self, $contents ) = @_;
 
-    $self->{current_method}->{init} =
-      $self->_output_line_number_comment . $contents;
+    $self->{current_method}->{init} = $self->_output_line_number_comment . $contents;
 }
 
 sub _handle_method_block {
@@ -436,7 +426,7 @@ sub _handle_text_block {
 
     $contents =~ s,([\'\\]),\\$1,g;
 
-    $self->_add_to_current_method("\$\$_outbuf .= '$contents';\n");
+    $self->_add_to_current_method("\$\$_buffer .= '$contents';\n");
 
     $self->{last_code_type} = 'text';
 }
@@ -459,7 +449,7 @@ sub _handle_substitution {
     }
 
     if ( ( defined $escape )
-        || @{ $self->{default_escape_flags} } )
+        || @{ $self->compiler->default_escape_flags } )
     {
         my @flags;
         if ( defined $escape ) {
@@ -471,7 +461,7 @@ sub _handle_substitution {
         # is there any way to check the flags for validity and still
         # allow them to be dynamically set from components?
 
-        unshift @flags, @{ $self->parser->default_escape_flags }
+        unshift @flags, @{ $self->compiler->default_escape_flags }
           unless grep { $_ eq 'n' } @flags;
 
         my %seen;
@@ -484,7 +474,7 @@ sub _handle_substitution {
           if $flags;
     }
 
-    my $code = "for ( $text ) { \$\$_outbuf .= \$_ if defined }\n";
+    my $code = "for ( $text ) { \$\$_buffer .= \$_ if defined }\n";
 
     $self->_add_to_current_method($code);
 
@@ -525,7 +515,7 @@ sub _handle_plain_text {
     #
     $text =~ s,([\'\\]),\\$1,g;
 
-    my $code = "\$\$_outbuf .= '$text';\n";
+    my $code = "\$\$_buffer .= '$text';\n";
     $self->_add_to_current_method($code);
 }
 
@@ -533,8 +523,7 @@ sub _assert_not_in_method {
     my ( $self, $entity ) = @_;
 
     if ( $self->{in_method_block} ) {
-        $self->throw_syntax_error(
-            "$entity not permitted inside <%method> block");
+        $self->throw_syntax_error("$entity not permitted inside <%method> block");
     }
 }
 
@@ -561,8 +550,7 @@ sub _add_to_current_method {
 sub throw_syntax_error {
     my ( $self, $msg ) = @_;
 
-    die sprintf( "%s at %s line %d",
-        $msg, $self->source_file, $self->{line_number} );
+    die sprintf( "%s at %s line %d", $msg, $self->source_file, $self->{line_number} );
 }
 
 1;

@@ -2,11 +2,14 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
 
-package Mason::Parser;
-use Moose;
+package Mason::Compiler;
 use Data::Dumper;
+use File::Basename;
+use File::Path;
+use File::Slurp;
 use Mason::Compilation;
 use Mason::Util qw(checksum);
+use Moose;
 use strict;
 use warnings;
 
@@ -17,7 +20,7 @@ has 'compilation_class'    => ( is => 'ro', default => 'Mason::Compilation' );
 has 'default_base_class'   => ( is => 'ro', default => 'Mason::Component' );
 has 'default_escape_flags' => ( is => 'ro', default => sub { [] } );
 has 'no_source_line_numbers' => ( is => 'ro' );
-has 'parser_id' => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'compiler_id' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 
 # Default list of blocks - may be augmented in subclass
 #
@@ -31,7 +34,7 @@ sub _build_block_regex {
     return qr/$re/i;
 }
 
-sub _build_parser_id {
+sub _build_compiler_id {
     my $self = shift;
 
     # TODO - collect all attributes automatically
@@ -52,8 +55,8 @@ sub compile {
 
     my $compilation = $self->compilation_class->new(
         source_file => $source_file,
-        path => $path,
-        parser      => $self,
+        path        => $path,
+        compiler    => $self,
     );
     return $compilation->compile();
 }

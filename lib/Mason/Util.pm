@@ -6,7 +6,8 @@ use strict;
 use warnings;
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(in_perl_db checksum read_file write_file unique_id);
+our @EXPORT_OK =
+  qw(dump_one_line in_perl_db checksum read_file write_file unique_id isa_mason_exception);
 
 my $Fetch_Flags = O_RDONLY | O_BINARY;
 my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;
@@ -20,6 +21,12 @@ if ( defined($DB::sub) ) {
 }
 else {
     *in_perl_db = sub () { 0 };
+}
+
+sub dump_one_line {
+    my ($value) = @_;
+
+    return Data::Dumper->new( [$value] )->Indent(0)->Sortkeys(1)->Quotekeys(0)->Terse(1)->Dump();
 }
 
 sub read_file {
@@ -55,8 +62,7 @@ sub write_file {
     #
     {
         my $write_fh;
-        unless ( sysopen( $write_fh, $file, $Store_Flags, $file_create_mode ) )
-        {
+        unless ( sysopen( $write_fh, $file, $Store_Flags, $file_create_mode ) ) {
             croak "write_file '$file' - sysopen: $!";
         }
         my $size_left = length($data);
@@ -94,14 +100,33 @@ sub write_file {
 # Adler32 algorithm
 sub checksum {
     my ($str) = @_;
-    
+
     my $s1 = 1;
     my $s2 = 1;
-    for my $c (unpack("C*", $str)) {
-        $s1 = ($s1 + $c ) % 65521;
-        $s2 = ($s2 + $s1) % 65521;
+    for my $c ( unpack( "C*", $str ) ) {
+        $s1 = ( $s1 + $c ) % 65521;
+        $s2 = ( $s2 + $s1 ) % 65521;
     }
-    return ($s2 << 16) + $s1;
+    return ( $s2 << 16 ) + $s1;
 }
+
+# Like File::Spec::canonpath but with a few fixes.
+#
+sub mason_canon_path {
+    my $path = shift;
+    $path =~ s|/+|/|g;           # xx////yy  -> xx/yy
+    $path =~ s|(?:/\.)+/|/|g;    # xx/././yy -> xx/yy
+    {
+        $path =~ s|^(?:\./)+||s unless $path eq "./";    # ./xx      -> xx
+        $path =~ s|^/(?:\.\./)+|/|s;                     # /../../xx -> xx
+        $path =~ s|/\Z(?!\n)|| unless $path eq "/";      # xx/       -> xx
+        $path =~ s|/[^/]+/\.\.$|| && redo;               # /xx/..    -> /
+        $path =~ s|[^/]+/\.\./||  && redo;               # /xx/../yy -> /yy
+    }
+    return $path;
+}
+
+# To do
+sub isa_mason_exception { }
 
 1;
