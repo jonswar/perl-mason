@@ -13,6 +13,12 @@ use warnings;
 subtype 'Mason::Types::CompRoot' => as 'ArrayRef[Str]';
 coerce 'Mason::Types::CompRoot' => from 'Str' => via { [$_] };
 
+subtype 'Mason::Types::OutMethod' => as 'CodeRef';
+coerce 'Mason::Types::OutMethod' => from 'ScalarRef' => via {
+    my $ref = $_;
+    sub { $$ref .= $_[0] }
+};
+
 my $default_out = sub { print( $_[0] ) };
 
 has 'autohandler_name' => ( is => 'ro', default    => 'autohandler' );
@@ -23,7 +29,8 @@ has 'data_dir'              => ( is => 'ro' );
 has 'dhandler_name'         => ( is => 'ro' );
 has 'max_recurse'           => ( is => 'ro' );
 has 'object_file_extension' => ( is => 'ro', default => '.obj' );
-has 'out_method'            => ( is => 'ro', default => sub { $default_out } );
+has 'out_method' =>
+  ( is => 'ro', isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 has 'request_class' => ( is => 'ro', default => 'Mason::Request' );
 has 'resolver'      => ( is => 'ro' );
 has 'static_source' => ( is => 'ro' );

@@ -160,9 +160,9 @@ sub fetch_comp_or_die {
 sub print {
     my $self = shift;
 
-    my $buffer = $self->{current_buffer};
+    my $buffer = $self->current_buffer;
     for (@_) {
-        $buffer .= $_ if defined;
+        $$buffer .= $_ if defined;
     }
 }
 

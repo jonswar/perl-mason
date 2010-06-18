@@ -499,7 +499,7 @@ sub _handle_component_call {
 }
 
 sub _handle_perl_line {
-    my ( $self, $contents ) = shift;
+    my ( $self, $contents ) = @_;
 
     my $code = "$contents\n";
 
