@@ -25,12 +25,12 @@ has 'compiler_id' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 # Default list of blocks - may be augmented in subclass
 #
 sub _build_block_types {
-    return qw(class doc init perl text);
+    return [qw(class doc init perl text)];
 }
 
 sub _build_block_regex {
     my $self = shift;
-    my $re = join '|', $self->block_types;
+    my $re = join '|', @{ $self->block_types };
     return qr/$re/i;
 }
 

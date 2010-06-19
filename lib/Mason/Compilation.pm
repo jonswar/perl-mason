@@ -7,7 +7,6 @@ use File::Basename qw(dirname);
 use Mason::Util qw(read_file unique_id);
 use Moose;
 use Text::Trim qw(trim);
-use d;
 use strict;
 use warnings;
 
@@ -18,8 +17,7 @@ has 'path'        => ( is => 'ro', required   => 1 );
 has 'source_file' => ( is => 'ro', required   => 1 );
 
 # Derived attributes
-has 'classname' => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'dir_path'  => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'dir_path' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 
 sub BUILD {
     my $self = shift;
@@ -38,16 +36,6 @@ sub BUILD {
 sub _build_base_class {
     my $self = shift;
     return $self->compiler->default_base_class;
-}
-
-sub _build_classname {
-    my $self = shift;
-    my $classname = substr( $self->path, 1 );
-    $classname =~ s/\//::/g;
-    $classname =~ s/[^:\w]/_/g;
-    my $unique_id = join( "", map { chr( int( rand(26) ) + ord('a') ) } ( 0 .. 4 ) );
-    $classname = "Mason::Component::${classname}::${unique_id}";
-    return $classname;
 }
 
 sub _build_dir_path {
@@ -115,19 +103,20 @@ sub _match_block {
         $self->{line_number} += $block_contents =~ tr/\n//;
         $self->{line_number}++ if $nl;
 
-        $self->_handle_block_end($block_type);
+        return 1;
     }
+    return 0;
 }
 
 sub _match_block_end {
     my ( $self, $block_type ) = @_;
 
-    my $re = qr,\G\s*</%\Q$block_type\E>(\n?),is;
+    my $re = qr,\G(.*)</%\Q$block_type\E>(\n?),is;
     if ( $self->{source} =~ /$re/gc ) {
         return $1;
     }
     else {
-        $self->throw_syntax_error("Invalid <%$block_type> section line");
+        $self->throw_syntax_error("<%$block_type> without matching </%$block_type>");
     }
 }
 
@@ -261,21 +250,10 @@ sub output_compiled_component {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_package_header,    #
-            $self->_output_use_vars,
-            $self->_output_use_base,
-            $self->_output_strictures,
-            $self->_output_comp_info,
-            $self->_output_class_block,
-            $self->_output_methods,
-            $self->_output_class_footer,
+            $self->_output_use_vars,  $self->_output_use_base,    $self->_output_strictures,
+            $self->_output_comp_info, $self->_output_class_block, $self->_output_methods,
         )
     ) . "\n";
-}
-
-sub _output_package_header {
-    my ($self) = @_;
-    return sprintf( "package %s;", $self->classname );
 }
 
 sub _output_use_vars {
@@ -293,14 +271,13 @@ sub _output_use_base {
 
 sub _output_strictures {
     my ($self) = @_;
-    return join( "\n", "use strict;", "use warnings;" );
+    return join( "\n", "use strict;", "use warnings;", "no warnings 'redefine';" );
 }
 
 sub _output_comp_info {
     my ($self) = @_;
 
     my %info = (
-        comp_class    => $self->classname,
         comp_dir_path => $self->dir_path,
         comp_path     => $self->path,
     );
@@ -314,11 +291,6 @@ sub _output_class_block {
     my ($self) = @_;
 
     return $self->{blocks}->{'class'} || '';
-}
-
-sub _output_class_footer {
-    my ($self) = @_;
-    return sprintf( 'return "%s";', $self->classname );
 }
 
 sub _output_methods {
@@ -361,19 +333,20 @@ sub _output_method {
 sub _output_line_number_comment {
     my ($self) = @_;
 
-    if ( my $line = $self->{line_number} && !$self->compiler->no_source_line_numbers ) {
-        return sprintf( qq{#line %s "%s"\n}, $line, $self->source_file );
+    if ( !$self->compiler->no_source_line_numbers ) {
+        if ( my $line = $self->{line_number} ) {
+            my $comment = sprintf( qq{#line %s "%s"\n}, $line, $self->source_file );
+            return $comment;
+        }
     }
-    else {
-        return "";
-    }
+    return "";
 }
 
 sub _handle_class_block {
     my ( $self, $contents ) = @_;
 
     $self->_assert_not_in_method('<%class>');
-    $self->{block}->{class} = $self->_output_line_number_comment . $contents;
+    $self->{blocks}->{class} = $self->_output_line_number_comment . $contents;
 }
 
 sub _handle_init_block {
@@ -482,7 +455,7 @@ sub _handle_substitution {
 }
 
 sub _handle_component_call {
-    my ( $self, $contents ) = shift;
+    my ( $self, $contents ) = @_;
 
     my ( $prespace, $call, $postspace ) = ( $contents =~ /(\s*)(.*)(\s*)/s );
     if ( $call =~ m,^[\w/.], ) {

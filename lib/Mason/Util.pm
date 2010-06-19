@@ -7,7 +7,7 @@ use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(dump_one_line in_perl_db checksum read_file write_file unique_id isa_mason_exception);
+  qw(clear_class dump_one_line in_perl_db checksum read_file write_file unique_id isa_mason_exception);
 
 my $Fetch_Flags = O_RDONLY | O_BINARY;
 my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;
@@ -124,6 +124,20 @@ sub mason_canon_path {
         $path =~ s|[^/]+/\.\./||  && redo;               # /xx/../yy -> /yy
     }
     return $path;
+}
+
+# Adapted from Symbol.pm
+sub delete_package ($) {
+    my $pkg = shift;
+    no strict 'refs';
+
+    $pkg .= '::';
+    my ( $stem, $leaf ) = $pkg =~ m/(.*::)(\w+::)$/;
+    my $stem_symtab = *{$stem}{HASH};
+    return unless defined $stem_symtab and exists $stem_symtab->{$leaf};
+    my $leaf_symtab = *{ $stem_symtab->{$leaf} }{HASH};
+    %$leaf_symtab = ();
+    delete $stem_symtab->{$leaf};
 }
 
 # To do

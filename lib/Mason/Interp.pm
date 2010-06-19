@@ -1,12 +1,12 @@
 package Mason::Interp;
 use File::Spec::Functions qw(canonpath catdir catfile);
+use Guard;
 use Mason::Compiler;
 use Mason::Request;
 use Mason::Util;
 use Moose::Util::TypeConstraints;
 use Moose;
 use autodie qw(:all);
-use d;
 use strict;
 use warnings;
 
@@ -20,7 +20,9 @@ coerce 'Mason::Types::OutMethod' => from 'ScalarRef' => via {
 };
 
 my $default_out = sub { print( $_[0] ) };
+my $interp_id = 0;
 
+# Passed attributes
 has 'autohandler_name' => ( is => 'ro', default    => 'autohandler' );
 has 'comp_root'        => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'         => ( is => 'ro', lazy_build => 1 );
@@ -36,12 +38,17 @@ has 'resolver'      => ( is => 'ro' );
 has 'static_source' => ( is => 'ro' );
 has 'static_source_touch_file' => ( is => 'ro' );
 
+# Derived attributes
+has 'code_cache' => ( is => 'ro', init_arg => undef );
+has 'id'         => ( is => 'ro', init_arg => undef );
+
 __PACKAGE__->meta->make_immutable();
 
 sub BUILD {
     my ($self) = @_;
 
     $self->{code_cache} = {};
+    $self->{id}         = $interp_id++;
 
     if ( $self->{static_source} ) {
         $self->{static_source_touch_file_lastmod} = 0;
@@ -59,6 +66,14 @@ sub run {
     my $path    = shift;
     my $request = $self->build_request();
     $request->run( $path, @_ );
+}
+
+sub srun {
+    my $self = shift;
+    my $output;
+    local $self->{out_method} = sub { $output .= $_[0] };
+    $self->run(@_);
+    return $output;
 }
 
 sub build_request {
@@ -86,11 +101,14 @@ sub load {
     # If code cache contains an entry for this source file and it is up to
     # date, return the cached comp.
     #
-    my $code_cache = $self->{code_cache};
-    if ( exists $code_cache->{$source_file}
-        && $code_cache->{$source_file}->{source_lastmod} >= $source_lastmod )
-    {
-        return $code_cache->{$source_file}->{compc};
+    my $code_cache = $self->code_cache;
+    if ( exists $code_cache->{$source_file} ) {
+        if ( $code_cache->{$source_file}->{source_lastmod} >= $source_lastmod ) {
+            return $code_cache->{$source_file}->{compc};
+        }
+        else {
+            delete $code_cache->{$source_file};
+        }
     }
 
     # Determine object file and its last modified time
@@ -101,43 +119,21 @@ sub load {
         die "The object file '$object_file' exists but it is not a file!";
     }
     my $object_lastmod = @stat ? $stat[9] : 0;
-
-    # Load from object file. If loading the object file generates an error,
-    # or results in a non-component object, try regenerating the object file
-    # once before giving up and reporting an error. This can be handy in the
-    # rare case of an empty or corrupted object file.  (But add an exception
-    # for "Compilation failed in require" errors, since the bad module will
-    # be added to %INC and the error will not occur the second time - RT
-    # #39803).
-    #
-    my $compc;
-    for my $try ( 1 .. 2 ) {
-        if ( ( $object_lastmod < $source_lastmod && !$self->static_source )
-            || $try == 2 )
-        {
-            $self->compiler->compile_to_file( $source_file, $path, $object_file );
-        }
-        $compc = do($object_file);
-        if ( !$self->is_valid_compc($compc)
-            && ( $try == 2 || $@ !~ /failed in require/ ) )
-        {
-            my $error = $@
-              || "Could not get component class from object file '$object_file'";
-            die $error;
-        }
+    if ( $object_lastmod < $source_lastmod && !$self->static_source ) {
+        $self->compiler->compile_to_file( $source_file, $path, $object_file );
     }
+
+    my $compc = $self->comp_class_for_path($path);
+    eval( sprintf( 'package %s; do("%s"); die $@ if $@', $compc, $object_file ) );
+    die $@ if $@;
 
     # Save component class in the cache.
     #
-    $code_cache->{$source_file} = { source_lastmod => $source_lastmod, compc => $compc };
+    my $guard = guard { Mason::Util::delete_package($compc) };
+    $code_cache->{$source_file} =
+      { source_lastmod => $source_lastmod, compc => $compc, guard => $guard };
 
     return $compc;
-}
-
-sub is_valid_compc {
-    my ( $self, $compc ) = @_;
-
-    return defined($compc) && $compc =~ /^Mason::Component/ && $compc->isa('Mason::Component');
 }
 
 sub source_file_for_path {
@@ -150,11 +146,6 @@ sub source_file_for_path {
     return undef;
 }
 
-sub object_dir {
-    my $self = shift;
-    return catdir( $self->data_dir, 'obj' );
-}
-
 sub object_file_for_path {
     my ( $self, $path ) = @_;
 
@@ -162,9 +153,24 @@ sub object_file_for_path {
       . $self->object_file_extension;
 }
 
+sub comp_class_for_path {
+    my ( $self, $path ) = @_;
+
+    my $classname = substr( $path, 1 );
+    $classname =~ s/[^\w]/_/g;
+    $classname =~ s/\//::/g;
+    $classname = "MC" . $self->id . "::" . $classname;
+    return $classname;
+}
+
 sub object_create_marker_file {
     my $self = shift;
     return catfile( $self->object_dir, '.__obj_create_marker' );
+}
+
+sub object_dir {
+    my $self = shift;
+    return catdir( $self->data_dir, 'obj' );
 }
 
 sub _make_object_dir {

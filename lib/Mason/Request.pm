@@ -13,6 +13,7 @@ has 'interp' => ( is => 'ro', required => 1, weak_ref => 1 );
 
 # Derived attributes
 has 'buffer_stack' => ( is => 'ro', init_arg => undef );
+has 'current_comp' => ( is => 'ro', init_arg => undef );
 has 'request_comp' => ( is => 'ro', init_arg => undef );
 
 # Class attributes

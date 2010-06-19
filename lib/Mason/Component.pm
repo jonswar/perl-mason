@@ -8,9 +8,16 @@ use warnings;
 has 'comp_request' => ( is => 'ro', required => 1, weak_ref => 1 );
 
 # Derived attributes
-has 'comp_logger' => ( is => 'ro', lazy_build => 1 );
+has 'comp_args' => ( is => 'ro', init_arg => undef );
+has 'comp_logger' => ( is => 'ro', init_arg => undef, lazy_build => 1 );
 
 __PACKAGE__->meta->make_immutable();
+
+sub BUILD {
+    my ( $self, $params ) = @_;
+
+    $self->{comp_args} = { map { /^comp_/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
+}
 
 sub _build_comp_logger {
     my ($self) = @_;
