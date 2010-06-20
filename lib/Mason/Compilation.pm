@@ -4,6 +4,7 @@
 
 package Mason::Compilation;
 use File::Basename qw(dirname);
+use Guard;
 use Mason::Util qw(read_file unique_id);
 use Moose;
 use Text::Trim qw(trim);
