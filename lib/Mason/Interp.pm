@@ -1,9 +1,11 @@
 package Mason::Interp;
+use File::Basename;
 use File::Spec::Functions qw(canonpath catdir catfile);
 use Guard;
 use Mason::Compiler;
 use Mason::Request;
 use Mason::Util;
+use Memoize;
 use Moose::Util::TypeConstraints;
 use Moose;
 use autodie qw(:all);
@@ -81,32 +83,58 @@ sub build_request {
     return $self->request_class->new( interp => $self );
 }
 
-# Loads the component in $path; returns a component class, or undef if
-# not found.
+# Loads the component in $path; returns a component class, or undef if not
+# found. Memoize the results - this helps both with components used multiple
+# times in a request, and with determining default parent components.
+# The memoize cache is cleared at the beginning of each request, or in
+# static_source_mode, when the purge file is touched.
 #
+memoize('load');
+
+sub flush_load_cache {
+    Memoize::flush_cache('load');
+}
+
 sub load {
     my ( $self, $path ) = @_;
 
-    # Ensure path is absolute, and canonicalize
+    # Canonicalize path
     #
-    die "path '$path' is not absolute" unless ( substr( $path, 0, 1 ) eq '/' );
     $path = Mason::Util::mason_canon_path($path);
+
+    # Split path into dir_path and base_name - validate that it has a
+    # starting slash and ends with at least one non-slash character
+    #
+    my ( $dir_path, $base_name ) = ( $path =~ m{^(/.*?)/?([^/]+)$} )
+      or die "not a valid absolute component path - '$path'";
+
+    # Determine default parent component class for component
+    #
+    my $default_parent_compc =
+      $self->load_upwards( $dir_path, 'autohandler', $base_name eq 'autohandler' ? 1 : 0 )
+      || 'Mason::Component';
 
     # Resolve path to source file
     #
     my $source_file = $self->source_file_for_path($path)
-      or return;
+      or return undef;
     my $source_lastmod = ( stat($source_file) )[9];
 
     # If code cache contains an entry for this source file and it is up to
     # date, return the cached comp.
     #
     my $code_cache = $self->code_cache;
-    if ( exists $code_cache->{$source_file} ) {
-        if ( $code_cache->{$source_file}->{source_lastmod} >= $source_lastmod ) {
-            return $code_cache->{$source_file}->{compc};
+    if ( my $entry = $code_cache->{$source_file} ) {
+        if (   $entry->{source_lastmod} >= $source_lastmod
+            && $entry->{default_parent_compc} eq $default_parent_compc )
+        {
+            return $entry->{compc};
         }
         else {
+
+            # Delete old package (by freeing guard) and delete cache entry
+            #
+            undef $entry->{guard};
             delete $code_cache->{$source_file};
         }
     }
@@ -124,16 +152,62 @@ sub load {
     }
 
     my $compc = $self->comp_class_for_path($path);
-    eval( sprintf( 'package %s; do("%s"); die $@ if $@', $compc, $object_file ) );
-    die $@ if $@;
+
+    $self->load_class_from_object_file( $compc, $default_parent_compc, $object_file );
 
     # Save component class in the cache.
     #
     my $guard = guard { Mason::Util::delete_package($compc) };
-    $code_cache->{$source_file} =
-      { source_lastmod => $source_lastmod, compc => $compc, guard => $guard };
+    $code_cache->{$source_file} = {
+        source_lastmod       => $source_lastmod,
+        default_parent_compc => $default_parent_compc,
+        compc                => $compc,
+        guard                => $guard
+    };
 
     return $compc;
+}
+
+sub load_class_from_object_file {
+    my ( $self, $compc, $default_parent_compc, $object_file ) = @_;
+
+    eval(
+        sprintf(
+            'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
+            $compc, $default_parent_compc, $object_file
+        )
+    );
+    die $@ if $@;
+
+    unless ( $compc->meta->has_method('render') ) {
+        $compc->meta->add_augment_method_modifier(
+            render => sub { my $self = shift; $self->main(@_) } );
+    }
+}
+
+# Search for component <name> in the parents of <dir_path>. Return the
+# component class or undef if we reach '/'. Skip <skip> initial directories.
+#
+our $depth = 0;
+
+sub load_upwards {
+    my ( $self, $dir_path, $name, $skip ) = @_;
+
+    local $depth = $depth + 1;
+    die "blah" if $depth > 10;
+    if ($skip) {
+        $skip--;
+    }
+    elsif ( my $compc = $self->load( $dir_path . ( $dir_path eq '/' ? '' : '/' ) . $name ) ) {
+        return $compc;
+    }
+    if ( $dir_path eq '/' ) {
+        return undef;
+    }
+    else {
+        $dir_path = dirname($dir_path);
+        return $self->load_upwards( $dir_path, $name, $skip, $depth + 1 );
+    }
 }
 
 sub source_file_for_path {
@@ -220,22 +294,6 @@ sub check_static_source_touch_file {
             $self->{static_source_touch_file_lastmod} = $touch_file_lastmod;
         }
     }
-}
-
-# Look for component <$name> starting in <$startpath> and moving upwards
-# to the root. Return component object or undef.
-#
-sub find_comp_upwards {
-    my ( $self, $startpath, $name ) = @_;
-    $startpath =~ s{/+$}{};
-
-    # Don't use File::Spec here, this is a URL path.
-    do {
-        my $comp = $self->load("$startpath/$name");
-        return $comp if $comp;
-    } while $startpath =~ s{/+[^/]*$}{};
-
-    return;    # Nothing found
 }
 
 1;

@@ -15,7 +15,7 @@ my $gen_path_count = 0;
 
 sub _startup : Test(startup) {
     my $self = shift;
-    $self->{temp_dir}  = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => 1 );
+    $self->{temp_dir}  = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => 0 );
     $self->{comp_root} = $self->{temp_dir} . "/comps";
     $self->{data_dir}  = $self->{temp_dir} . "/data";
     mkpath( [ $self->{comp_root}, $self->{data_dir} ], 0, 0775 );
@@ -35,14 +35,23 @@ sub add_comp {
     mkpath_and_write_file( $source_file, $source );
 }
 
+sub remove_comp {
+    my ( $self, %params ) = @_;
+
+    my $path = $params{path} || die "must pass path";
+    my $source_file = join( "/", $self->{comp_root}, $path );
+    unlink($source_file);
+}
+
 sub test_comp {
     my ( $self, %params ) = @_;
 
     my $caller = ( caller(1) )[3];
-    my $path   = $params{path} || ( "/$caller" . ( ++$gen_path_count ) );
-    my $desc   = $params{desc} || $caller;
+    my ($caller_base) = ( $caller =~ /([^:]+)$/ );
+    my $path   = $params{path}      || ( "/$caller_base" . ( ++$gen_path_count ) );
+    my $desc   = $params{desc}      || $caller;
     my $source = $params{component} || die "must pass component";
-    my $expect = $params{expect} || die "must pass expect";
+    my $expect = $params{expect}    || die "must pass expect";
 
     $self->add_comp( path => $path, component => $source );
     is( $self->{interp}->srun($path), $expect, $desc );

@@ -12,10 +12,9 @@ use strict;
 use warnings;
 
 # Passed attributes
-has 'base_class'  => ( is => 'ro', lazy_build => 1 );
-has 'compiler'    => ( is => 'ro', required   => 1, weak_ref => 1 );
-has 'path'        => ( is => 'ro', required   => 1 );
-has 'source_file' => ( is => 'ro', required   => 1 );
+has 'compiler' => ( is => 'ro', required => 1, weak_ref => 1 );
+has 'path' => ( is => 'ro', required => 1 );
+has 'source_file' => ( is => 'ro', required => 1 );
 
 # Derived attributes
 has 'dir_path' => ( is => 'ro', lazy_build => 1, init_arg => undef );
@@ -32,11 +31,6 @@ sub BUILD {
     $self->{line_number}     = 1;
     $self->{methods}         = { main => $self->_new_method_hash() };
     $self->{current_method}  = $self->{methods}->{main};
-}
-
-sub _build_base_class {
-    my $self = shift;
-    return $self->compiler->default_base_class;
 }
 
 sub _build_dir_path {
@@ -70,13 +64,13 @@ sub _match_unnamed_block {
     my ($self) = @_;
 
     my $block_regex = $self->compiler->block_regex;
-    $self->_match_block( qr/\G<%($block_regex)>/, 0 );
+    $self->_match_block( qr/\G(\n?)<%($block_regex)>/, 0 );
 }
 
 sub _match_named_block {
     my ($self) = @_;
 
-    $self->_match_block( qr/\G<%(method)(?:\s+([^\n^>]+))?>/, 1 );
+    $self->_match_block( qr/\G(\n?)<%(method)(?:\s+([^\n^>]+))?>/, 1 );
 }
 
 sub _match_block {
@@ -85,7 +79,7 @@ sub _match_block {
     my $block_regex = $self->compiler->block_regex;
 
     if ( $self->{source} =~ /$regex/gcs ) {
-        my ( $block_type, $name ) = ( $1, $2 );
+        my ( $preceding_newline, $block_type, $name ) = ( $1, $2, $3 );
 
         $self->throw_syntax_error("$block_type block requires a name")
           if ( $named && !defined($name) );
@@ -97,12 +91,14 @@ sub _match_block {
 
         my $block_method = "_handle_${block_type}_block";
 
+        $self->{line_number}++ if $preceding_newline;
+
         my ( $block_contents, $nl ) = $self->_match_block_end($block_type);
 
         $self->$block_method( $block_contents, $name );
 
         $self->{line_number} += $block_contents =~ tr/\n//;
-        $self->{line_number}++ if $nl;
+        $self->{line_number} += length($nl) if $nl;
 
         return 1;
     }
@@ -112,9 +108,9 @@ sub _match_block {
 sub _match_block_end {
     my ( $self, $block_type ) = @_;
 
-    my $re = qr,\G(.*)</%\Q$block_type\E>(\n?),is;
+    my $re = qr,\G(.*)</%\Q$block_type\E>(\n?\n?),is;
     if ( $self->{source} =~ /$re/gc ) {
-        return $1;
+        return ( $1, $2 );
     }
     else {
         $self->throw_syntax_error("<%$block_type> without matching </%$block_type>");
@@ -196,6 +192,7 @@ sub _match_plain_text {
     # lexeme in the source, so we use a lookahead if we don't want to
     # consume them.  We use a lookbehind when we want to consume
     # something in the matched text, like the newline before a '%'.
+
     if (
         $self->{source} =~ m{
                                 \G
@@ -203,7 +200,9 @@ sub _match_plain_text {
                                 (
                                  (?<=\n)(?=%) # an eval line - consume the \n
                                  |
-                                 (?=</?[%&])  # a substitution or block or call start or end
+                                 (?=<%\s)     # a substitution tag
+                                 |
+                                 (?=</?[%&])  # a block or call start or end
                                               # - don't consume
                                  |
                                  \\\n         # an escaped newline  - throw away
@@ -213,8 +212,14 @@ sub _match_plain_text {
                                }xcgs
       )
     {
+        my $text = $1;
 
-        $self->_handle_plain_text($1) if length $1;
+        # Chomp newline before block start
+        #
+        if ( substr( $self->{source}, pos( $self->{source} ), 3 ) =~ /<%[a-z]/ ) {
+            chomp($text);
+        }
+        $self->_handle_plain_text($text) if length $text;
 
         # Not checking definedness seems to cause extra lines to be
         # counted with Perl 5.00503.  I'm not sure why - dave
@@ -251,8 +256,8 @@ sub output_compiled_component {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_use_vars,  $self->_output_use_base,    $self->_output_strictures,
-            $self->_output_comp_info, $self->_output_class_block, $self->_output_methods,
+            $self->_output_use_vars,    $self->_output_strictures, $self->_output_comp_info,
+            $self->_output_class_block, $self->_output_methods,
         )
     ) . "\n";
 }
@@ -265,14 +270,9 @@ sub _output_use_vars {
       : "";
 }
 
-sub _output_use_base {
-    my ($self) = @_;
-    return sprintf( "use base qw(%s);", $self->base_class );
-}
-
 sub _output_strictures {
     my ($self) = @_;
-    return join( "\n", "use strict;", "use warnings;", "no warnings 'redefine';" );
+    return join( "\n", "no warnings 'redefine';" );
 }
 
 sub _output_comp_info {

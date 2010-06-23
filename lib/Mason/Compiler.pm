@@ -14,13 +14,13 @@ use strict;
 use warnings;
 
 has 'allow_globals' => ( is => 'ro', default => sub { [] } );
-has 'block_types' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 has 'block_regex' => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'compilation_class'    => ( is => 'ro', default => 'Mason::Compilation' );
-has 'default_base_class'   => ( is => 'ro', default => 'Mason::Component' );
+has 'block_types' => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'compilation_class'  => ( is => 'ro', default    => 'Mason::Compilation' );
+has 'compiler_id'        => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'default_base_class' => ( is => 'ro', default    => 'Mason::Component' );
 has 'default_escape_flags' => ( is => 'ro', default => sub { [] } );
 has 'no_source_line_numbers' => ( is => 'ro' );
-has 'compiler_id' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 
 # Default list of blocks - may be augmented in subclass
 #

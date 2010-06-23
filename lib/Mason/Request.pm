@@ -12,9 +12,10 @@ use warnings;
 has 'interp' => ( is => 'ro', required => 1, weak_ref => 1 );
 
 # Derived attributes
-has 'buffer_stack' => ( is => 'ro', init_arg => undef );
-has 'current_comp' => ( is => 'ro', init_arg => undef );
-has 'request_comp' => ( is => 'ro', init_arg => undef );
+has 'buffer_stack'       => ( is => 'ro', init_arg => undef );
+has 'current_comp'       => ( is => 'ro', init_arg => undef );
+has 'request_comp'       => ( is => 'ro', init_arg => undef );
+has 'request_code_cache' => ( is => 'ro', init_arg => undef );
 
 # Class attributes
 our $current_request;
@@ -23,12 +24,17 @@ sub current_request { $current_request }
 sub BUILD {
     my ( $self, $params ) = @_;
     $self->push_buffer();
+    $self->{request_code_cache} = {};
 }
 
 sub run {
     my $self      = shift;
     my $path      = shift;
     my $wantarray = wantarray();
+
+    # Flush interp load cache
+    #
+    $self->interp->flush_load_cache();
 
     # Make this the current request.
     #
@@ -58,7 +64,13 @@ sub run {
     }
     die $err if $err && !$self->_aborted_or_declined($err);
 
+    # Send output to its final destination
+    #
     $self->flush_buffer;
+
+    # Flush interp load cache
+    #
+    $self->interp->flush_load_cache();
 
     # Return aborted value or result.
     #
@@ -145,7 +157,12 @@ sub fetch_comp {
     $path = join( "/", $self->current_comp->comp_dir_path, $path )
       unless substr( $path, 0, 1 ) eq '/';
 
+    # Load the component class
+    #
     my $compc = $self->interp->load($path);
+
+    # Create and return a component instance
+    #
     my $comp = $compc->new( @_, comp_request => $self );
 
     return $comp;
