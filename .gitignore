@@ -14,6 +14,7 @@ bench
 blib*
 cp.yml
 data
+docs
 dist
 inc
 localcpan*
