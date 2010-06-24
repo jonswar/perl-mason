@@ -1,9 +1,11 @@
 package Mason::Test::Class;
+use Carp;
 use File::Basename;
 use File::Path;
 use File::Slurp;
 use File::Temp qw(tempdir);
 use Mason::Interp;
+use Test::Exception;
 use Test::More;
 use strict;
 use warnings;
@@ -48,13 +50,22 @@ sub test_comp {
 
     my $caller = ( caller(1) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
-    my $path   = $params{path}      || ( "/$caller_base" . ( ++$gen_path_count ) );
-    my $desc   = $params{desc}      || $caller;
-    my $source = $params{component} || die "must pass component";
-    my $expect = $params{expect}    || die "must pass expect";
+    my $path         = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) );
+    my $desc         = $params{desc};
+    my $source       = $params{component} || croak "must pass component";
+    my $expect       = $params{expect};
+    my $expect_error = $params{expect_error};
+    croak "must pass either expect or expect_error" unless $expect || $expect_error;
 
     $self->add_comp( path => $path, component => $source );
-    is( $self->{interp}->srun($path), $expect, $desc );
+    if ($expect_error) {
+        $desc ||= $expect_error;
+        throws_ok( sub { $self->{interp}->srun($path) }, $expect_error, $desc );
+    }
+    else {
+        $desc ||= $caller;
+        is( $self->{interp}->srun($path), $expect, $desc );
+    }
 }
 
 sub mkpath_and_write_file {
