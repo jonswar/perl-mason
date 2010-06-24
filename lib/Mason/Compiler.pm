@@ -21,11 +21,12 @@ has 'compiler_id'        => ( is => 'ro', lazy_build => 1, init_arg => undef );
 has 'default_base_class' => ( is => 'ro', default    => 'Mason::Component' );
 has 'default_escape_flags' => ( is => 'ro', default => sub { [] } );
 has 'no_source_line_numbers' => ( is => 'ro' );
+has 'perltidy_object_files'  => ( is => 'ro' );
 
 # Default list of blocks - may be augmented in subclass
 #
 sub _build_block_types {
-    return [qw(class doc init perl text)];
+    return [qw(class doc filter init perl text)];
 }
 
 sub _build_block_regex {
@@ -77,7 +78,19 @@ sub compile_to_file {
         }
         rmtree($dest_file) if ( -d $dest_file );
     }
-    write_file( $dest_file, $self->compile( $source_file, $path ) );
+    my $object_contents = $self->compile( $source_file, $path );
+    if ( my $perltidy_options = $self->perltidy_object_files ) {
+        require Perl::Tidy;
+        my $argv = ( $perltidy_options eq '1' ? '' : $perltidy_options );
+        my $source = $object_contents;
+        Perl::Tidy::perltidy(
+            'perltidyrc' => '/dev/null',
+            source       => \$source,
+            destination  => \$object_contents,
+            argv         => $argv
+        );
+    }
+    write_file( $dest_file, $object_contents );
 }
 
 1;

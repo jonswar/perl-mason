@@ -8,6 +8,7 @@ use Mason::Util;
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Moose;
+use MooseX::StrictConstructor;
 use autodie qw(:all);
 use strict;
 use warnings;
@@ -28,11 +29,12 @@ my $interp_id = 0;
 has 'autohandler_name' => ( is => 'ro', default    => 'autohandler' );
 has 'comp_root'        => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'         => ( is => 'ro', lazy_build => 1 );
+has 'compiler_class'   => ( is => 'ro', default    => 'Mason::Compiler' );
 has 'chi_root_class'        => ( is => 'ro' );
 has 'data_dir'              => ( is => 'ro' );
 has 'dhandler_name'         => ( is => 'ro' );
 has 'max_recurse'           => ( is => 'ro' );
-has 'object_file_extension' => ( is => 'ro', default => '.obj' );
+has 'object_file_extension' => ( is => 'ro', default => '.obj.pl' );
 has 'out_method' =>
   ( is => 'ro', isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 has 'request_class' => ( is => 'ro', default => 'Mason::Request' );
@@ -47,7 +49,7 @@ has 'id'         => ( is => 'ro', init_arg => undef );
 __PACKAGE__->meta->make_immutable();
 
 sub BUILD {
-    my ($self) = @_;
+    my ( $self, $params ) = @_;
 
     $self->{code_cache} = {};
     $self->{id}         = $interp_id++;
@@ -57,10 +59,22 @@ sub BUILD {
         $self->{static_source_touch_file} ||= catfile( $self->data_dir, 'purge.dat' );
         $self->{use_internal_component_caches} = 1;
     }
+
+    # Separate out compiler parameters
+    #
+    $self->{compiler_params} = {};
+    my %is_compiler_attribute = map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
+
+    foreach my $key ( keys(%$params) ) {
+        if ( $is_compiler_attribute{$key} ) {
+            $self->{compiler_params}->{$key} = delete( $params->{$key} );
+        }
+    }
 }
 
 sub _build_compiler {
-    return Mason::Compiler->new();
+    my $self = shift;
+    return $self->compiler_class->new( %{ $self->{compiler_params} } );
 }
 
 sub run {

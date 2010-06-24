@@ -108,7 +108,7 @@ sub _match_block {
 sub _match_block_end {
     my ( $self, $block_type ) = @_;
 
-    my $re = qr,\G(.*)</%\Q$block_type\E>(\n?\n?),is;
+    my $re = qr,\G(.*?)</%\Q$block_type\E>(\n?\n?),is;
     if ( $self->{source} =~ /$re/gc ) {
         return ( $1, $2 );
     }
@@ -178,7 +178,11 @@ sub _match_perl_line {
     my $self = shift;
 
     if ( $self->{source} =~ /\G(?<=^)%([^\n]*)(?:\n|\z)/gcm ) {
-        $self->_handle_perl_line($1);
+        my $line = $1;
+        if ( $line !~ /^\s/ ) {
+            $self->throw_syntax_error("% must be followed by whitespace");
+        }
+        $self->_handle_perl_line($line);
         $self->{line_number}++;
 
         return 1;
@@ -309,6 +313,10 @@ sub _output_method {
 
     my $method = $self->{methods}->{$method_name};
     my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
+    my $filter_sub;
+    if ( $method->{filter} ) {
+        $filter_sub = join( "\n", 'sub { local $_ = $_[0];', $method->{filter}, 'return $_ }' );
+    }
 
     return join(
         "\n",
@@ -316,6 +324,9 @@ sub _output_method {
         "my \$self = shift;",
         "my \$m = \$Mason::Request::current_request;",
         "local \$m->{current_comp} = \$self;",
+
+        $filter_sub ? "\$m->apply_immediate_filter($filter_sub, sub {" : "",
+
         "my \$_buffer = \$m->current_buffer;",
         "\$m->debug_hook( '$path', '$method_name' ) if ( Mason::Util::in_perl_db() );",
 
@@ -324,10 +335,12 @@ sub _output_method {
         # blocks (or all sort of other things!)
         $contents,
 
+        $filter_sub ? "});" : "",
+
         # don't return values explicitly. semi before return will help catch
         # syntax errors in component body.
         ";return;",
-        "}"
+        "}",
     );
 }
 
@@ -385,6 +398,12 @@ sub _handle_method_block {
 sub _handle_doc_block {
 
     # Don't do anything - just discard the comment.
+}
+
+sub _handle_filter_block {
+    my ( $self, $contents ) = @_;
+
+    $self->{current_method}->{filter} = $self->_output_line_number_comment . $contents;
 }
 
 sub _handle_perl_block {

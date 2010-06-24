@@ -1,5 +1,6 @@
 package Mason::Request;
 use autodie qw(:all);
+use Carp;
 use Guard;
 use Log::Any qw($log);
 use Mason::Request::TieHandle;
@@ -159,7 +160,8 @@ sub fetch_comp {
 
     # Load the component class
     #
-    my $compc = $self->interp->load($path);
+    my $compc = $self->interp->load($path)
+      or return undef;
 
     # Create and return a component instance
     #
@@ -171,7 +173,7 @@ sub fetch_comp {
 sub fetch_comp_or_die {
     my $self = shift;
     my $comp = $self->fetch_comp(@_)
-      or die "could not find component for path '$_[0]'";
+      or croak "could not find component for path '$_[0]'";
     return $comp;
 }
 
@@ -196,7 +198,7 @@ sub comp {
 #
 sub scomp {
     my $self = shift;
-    my ($buf) = $self->capture( sub { $self->comp(@_) } );
+    $self->capture( \my $buf, sub { $self->comp(@_) } );
     return $buf;
 }
 
@@ -245,10 +247,22 @@ sub request_buffer { $_[0]->{buffer_stack}->[0] }
 sub current_buffer { $_[0]->{buffer_stack}->[-1] }
 
 sub capture {
-    my ( $self, $code ) = @_;
+    my ( $self, $output_ref, $code ) = @_;
     $self->push_buffer;
-    scope_guard { $self->pop_buffer };
-    return $code->();
+    scope_guard { $$output_ref = ${ $self->current_buffer }; $self->pop_buffer };
+    $code->();
+}
+
+sub apply_immediate_filter {
+    my ( $self, $filter_code, $code ) = @_;
+
+    $self->push_buffer;
+    scope_guard {
+        my $output = $filter_code->( ${ $self->current_buffer } );
+        $self->pop_buffer;
+        $self->print($output);
+    };
+    $code->();
 }
 
 1;

@@ -99,4 +99,30 @@ EOF
     );
 }
 
+sub test_filter : Test(1) {
+    my $self = shift;
+    $self->test_comp(
+        component => <<'EOF',
+Hello world. <% $self->foo %>
+
+<%filter>
+$_ = uc($_);
+</%filter>
+
+<%method foo>
+How are you?
+
+<%filter>
+$_ = reverse($_);
+</%filter>
+</%method>
+EOF
+        expect => <<'EOF',
+HELLO WORLD. 
+?UOY ERA WOH
+
+EOF
+    );
+}
+
 1;
