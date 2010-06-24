@@ -173,7 +173,8 @@ sub fetch_comp {
 sub fetch_comp_or_die {
     my $self = shift;
     my $comp = $self->fetch_comp(@_)
-      or croak "could not find component for path '$_[0]'";
+      or croak sprintf( "could not find component for path '%s' - component root is [%s]",
+        $_[0], join( ", ", @{ $self->interp->comp_root } ) );
     return $comp;
 }
 

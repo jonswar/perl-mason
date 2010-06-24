@@ -9,9 +9,11 @@ sub test_errors : Test(10) {
         component    => '%my $i = 1;',
         expect_error => qr/% must be followed by whitespace at .* line 1/,
     );
+    my $root = $self->{interp}->comp_root->[0];
     $self->test_comp(
-        component    => '<& /does/not/exist &>',
-        expect_error => qr/could not find component for path/,
+        component => '<& /does/not/exist &>',
+        expect_error =>
+          qr/could not find component for path '\/does\/not\/exist' - component root is \Q[$root]\E/,
     );
     $self->test_comp(
         component    => '<%',
