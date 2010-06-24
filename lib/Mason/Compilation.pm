@@ -216,7 +216,8 @@ sub _match_plain_text {
                                }xcgs
       )
     {
-        my $text = $1;
+        my ( $orig_text, $swallowed ) = ( $1, $2 );
+        my $text = $orig_text;
 
         # Chomp newline before block start
         #
@@ -227,7 +228,7 @@ sub _match_plain_text {
 
         # Not checking definedness seems to cause extra lines to be
         # counted with Perl 5.00503.  I'm not sure why - dave
-        $self->{line_number} += tr/\n// foreach grep defined, ( $1, $2 );
+        $self->{line_number} += tr/\n// foreach grep defined, ( $orig_text, $swallowed );
 
         return 1;
     }
@@ -543,7 +544,7 @@ sub _add_to_current_method {
 sub throw_syntax_error {
     my ( $self, $msg ) = @_;
 
-    die sprintf( "%s at %s line %d", $msg, $self->source_file, $self->{line_number} );
+    die sprintf( "%s at %s line %d\n", $msg, $self->source_file, $self->{line_number} );
 }
 
 1;
