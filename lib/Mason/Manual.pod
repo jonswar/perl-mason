@@ -5,8 +5,6 @@ Mason::Devel - Mason Developer's Manual
 
 =head1 DESCRIPTION
 
-=head1 A NOTE ON HTML AND THE WEB
-
 =head1 WHAT ARE COMPONENTS?
 
 The component - a mix of Perl and HTML - is Mason's basic building block and
