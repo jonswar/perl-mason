@@ -13,20 +13,24 @@ use Moose;
 use strict;
 use warnings;
 
+# Passed attributes
 has 'allow_globals' => ( is => 'ro', default => sub { [] } );
-has 'block_regex' => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'block_types' => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'compilation_class'  => ( is => 'ro', default    => 'Mason::Compilation' );
-has 'compiler_id'        => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'default_base_class' => ( is => 'ro', default    => 'Mason::Component' );
+has 'compilation_class' => ( is => 'ro', default => 'Mason::Compilation' );
 has 'default_escape_flags' => ( is => 'ro', default => sub { [] } );
 has 'no_source_line_numbers' => ( is => 'ro' );
 has 'perltidy_object_files'  => ( is => 'ro' );
+has 'valid_flags'            => ( is => 'ro', default => sub { ['extends'] } );
+
+# Derived attributes
+has 'block_regex'      => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'block_types'      => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'compiler_id'      => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'valid_flags_hash' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 
 # Default list of blocks - may be augmented in subclass
 #
 sub _build_block_types {
-    return [qw(class doc filter init perl text)];
+    return [qw(class doc flags filter init perl text)];
 }
 
 sub _build_block_regex {
@@ -48,22 +52,28 @@ sub _build_compiler_id {
     return checksum($dumped_vals);
 }
 
+sub _build_valid_flags_hash {
+    my $self = shift;
+    return { map { ( $_, 1 ) } @{ $self->valid_flags } };
+}
+
 # Like [a-zA-Z_] but respects locales
 sub escape_flag_regex { qr/[[:alpha:]_]\w*/ }
 
 sub compile {
-    my ( $self, $source_file, $path ) = @_;
+    my ( $self, $interp, $source_file, $path ) = @_;
 
     my $compilation = $self->compilation_class->new(
+        interp      => $interp,
         source_file => $source_file,
         path        => $path,
-        compiler    => $self,
+        compiler    => $self
     );
     return $compilation->compile();
 }
 
 sub compile_to_file {
-    my ( $self, $source_file, $path, $dest_file ) = @_;
+    my ( $self, $interp, $source_file, $path, $dest_file ) = @_;
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not
@@ -78,7 +88,7 @@ sub compile_to_file {
         }
         rmtree($dest_file) if ( -d $dest_file );
     }
-    my $object_contents = $self->compile( $source_file, $path );
+    my $object_contents = $self->compile( $interp, $source_file, $path );
     if ( my $perltidy_options = $self->perltidy_object_files ) {
         require Perl::Tidy;
         my $argv = ( $perltidy_options eq '1' ? '' : $perltidy_options );

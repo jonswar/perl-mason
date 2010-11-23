@@ -5,6 +5,7 @@
 package Mason::Compilation;
 use File::Basename qw(dirname);
 use Guard;
+use JSON;
 use Mason::Util qw(read_file unique_id);
 use Moose;
 use Text::Trim qw(trim);
@@ -13,7 +14,8 @@ use warnings;
 
 # Passed attributes
 has 'compiler' => ( is => 'ro', required => 1, weak_ref => 1 );
-has 'path' => ( is => 'ro', required => 1 );
+has 'interp'   => ( is => 'ro', required => 1 );
+has 'path'     => ( is => 'ro', required => 1 );
 has 'source_file' => ( is => 'ro', required => 1 );
 
 # Derived attributes
@@ -75,8 +77,6 @@ sub _match_named_block {
 
 sub _match_block {
     my ( $self, $regex, $named ) = @_;
-
-    my $block_regex = $self->compiler->block_regex;
 
     if ( $self->{source} =~ /$regex/gcs ) {
         my ( $preceding_newline, $block_type, $name ) = ( $1, $2, $3 );
@@ -261,10 +261,20 @@ sub output_compiled_component {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_use_vars,    $self->_output_strictures, $self->_output_comp_info,
-            $self->_output_class_block, $self->_output_methods,
+            $self->_output_flag_comment, $self->_output_use_vars,    $self->_output_strictures,
+            $self->_output_comp_info,    $self->_output_class_block, $self->_output_methods,
         )
     ) . "\n";
+}
+
+sub _output_flag_comment {
+    my ($self) = @_;
+    if ( my $flags = $self->{blocks}->{flags} ) {
+        if (%$flags) {
+            my $json = JSON->new->indent(0);
+            return "# FLAGS: " . $json->encode($flags) . "\n\n";
+        }
+    }
 }
 
 sub _output_use_vars {
@@ -405,6 +415,48 @@ sub _handle_filter_block {
     my ( $self, $contents ) = @_;
 
     $self->{current_method}->{filter} = $self->_output_line_number_comment . $contents;
+}
+
+sub _handle_flags_block {
+    my ( $self, $contents ) = @_;
+
+    my $ending = qr, (?: \n |           # newline or
+                         (?= </%flags> ) )   # end of block (don't consume it)
+                   ,ix;
+
+    while (
+        $contents =~ /
+                      \G
+                      [ \t]*
+                      ([\w_]+)          # identifier
+                      [ \t]*=>[ \t]*    # separator
+                      (\S[^\n]*?)       # value ( must start with a non-space char)
+                      $ending
+                      |
+                      \G\n              # a plain empty line
+                      |
+                      \G
+                      [ \t]*            # an optional comment
+                      \#
+                      [^\n]*
+                      $ending
+                      |
+                      \G[ \t]+?
+                      $ending
+                     /xgc
+      )
+    {
+        my ( $flag, $value ) = ( $1, $2 );
+        if ( defined $flag && defined $value && length $flag && length $value ) {
+            if ( $self->compiler->valid_flags_hash->{$flag} ) {
+                $self->{blocks}->{flags}->{$flag} = eval($value);
+                die $@ if $@;
+            }
+            else {
+                $self->throw_syntax_error("Invalid flag '$flag'");
+            }
+        }
+    }
 }
 
 sub _handle_perl_block {

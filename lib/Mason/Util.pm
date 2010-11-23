@@ -6,8 +6,7 @@ use strict;
 use warnings;
 use base qw(Exporter);
 
-our @EXPORT_OK =
-  qw(clear_class dump_one_line in_perl_db checksum read_file write_file unique_id isa_mason_exception);
+our @EXPORT_OK = qw(clear_class dump_one_line in_perl_db checksum read_file write_file unique_id);
 
 my $Fetch_Flags = O_RDONLY | O_BINARY;
 my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;
@@ -131,6 +130,10 @@ sub delete_package ($) {
     my $pkg = shift;
     no strict 'refs';
 
+    # Unfortunately this messes up Moose in a variety ways - warnings about meta method
+    # and @ISA. For now, don't do anything. TODO.
+    return;
+
     $pkg .= '::';
     my ( $stem, $leaf ) = $pkg =~ m/(.*::)(\w+::)$/;
     my $stem_symtab = *{$stem}{HASH};
@@ -139,8 +142,5 @@ sub delete_package ($) {
     %$leaf_symtab = ();
     delete $stem_symtab->{$leaf};
 }
-
-# To do
-sub isa_mason_exception { }
 
 1;

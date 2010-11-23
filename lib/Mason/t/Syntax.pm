@@ -49,7 +49,7 @@ sub test_empty_percents : Test(1) {
     shift->test_comp(
         component => <<'EOF',
 some text,
-%
+% 
 and some more
 EOF
         expect => <<'EOF',
@@ -63,7 +63,7 @@ sub test_empty_percents2 : Test(1) {
     shift->test_comp(
         component => <<'EOF',
 some text,
-%
+% 
 % $m->print('foo, ');
 and some more
 EOF

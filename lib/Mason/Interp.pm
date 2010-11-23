@@ -4,47 +4,40 @@ use File::Spec::Functions qw(canonpath catdir catfile);
 use Guard;
 use Mason::Compiler;
 use Mason::Request;
+use Mason::Types;
 use Mason::Util;
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Moose;
 use MooseX::StrictConstructor;
+use JSON;
 use autodie qw(:all);
 use strict;
 use warnings;
-
-subtype 'Mason::Types::CompRoot' => as 'ArrayRef[Str]';
-coerce 'Mason::Types::CompRoot' => from 'Str' => via { [$_] };
-
-subtype 'Mason::Types::OutMethod' => as 'CodeRef';
-coerce 'Mason::Types::OutMethod' => from 'ScalarRef' => via {
-    my $ref = $_;
-    sub { $$ref .= $_[0] }
-};
 
 my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
-has 'autohandler_name' => ( is => 'ro', default    => 'autohandler' );
-has 'comp_root'        => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
-has 'compiler'         => ( is => 'ro', lazy_build => 1 );
-has 'compiler_class'   => ( is => 'ro', default    => 'Mason::Compiler' );
-has 'chi_root_class'        => ( is => 'ro' );
-has 'data_dir'              => ( is => 'ro' );
-has 'dhandler_name'         => ( is => 'ro' );
-has 'max_recurse'           => ( is => 'ro' );
-has 'object_file_extension' => ( is => 'ro', default => '.obj.pl' );
-has 'out_method' =>
-  ( is => 'ro', isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
-has 'request_class' => ( is => 'ro', default => 'Mason::Request' );
-has 'resolver'      => ( is => 'ro' );
-has 'static_source' => ( is => 'ro' );
+has 'autohandler_name'       => ( is => 'ro', default    => 'autohandler' );
+has 'comp_root'              => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
+has 'compiler'               => ( is => 'ro', lazy_build => 1 );
+has 'compiler_class'         => ( is => 'ro', default    => 'Mason::Compiler' );
+has 'component_class_prefix' => ( is => 'ro', default    => 'MC0' );
+has 'component_base_class'   => ( is => 'ro', default    => 'Mason::Component' );
+has 'chi_root_class'           => ( is => 'ro' );
+has 'data_dir'                 => ( is => 'ro' );
+has 'dhandler_name'            => ( is => 'ro' );
+has 'object_file_extension'    => ( is => 'ro', default => '.obj.pm' );
+has 'request_class'            => ( is => 'ro', default => 'Mason::Request' );
+has 'static_source'            => ( is => 'ro' );
 has 'static_source_touch_file' => ( is => 'ro' );
 
 # Derived attributes
-has 'code_cache' => ( is => 'ro', init_arg => undef );
-has 'id'         => ( is => 'ro', init_arg => undef );
+has 'code_cache'             => ( is => 'ro', init_arg => undef );
+has 'compiler_params'        => ( is => 'ro', init_arg => undef );
+has 'default_request_params' => ( is => 'ro', init_arg => undef );
+has 'id'                     => ( is => 'ro', init_arg => undef );
 
 __PACKAGE__->meta->make_immutable();
 
@@ -60,41 +53,49 @@ sub BUILD {
         $self->{use_internal_component_caches} = 1;
     }
 
-    # Separate out compiler parameters
+    # Separate out compiler and request parameters
     #
     $self->{compiler_params} = {};
     my %is_compiler_attribute = map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
-
     foreach my $key ( keys(%$params) ) {
         if ( $is_compiler_attribute{$key} ) {
             $self->{compiler_params}->{$key} = delete( $params->{$key} );
+        }
+    }
+    $self->{default_request_params} = {};
+    my %is_request_attribute = map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
+    foreach my $key ( keys(%$params) ) {
+        if ( $is_request_attribute{$key} ) {
+            $self->{default_request_params}->{$key} = delete( $params->{$key} );
         }
     }
 }
 
 sub _build_compiler {
     my $self = shift;
-    return $self->compiler_class->new( %{ $self->{compiler_params} } );
+    return $self->compiler_class->new( %{ $self->compiler_params } );
 }
 
 sub run {
-    my $self    = shift;
+    my $self = shift;
+    my %request_params;
+    while ( ref( $_[0] ) eq 'HASH' ) {
+        %request_params = ( %request_params, %{ shift(@_) } );
+    }
     my $path    = shift;
-    my $request = $self->build_request();
+    my $request = $self->build_request(%request_params);
     $request->run( $path, @_ );
 }
 
 sub srun {
     my $self = shift;
-    my $output;
-    local $self->{out_method} = sub { $output .= $_[0] };
-    $self->run(@_);
+    $self->run( { out_method => \my $output }, @_ );
     return $output;
 }
 
 sub build_request {
     my $self = shift;
-    return $self->request_class->new( interp => $self );
+    return $self->request_class->new( interp => $self, %{ $self->default_request_params }, @_ );
 }
 
 # Loads the component in $path; returns a component class, or undef if not
@@ -125,8 +126,9 @@ sub load {
     # Determine default parent component class for component
     #
     my $default_parent_compc =
-      $self->load_upwards( $dir_path, 'autohandler', $base_name eq 'autohandler' ? 1 : 0 )
-      || 'Mason::Component';
+      $self->load_upwards( $dir_path, $self->autohandler_name,
+        $base_name eq $self->autohandler_name ? 1 : 0 )
+      || $self->component_base_class;
 
     # Resolve path to source file
     #
@@ -162,12 +164,12 @@ sub load {
     }
     my $object_lastmod = @stat ? $stat[9] : 0;
     if ( $object_lastmod < $source_lastmod && !$self->static_source ) {
-        $self->compiler->compile_to_file( $source_file, $path, $object_file );
+        $self->compiler->compile_to_file( $self, $source_file, $path, $object_file );
     }
 
     my $compc = $self->comp_class_for_path($path);
 
-    $self->load_class_from_object_file( $compc, $default_parent_compc, $object_file );
+    $self->load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
 
     # Save component class in the cache.
     #
@@ -183,12 +185,28 @@ sub load {
 }
 
 sub load_class_from_object_file {
-    my ( $self, $compc, $default_parent_compc, $object_file ) = @_;
+    my ( $self, $compc, $object_file, $path, $default_parent_compc ) = @_;
+
+    my $flags = $self->extract_flags_from_object_file($object_file);
+    my $parent_compc;
+    if ( exists( $flags->{extends} ) ) {
+        my $extends = $flags->{extends};
+        if ( defined($extends) ) {
+            $parent_compc = $self->load( $flags->{extends} )
+              or die "could not load '$extends' for extends flag";
+        }
+        else {
+            $parent_compc = $self->component_base_class;
+        }
+    }
+    else {
+        $parent_compc = $default_parent_compc;
+    }
 
     eval(
         sprintf(
             'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
-            $compc, $default_parent_compc, $object_file
+            $compc, $parent_compc, $object_file
         )
     );
     die $@ if $@;
@@ -197,6 +215,17 @@ sub load_class_from_object_file {
         $compc->meta->add_augment_method_modifier(
             render => sub { my $self = shift; $self->main(@_) } );
     }
+}
+
+sub extract_flags_from_object_file {
+    my ( $self, $object_file ) = @_;
+    my $flags = {};
+    open( my $fh, "<", $object_file );
+    my $line = <$fh>;
+    if ( my ($flags_str) = ( $line =~ /\# FLAGS: (.*)/ ) ) {
+        $flags = JSON->new->decode($flags_str);
+    }
+    return $flags;
 }
 
 # Search for component <name> in the parents of <dir_path>. Return the
@@ -247,7 +276,7 @@ sub comp_class_for_path {
     my $classname = substr( $path, 1 );
     $classname =~ s/[^\w]/_/g;
     $classname =~ s/\//::/g;
-    $classname = "MC" . $self->id . "::" . $classname;
+    $classname = $self->component_class_prefix . "::" . $classname;
     return $classname;
 }
 

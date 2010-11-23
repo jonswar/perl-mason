@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use base qw(Mason::Test::Class);
 
-sub test_autohandler : Test(16) {
+sub test_autohandler : Test(18) {
     my $self   = shift;
     my $interp = $self->{interp};
 
@@ -19,9 +19,12 @@ sub test_autohandler : Test(16) {
     };
 
     my $add = sub {
-        my ($path) = @_;
+        my ( $path, $extends ) = @_;
 
-        $self->add_comp( path => $path, component => ' ' );
+        $self->add_comp(
+            path      => $path,
+            component => ( $extends ? "<%flags>\nextends => $extends\n</%flags>" : " " )
+        );
     };
 
     # Add components with no autohandlers, make sure they inherit from
@@ -52,6 +55,12 @@ sub test_autohandler : Test(16) {
     $check_parent->( '/foo/bar/comp',            '/foo/autohandler' );
     $check_parent->( '/foo/bar/baz/comp',        '/foo/bar/baz/autohandler' );
 
+    $add->( '/foo/bar/baz/none', "undef" );
+    $check_parent->( '/foo/bar/baz/none', 'Mason::Component' );
+
+    $add->( '/foo/bar/baz/top', "'/autohandler'" );
+    $check_parent->( '/foo/bar/baz/top', '/autohandler' );
+
     $self->remove_comp( path => '/autohandler' );
     $self->remove_comp( path => '/foo/autohandler' );
 
@@ -63,6 +72,7 @@ sub test_autohandler : Test(16) {
     $check_parent->( '/foo/bar/comp',            'Mason::Component' );
     $check_parent->( '/foo/bar/baz/comp',        '/foo/bar/baz/autohandler' );
     $check_parent->( '/foo/bar/baz/autohandler', 'Mason::Component' );
+
 }
 
 sub test_wrapping : Tests(2) {

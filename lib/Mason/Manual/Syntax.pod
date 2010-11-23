@@ -1,0 +1,226 @@
+
+=head1 NAME
+
+Mason::Devel - Mason Developer's Manual
+
+=head1 DESCRIPTION
+
+=head1 BLOCKS
+
+=head2 <%perl>
+
+Contains multi-line block of Perl code. The enclosed text is executed as Perl
+and the return value, if any, is discarded. May appear anywhere in the text and
+any number of times.
+
+   <%perl>
+   </%perl>
+
+=head2 <%init>
+
+Contains Perl code that is placed at the beginning of the current method.
+
+   <%init>
+   </%init>
+
+=head2 <%class>
+
+Contains Perl code code that executes once when the component is loaded, in the
+main body of the class outside of any methods. This is the place to use
+modules, declare attributes, and do other things on a class level.
+
+=head2 <%method I<name>>
+
+Each instance of this block creates a new method with the specified name.
+
+=head2 <%filter>
+
+Filters the entire output of the current component. Upon entry to this code,
+C<$_> contains the component output, and you are expected to modify it in
+place. On return, the contents of $_ are output.
+
+This simple filter converts the component output to UPPERCASE:
+
+    <%filter>
+    tr/a-z/A-Z/
+    </%filter>
+
+=head2 <% # comment... %>
+
+A C<< <% %> >> tag is considered a comment if all of its lines are either
+whitespace, or begin with a '#' optionally preceded by whitespace. For example,
+
+    <% # This is a single-line comment %>
+
+    <%
+       # This is a
+       # multi-line comment
+    %>
+
+=head2 % # comment
+
+Because a line beginning with C<%> is treated as Perl, C<% #> automatically
+works as a comment. However we prefer the C<< <% # comment %> >> form over C<<
+% # >>, because it stands out a little more as a comment and because it is more
+flexible with regards to preceding whitespace.
+
+=head2 % if (0) { }
+
+Anything between these two lines
+
+   % if (0) {
+   ...
+   % }
+
+will be skipped by Mason, including component calls.  While we don't recomend
+this for comments per se, it is a useful notation for "commenting out" code
+that you don't want to run.
+
+=head2 HTML/XML/... comments
+
+HTML and other markup languages will have their own comment markers, for
+example C<< <!-- --> >>. Note two important differences with these comments
+versus the above comments:
+
+=over
+
+=item *
+
+They will be sent to the client and appear in the source of the page.
+
+=item *
+
+They do not block component calls and other code from running, so don't try to
+use them to comment out code!
+
+   <!-- Oops, the code below will still run
+      <& /shared/expensive.mhtml &>
+   -->
+
+=back
+
+=head1 OTHER SYNTAX
+
+=head2 <%text>
+
+Text in this section is printed as-is with all Mason syntax ignored. This is
+useful, for example, when documenting Mason itself from a component:
+
+    <%text>
+    % This is an example of a Perl line.
+    <% This is an example of an expression block. %>
+    </%text>
+
+This works for almost everything, but doesn't let you output C<< </%text> >>
+itself! When all else fails, use C<< $m->print >>:
+
+    % $m->print('The tags are <%text> and </%text>.');
+
+=head2 Escaping expressions
+
+Mason has facilities for I<escaping> the output from C<< <% %> >> tags, on
+either a site-wide or a per-expression basis.
+
+Any C<< <% %> >> expression may be terminated by a '|' and one or more escape
+flags (plus arbitrary whitespace), separated by commas:
+
+    <% $file_data |h %>
+
+The current valid flags are:
+
+=over
+
+=item * h
+
+Escape HTML ('<' => '&lt;', etc.) using C<HTML::Entities::encode()>. Before
+Perl 5.8.0 this module assumes that text is in the ISO-8859-1 character set;
+see the next section for how to override this escaping. After 5.8.0, the
+encoding assumes that text is in Unicode.
+
+=item * u
+
+Escape a URL query string (':' => '%3A', etc.) - all but [a-zA-Z0-9_.-]
+
+=item * n
+
+This is a special flag indicating that the default escape flags should I<not>
+be used for this substitution.
+
+=back
+
+The administrator may specify a set of default escape flags via the
+L<Mason::Params/default_escape_flags> parameter. For example, if the
+administrator sets L<Mason::Params/default_escape_flags> to C<['h']>, then all
+<% %> expressions will automatically be HTML-escaped.  In this case you would
+use the C<n> flag to turn off HTML-escaping for a specific expression:
+
+    <% $html_block |n %>
+
+Multiple escapes can be specified as a comma-separated list:
+
+    <% $uri | u, n %>
+
+=head3 User-defined Escapes
+
+Besides the default escapes mentioned above, it is possible for the user to
+define their own escapes or to override the built-in 'h' and 'u' escapes.
+
+This is done via the Interp object's L<Mason::Params/escape_flags> parameter or
+L<set_escape()|HTML::Mason::Interp/item_set_escape> method.  Escape names may
+be any number of characters as long as it matches the regex C</^[\w-]+$/>.  The
+one exception is that you cannot override the 'n' flag.
+
+Each escape flag is associated with a subroutine reference.  The subroutine
+should expect to receive a scalar reference, which should be manipulated in
+place.  Any return value from this subroutine is ignored.
+
+Escapes can be defined at any time but using an escape that is not defined will
+cause an error when executing that component.
+
+=head3 Manually applying escapes
+
+You can manually apply one or more escapes to text using the L<Interp object's
+C<apply_escapes()> method|HTML::Mason::Interp/item_apply_escapes>. e.g.
+
+    $m->interp->apply_escapes( 'some html content', 'h' );
+
+=head2 Backslash at end of line
+
+A backslash (\) at the end of a line suppresses the newline. In HTML
+components, this is mostly useful for fixed width areas like C<< <pre> >> tags,
+since browsers ignore white space for the most part. An example:
+
+    <pre>
+    foo
+    % if (1) {
+    bar
+    % }
+    baz
+    </pre>
+
+outputs
+
+    foo
+    bar
+    baz
+
+because of the newlines on lines 2 and 4. (Lines 3 and 5 do not generate a
+newline because the entire line is taken by Perl.) To suppress the newlines:
+
+    <pre>
+    foo\
+    % if (1) {
+    bar\
+    % }
+    baz
+    </pre>
+
+which prints
+
+    foobarbaz
+
+=head1 AUTHORS
+
+Jonathan Swartz <swartz@pobox.com>
+
+=cut

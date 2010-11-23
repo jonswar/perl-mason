@@ -17,7 +17,7 @@ my $gen_path_count = 0;
 
 sub _startup : Test(startup) {
     my $self = shift;
-    $self->{temp_dir}  = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => 0 );
+    $self->{temp_dir}  = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => 1 );
     $self->{comp_root} = $self->{temp_dir} . "/comps";
     $self->{data_dir}  = $self->{temp_dir} . "/data";
     mkpath( [ $self->{comp_root}, $self->{data_dir} ], 0, 0775 );
