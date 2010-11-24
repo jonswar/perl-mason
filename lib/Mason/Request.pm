@@ -3,7 +3,7 @@ use autodie qw(:all);
 use Carp;
 use Guard;
 use Log::Any qw($log);
-use Mason::Request::TieHandle;
+use Mason::TieHandle;
 use Mason::Types;
 use Moose;
 use Scalar::Util qw(blessed);
@@ -61,7 +61,7 @@ sub run {
     my ( $retval, $err );
     {
         local *TH;
-        tie *TH, 'Mason::Request::TieHandle';
+        tie *TH, 'Mason::TieHandle';
         my $old = select TH;
         scope_guard { select $old };
 

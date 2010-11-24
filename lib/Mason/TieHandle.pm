@@ -1,4 +1,4 @@
-package Mason::Request::TieHandle;
+package Mason::TieHandle;
 use strict;
 use warnings;
 
