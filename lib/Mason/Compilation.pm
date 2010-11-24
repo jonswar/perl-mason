@@ -294,8 +294,9 @@ sub _output_comp_info {
     my ($self) = @_;
 
     my %comp_info = (
-        comp_dir_path => $self->dir_path,
-        comp_path     => $self->path,
+        comp_dir_path    => $self->dir_path,
+        comp_path        => $self->path,
+        comp_is_internal => ( $self->path =~ $self->compiler->internal_component_regex ? 1 : 0 ),
     );
     return sprintf( 'sub _comp_info { return %s }', dump_one_line( \%comp_info ) );
 }

@@ -12,4 +12,7 @@ coerce 'Mason::Types::OutMethod' => from 'ScalarRef' => via {
     sub { $$ref .= $_[0] }
 };
 
+subtype 'Mason::Types::RegexpRefOrStr' => as 'RegexpRef';
+coerce 'Mason::Types::RegexpRefOrStr' => from 'Str' => via { qr/$/ };
+
 1;

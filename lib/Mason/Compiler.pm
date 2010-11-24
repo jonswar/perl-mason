@@ -8,6 +8,7 @@ use File::Basename;
 use File::Path;
 use File::Slurp;
 use Mason::Compilation;
+use Mason::Types;
 use Mason::Util qw(checksum);
 use Moose;
 use strict;
@@ -17,6 +18,8 @@ use warnings;
 has 'allow_globals' => ( is => 'ro', default => sub { [] } );
 has 'compilation_class' => ( is => 'ro', default => 'Mason::Compilation' );
 has 'default_escape_flags' => ( is => 'ro', default => sub { [] } );
+has 'internal_component_regex' =>
+  ( is => 'ro', isa => 'Mason::Types::RegexpRefOrStr', default => sub { qr/\.mi$/ }, coerce => 1 );
 has 'no_source_line_numbers' => ( is => 'ro' );
 has 'perltidy_object_files'  => ( is => 'ro' );
 has 'valid_flags'            => ( is => 'ro', default => sub { ['extends'] } );

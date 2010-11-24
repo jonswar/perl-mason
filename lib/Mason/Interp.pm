@@ -39,8 +39,6 @@ has 'compiler_params'        => ( is => 'ro', init_arg => undef );
 has 'default_request_params' => ( is => 'ro', init_arg => undef );
 has 'id'                     => ( is => 'ro', init_arg => undef );
 
-__PACKAGE__->meta->make_immutable();
-
 sub BUILD {
     my ( $self, $params ) = @_;
 
@@ -345,5 +343,7 @@ sub check_static_source_touch_file {
         }
     }
 }
+
+__PACKAGE__->meta->make_immutable();
 
 1;
