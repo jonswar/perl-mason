@@ -5,7 +5,7 @@ use Guard;
 use Mason::Compiler;
 use Mason::Request;
 use Mason::Types;
-use Mason::Util;
+use Mason::Util qw(mason_canon_path);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Moose;
@@ -192,7 +192,9 @@ sub load_class_from_object_file {
     if ( exists( $flags->{extends} ) ) {
         my $extends = $flags->{extends};
         if ( defined($extends) ) {
-            $parent_compc = $self->load( $flags->{extends} )
+            $extends = mason_canon_path( join( "/", dirname($path), $extends ) )
+              if substr( $extends, 0, 1 ) ne '/';
+            $parent_compc = $self->load($extends)
               or die "could not load '$extends' for extends flag";
         }
         else {

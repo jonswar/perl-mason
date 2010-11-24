@@ -6,7 +6,8 @@ use strict;
 use warnings;
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(clear_class dump_one_line in_perl_db checksum read_file write_file unique_id);
+our @EXPORT_OK =
+  qw(checksum clear_class dump_one_line in_perl_db mason_canon_path read_file unique_id write_file);
 
 my $Fetch_Flags = O_RDONLY | O_BINARY;
 my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;

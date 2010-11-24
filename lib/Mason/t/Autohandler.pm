@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use base qw(Mason::Test::Class);
 
-sub test_autohandler : Test(18) {
+sub test_autohandler : Test(20) {
     my $self   = shift;
     my $interp = $self->{interp};
 
@@ -60,6 +60,9 @@ sub test_autohandler : Test(18) {
 
     $add->( '/foo/bar/baz/top', "'/autohandler'" );
     $check_parent->( '/foo/bar/baz/top', '/autohandler' );
+
+    $add->( '/foo/bar/baz/top2', "'../../autohandler'" );
+    $check_parent->( '/foo/bar/baz/top2', '/foo/autohandler' );
 
     $self->remove_comp( path => '/autohandler' );
     $self->remove_comp( path => '/foo/autohandler' );
