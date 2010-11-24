@@ -27,6 +27,9 @@ sub _build_comp_logger {
     return Log::Any->get_logger( category => $log_category );
 }
 
+sub comp_path     { return $_[0]->_comp_info->{comp_path} }
+sub comp_dir_path { return $_[0]->_comp_info->{comp_dir_path} }
+
 sub render {
     my ($self) = @_;
 

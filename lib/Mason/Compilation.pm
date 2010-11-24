@@ -6,7 +6,7 @@ package Mason::Compilation;
 use File::Basename qw(dirname);
 use Guard;
 use JSON;
-use Mason::Util qw(read_file unique_id);
+use Mason::Util qw(dump_one_line read_file unique_id);
 use Moose;
 use Text::Trim qw(trim);
 use strict;
@@ -293,14 +293,11 @@ sub _output_strictures {
 sub _output_comp_info {
     my ($self) = @_;
 
-    my %info = (
+    my %comp_info = (
         comp_dir_path => $self->dir_path,
         comp_path     => $self->path,
     );
-    return join(
-        "\n", map { sprintf( 'sub %s { "%s" }', $_, $info{$_} ) }
-          sort( keys(%info) )
-    );
+    return sprintf( 'sub _comp_info { return %s }', dump_one_line( \%comp_info ) );
 }
 
 sub _output_class_block {
@@ -360,7 +357,7 @@ sub _output_line_number_comment {
 
     if ( !$self->compiler->no_source_line_numbers ) {
         if ( my $line = $self->{line_number} ) {
-            my $comment = sprintf( qq{#line %s "%s"\n}, $line, $self->source_file );
+            my $comment = sprintf( qq{ #line %s "%s"\n}, $line, $self->source_file );
             return $comment;
         }
     }
