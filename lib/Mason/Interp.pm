@@ -23,7 +23,7 @@ has 'autohandler_name'       => ( is => 'ro', default    => 'autohandler' );
 has 'comp_root'              => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'               => ( is => 'ro', lazy_build => 1 );
 has 'compiler_class'         => ( is => 'ro', default    => 'Mason::Compiler' );
-has 'component_class_prefix' => ( is => 'ro', default    => 'MC0' );
+has 'component_class_prefix' => ( is => 'ro', lazy_build => 1 );
 has 'component_base_class'   => ( is => 'ro', default    => 'Mason::Component' );
 has 'chi_root_class'           => ( is => 'ro' );
 has 'data_dir'                 => ( is => 'ro' );
@@ -74,6 +74,11 @@ sub BUILD {
 sub _build_compiler {
     my $self = shift;
     return $self->compiler_class->new( %{ $self->compiler_params } );
+}
+
+sub _build_component_class_prefix {
+    my $self = shift;
+    return "MC" . $self->{id};
 }
 
 sub run {
@@ -278,7 +283,7 @@ sub comp_class_for_path {
     my $classname = substr( $path, 1 );
     $classname =~ s/[^\w]/_/g;
     $classname =~ s/\//::/g;
-    $classname = $self->component_class_prefix . "::" . $classname;
+    $classname = join( "::", $self->component_class_prefix, $classname );
     return $classname;
 }
 
