@@ -68,7 +68,7 @@ sub run {
         $retval = eval { $request_comp->render() };
         $err = $@;
     }
-    die $err if $err && !$self->_aborted_or_decined;
+    die $err if $err && !$self->_aborted_or_declined;
 
     # Send output to its final destination
     #
