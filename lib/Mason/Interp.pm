@@ -47,7 +47,6 @@ method BUILD($params) {
     if ( $self->{static_source} ) {
         $self->{static_source_touch_file_lastmod} = 0;
         $self->{static_source_touch_file} ||= catfile( $self->data_dir, 'purge.dat' );
-        $self->{use_internal_component_caches} = 1;
     }
 
     # Separate out compiler and request parameters
