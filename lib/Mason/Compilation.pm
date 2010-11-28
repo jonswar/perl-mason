@@ -7,6 +7,7 @@ use File::Basename qw(dirname);
 use Guard;
 use JSON;
 use Mason::Util qw(dump_one_line read_file unique_id);
+use Method::Signatures::Simple;
 use Moose;
 use Text::Trim qw(trim);
 use strict;
@@ -21,8 +22,7 @@ has 'source_file' => ( is => 'ro', required => 1 );
 # Derived attributes
 has 'dir_path' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 
-sub BUILD {
-    my $self = shift;
+method BUILD () {
 
     # Initialize state
     $self->{blocks} = {};
@@ -35,16 +35,13 @@ sub BUILD {
     $self->{current_method}  = $self->{methods}->{main};
 }
 
-sub _build_dir_path {
-    my $self = shift;
+method _build_dir_path () {
     return dirname( $self->path );
 }
 
 # Parse the component source, or a single method block body
 #
-sub parse {
-    my $self = shift;
-
+method parse () {
     $self->{in_block}       = undef;
     $self->{last_code_type} = '';
 
@@ -62,22 +59,16 @@ sub parse {
     }
 }
 
-sub _match_unnamed_block {
-    my ($self) = @_;
-
+method _match_unnamed_block () {
     my $block_regex = $self->compiler->block_regex;
     $self->_match_block( qr/\G(\n?)<%($block_regex)>/, 0 );
 }
 
-sub _match_named_block {
-    my ($self) = @_;
-
+method _match_named_block () {
     $self->_match_block( qr/\G(\n?)<%(method)(?:\s+([^\n^>]+))?>/, 1 );
 }
 
-sub _match_block {
-    my ( $self, $regex, $named ) = @_;
-
+method _match_block( $regex, $named ) {
     if ( $self->{source} =~ /$regex/gcs ) {
         my ( $preceding_newline, $block_type, $name ) = ( $1, $2, $3 );
 
@@ -105,9 +96,7 @@ sub _match_block {
     return 0;
 }
 
-sub _match_block_end {
-    my ( $self, $block_type ) = @_;
-
+method _match_block_end($block_type) {
     my $re = qr,\G(.*?)</%\Q$block_type\E>(\n?\n?),is;
     if ( $self->{source} =~ /$re/gc ) {
         return ( $1, $2 );
@@ -117,12 +106,10 @@ sub _match_block_end {
     }
 }
 
-sub _match_substitution {
+method _match_substitution () {
 
     # This routine relies on there *not* to be an opening <%foo> tag
     # present, so _match_block() must happen first.
-
-    my $self = shift;
 
     return 0 unless $self->{source} =~ /\G<%/gcs;
 
@@ -157,9 +144,7 @@ sub _match_substitution {
     }
 }
 
-sub _match_component_call {
-    my $self = shift;
-
+method _match_component_call () {
     if ( $self->{source} =~ /\G<&(?!\|)/gcs ) {
         if ( $self->{source} =~ /\G(.*?)&>/gcs ) {
             my $body = $1;
@@ -174,9 +159,7 @@ sub _match_component_call {
     }
 }
 
-sub _match_perl_line {
-    my $self = shift;
-
+method _match_perl_line () {
     if ( $self->{source} =~ /\G(?<=^)%([^\n]*)(?:\n|\z)/gcm ) {
         my $line = $1;
         if ( $line !~ /^\s/ ) {
@@ -189,8 +172,7 @@ sub _match_perl_line {
     }
 }
 
-sub _match_plain_text {
-    my $self = shift;
+method _match_plain_text () {
 
     # Most of these terminator patterns actually belong to the next
     # lexeme in the source, so we use a lookahead if we don't want to
@@ -236,8 +218,7 @@ sub _match_plain_text {
     return 0;
 }
 
-sub _match_end {
-    my $self = shift;
+method _match_end () {
 
     # $self->{ending} is a qr// 'string'.  No need to escape.  It will
     # also include the needed \G marker
@@ -248,16 +229,12 @@ sub _match_end {
     return 0;
 }
 
-sub compile {
-    my ($self) = @_;
-
+method compile () {
     $self->parse();
     return $self->output_compiled_component();
 }
 
-sub output_compiled_component {
-    my ($self) = @_;
-
+method output_compiled_component () {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
@@ -267,8 +244,7 @@ sub output_compiled_component {
     ) . "\n";
 }
 
-sub _output_flag_comment {
-    my ($self) = @_;
+method _output_flag_comment () {
     if ( my $flags = $self->{blocks}->{flags} ) {
         if (%$flags) {
             my $json = JSON->new->indent(0);
@@ -277,22 +253,18 @@ sub _output_flag_comment {
     }
 }
 
-sub _output_use_vars {
-    my ($self) = @_;
+method _output_use_vars () {
     my @allow_globals = @{ $self->compiler->allow_globals };
     return @allow_globals
       ? sprintf( "use vars qw(%s);", join( ' ', @allow_globals ) )
       : "";
 }
 
-sub _output_strictures {
-    my ($self) = @_;
+method _output_strictures () {
     return join( "\n", "no warnings 'redefine';" );
 }
 
-sub _output_comp_info {
-    my ($self) = @_;
-
+method _output_comp_info () {
     my %comp_info = (
         comp_dir_path    => $self->dir_path,
         comp_path        => $self->path,
@@ -301,23 +273,18 @@ sub _output_comp_info {
     return sprintf( 'sub _comp_info { return %s }', dump_one_line( \%comp_info ) );
 }
 
-sub _output_class_block {
-    my ($self) = @_;
-
+method _output_class_block () {
     return $self->{blocks}->{'class'} || '';
 }
 
-sub _output_methods {
-    my ($self) = @_;
-
+method _output_methods () {
     return join(
         "\n", map { $self->_output_method($_) }
           sort( keys( %{ $self->{methods} } ) )
     );
 }
 
-sub _output_method {
-    my ( $self, $method_name ) = @_;
+method _output_method($method_name) {
     my $path = $self->path;
 
     my $method = $self->{methods}->{$method_name};
@@ -353,9 +320,7 @@ sub _output_method {
     );
 }
 
-sub _output_line_number_comment {
-    my ($self) = @_;
-
+method _output_line_number_comment () {
     if ( !$self->compiler->no_source_line_numbers ) {
         if ( my $line = $self->{line_number} ) {
             my $comment = sprintf( qq{ #line %s "%s"\n}, $line, $self->source_file );
@@ -365,21 +330,16 @@ sub _output_line_number_comment {
     return "";
 }
 
-sub _handle_class_block {
-    my ( $self, $contents ) = @_;
-
+method _handle_class_block($contents) {
     $self->_assert_not_in_method('<%class>');
     $self->{blocks}->{class} = $self->_output_line_number_comment . $contents;
 }
 
-sub _handle_init_block {
-    my ( $self, $contents ) = @_;
-
+method _handle_init_block($contents) {
     $self->{current_method}->{init} = $self->_output_line_number_comment . $contents;
 }
 
-sub _handle_method_block {
-    my ( $self, $contents, $name ) = @_;
+method _handle_method_block( $contents, $name ) {
     $self->_assert_not_in_method('<%method>');
 
     $self->throw_syntax_error("Invalid method name '$name'")
@@ -404,20 +364,16 @@ sub _handle_method_block {
     }
 }
 
-sub _handle_doc_block {
+method _handle_doc_block () {
 
     # Don't do anything - just discard the comment.
 }
 
-sub _handle_filter_block {
-    my ( $self, $contents ) = @_;
-
+method _handle_filter_block($contents) {
     $self->{current_method}->{filter} = $self->_output_line_number_comment . $contents;
 }
 
-sub _handle_flags_block {
-    my ( $self, $contents ) = @_;
-
+method _handle_flags_block($contents) {
     my $ending = qr, (?: \n |           # newline or
                          (?= </%flags> ) )   # end of block (don't consume it)
                    ,ix;
@@ -457,17 +413,13 @@ sub _handle_flags_block {
     }
 }
 
-sub _handle_perl_block {
-    my ( $self, $contents ) = @_;
-
+method _handle_perl_block($contents) {
     $self->_add_to_current_method($contents);
 
     $self->{last_code_type} = 'perl_block';
 }
 
-sub _handle_text_block {
-    my ( $self, $contents ) = @_;
-
+method _handle_text_block($contents) {
     $contents =~ s,([\'\\]),\\$1,g;
 
     $self->_add_to_current_method("\$\$_buffer .= '$contents';\n");
@@ -475,8 +427,7 @@ sub _handle_text_block {
     $self->{last_code_type} = 'text';
 }
 
-sub _handle_substitution {
-    my ( $self, $text, $escape ) = @_;
+method _handle_substitution( $text, $escape ) {
 
     # This is a comment tag if all lines of text contain only whitespace
     # or start with whitespace and a comment marker, e.g.
@@ -525,9 +476,7 @@ sub _handle_substitution {
     $self->{last_code_type} = 'substitution';
 }
 
-sub _handle_component_call {
-    my ( $self, $contents ) = @_;
-
+method _handle_component_call($contents) {
     my ( $prespace, $call, $postspace ) = ( $contents =~ /(\s*)(.*)(\s*)/s );
     if ( $call =~ m,^[\w/.], ) {
         my $comma = index( $call, ',' );
@@ -542,9 +491,7 @@ sub _handle_component_call {
     $self->{last_code_type} = 'component_call';
 }
 
-sub _handle_perl_line {
-    my ( $self, $contents ) = @_;
-
+method _handle_perl_line($contents) {
     my $code = "$contents\n";
 
     $self->_add_to_current_method($code);
@@ -552,8 +499,7 @@ sub _handle_perl_line {
     $self->{last_code_type} = 'perl_line';
 }
 
-sub _handle_plain_text {
-    my ( $self, $text ) = @_;
+method _handle_plain_text($text) {
 
     # Escape single quotes and backslashes
     #
@@ -563,20 +509,17 @@ sub _handle_plain_text {
     $self->_add_to_current_method($code);
 }
 
-sub _assert_not_in_method {
-    my ( $self, $entity ) = @_;
-
+method _assert_not_in_method($entity) {
     if ( $self->{in_method_block} ) {
         $self->throw_syntax_error("$entity not permitted inside <%method> block");
     }
 }
 
-sub _new_method_hash {
+method _new_method_hash () {
     return { body => '', init => '' };
 }
 
-sub _add_to_current_method {
-    my ( $self, $text ) = @_;
+method _add_to_current_method($text) {
 
     # Don't add a line number comment when following a perl-line.
     # We know a perl-line is always _one_ line, so we know that the
@@ -591,9 +534,7 @@ sub _add_to_current_method {
     $self->{current_method}->{body} .= $text;
 }
 
-sub throw_syntax_error {
-    my ( $self, $msg ) = @_;
-
+method throw_syntax_error($msg) {
     die sprintf( "%s at %s line %d\n", $msg, $self->source_file, $self->{line_number} );
 }
 

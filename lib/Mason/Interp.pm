@@ -7,6 +7,7 @@ use Mason::Request;
 use Mason::Types;
 use Mason::Util qw(mason_canon_path);
 use Memoize;
+use Method::Signatures::Simple;
 use Moose::Util::TypeConstraints;
 use Moose;
 use MooseX::StrictConstructor;
@@ -39,9 +40,7 @@ has 'compiler_params'        => ( is => 'ro', init_arg => undef );
 has 'default_request_params' => ( is => 'ro', init_arg => undef );
 has 'id'                     => ( is => 'ro', init_arg => undef );
 
-sub BUILD {
-    my ( $self, $params ) = @_;
-
+method BUILD($params) {
     $self->{code_cache} = {};
     $self->{id}         = $interp_id++;
 
@@ -54,14 +53,16 @@ sub BUILD {
     # Separate out compiler and request parameters
     #
     $self->{compiler_params} = {};
-    my %is_compiler_attribute = map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
+    my %is_compiler_attribute =
+      map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
     foreach my $key ( keys(%$params) ) {
         if ( $is_compiler_attribute{$key} ) {
             $self->{compiler_params}->{$key} = delete( $params->{$key} );
         }
     }
     $self->{default_request_params} = {};
-    my %is_request_attribute = map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
+    my %is_request_attribute =
+      map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
     foreach my $key ( keys(%$params) ) {
         if ( $is_request_attribute{$key} ) {
             $self->{default_request_params}->{$key} = delete( $params->{$key} );
@@ -69,18 +70,15 @@ sub BUILD {
     }
 }
 
-sub _build_compiler {
-    my $self = shift;
+method _build_compiler() {
     return $self->compiler_class->new( %{ $self->compiler_params } );
 }
 
-sub _build_component_class_prefix {
-    my $self = shift;
+method _build_component_class_prefix() {
     return "MC" . $self->{id};
 }
 
-sub run {
-    my $self = shift;
+method run() {
     my %request_params;
     while ( ref( $_[0] ) eq 'HASH' ) {
         %request_params = ( %request_params, %{ shift(@_) } );
@@ -90,15 +88,17 @@ sub run {
     $request->run( $path, @_ );
 }
 
-sub srun {
-    my $self = shift;
+method srun() {
     $self->run( { out_method => \my $output }, @_ );
     return $output;
 }
 
-sub build_request {
-    my $self = shift;
+method build_request() {
     return $self->request_class->new( interp => $self, %{ $self->default_request_params }, @_ );
+}
+
+method flush_load_cache() {
+    Memoize::flush_cache('load');
 }
 
 # Loads the component in $path; returns a component class, or undef if not
@@ -107,17 +107,9 @@ sub build_request {
 # The memoize cache is cleared at the beginning of each request, or in
 # static_source_mode, when the purge file is touched.
 #
-memoize('load');
-
-sub flush_load_cache {
-    Memoize::flush_cache('load');
-}
-
-sub load {
-    my ( $self, $path ) = @_;
+method load($path) {
 
     # Canonicalize path
-    #
     $path = Mason::Util::mason_canon_path($path);
 
     # Split path into dir_path and base_name - validate that it has a
@@ -187,9 +179,9 @@ sub load {
     return $compc;
 }
 
-sub load_class_from_object_file {
-    my ( $self, $compc, $object_file, $path, $default_parent_compc ) = @_;
+memoize('load');
 
+method load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc ) {
     my $flags = $self->extract_flags_from_object_file($object_file);
     my $parent_compc;
     if ( exists( $flags->{extends} ) ) {
@@ -222,8 +214,7 @@ sub load_class_from_object_file {
     }
 }
 
-sub extract_flags_from_object_file {
-    my ( $self, $object_file ) = @_;
+method extract_flags_from_object_file($object_file) {
     my $flags = {};
     open( my $fh, "<", $object_file );
     my $line = <$fh>;
@@ -238,9 +229,7 @@ sub extract_flags_from_object_file {
 #
 our $depth = 0;
 
-sub load_upwards {
-    my ( $self, $dir_path, $name, $skip ) = @_;
-
+method load_upwards( $dir_path, $name, $skip ) {
     local $depth = $depth + 1;
     die "blah" if $depth > 10;
     if ($skip) {
@@ -258,9 +247,7 @@ sub load_upwards {
     }
 }
 
-sub source_file_for_path {
-    my ( $self, $path ) = @_;
-
+method source_file_for_path($path) {
     foreach my $root_path ( @{ $self->comp_root } ) {
         my $source_file = $root_path . $path;
         return $source_file if -f $source_file;
@@ -268,16 +255,12 @@ sub source_file_for_path {
     return undef;
 }
 
-sub object_file_for_path {
-    my ( $self, $path ) = @_;
-
+method object_file_for_path($path) {
     return catfile( $self->object_dir, $self->compiler->compiler_id, ( split /\//, $path ), )
       . $self->object_file_extension;
 }
 
-sub comp_class_for_path {
-    my ( $self, $path ) = @_;
-
+method comp_class_for_path($path) {
     my $classname = substr( $path, 1 );
     $classname =~ s/[^\w]/_/g;
     $classname =~ s/\//::/g;
@@ -285,19 +268,15 @@ sub comp_class_for_path {
     return $classname;
 }
 
-sub object_create_marker_file {
-    my $self = shift;
+method object_create_marker_file() {
     return catfile( $self->object_dir, '.__obj_create_marker' );
 }
 
-sub object_dir {
-    my $self = shift;
+method object_dir() {
     return catdir( $self->data_dir, 'obj' );
 }
 
-sub _make_object_dir {
-    my ($self) = @_;
-
+method _make_object_dir() {
     my $object_dir = $self->object_dir;
     if ( !-f $object_dir ) {
         make_path($object_dir);
@@ -311,9 +290,7 @@ sub _make_object_dir {
 # changed since we last checked. If it has, clear the code cache and
 # object files if appropriate.
 #
-sub check_static_source_touch_file {
-    my $self = shift;
-
+method check_static_source_touch_file() {
     if ( my $touch_file = $self->static_source_touch_file ) {
         return unless -f $touch_file;
         my $touch_file_lastmod = ( stat($touch_file) )[9];

@@ -5,6 +5,7 @@ use Guard;
 use Log::Any qw($log);
 use Mason::TieHandle;
 use Mason::Types;
+use Method::Signatures::Simple;
 use Moose;
 use Scalar::Util qw(blessed);
 use strict;
@@ -25,16 +26,14 @@ has 'request_code_cache' => ( is => 'ro', init_arg => undef );
 
 # Class attributes
 our $current_request;
-sub current_request { $current_request }
+method current_request() { $current_request }
 
-sub BUILD {
-    my ( $self, $params ) = @_;
+method BUILD($params) {
     $self->push_buffer();
     $self->{request_code_cache} = {};
 }
 
-sub run {
-    my $self      = shift;
+method run() {
     my $path      = shift;
     my $wantarray = wantarray();
 
@@ -83,15 +82,12 @@ sub run {
     return $self->aborted($err) ? $err->aborted_value : $retval;
 }
 
-sub clear_and_abort {
-    my $self = shift;
-
+method clear_and_abort() {
     $self->clear_buffer;
     $self->abort(@_);
 }
 
-sub abort {
-    my ( $self, $aborted_value ) = @_;
+method abort($aborted_value) {
     Mason::Exception::Abort->throw(
         error         => 'Request->abort was called',
         aborted_value => $aborted_value
@@ -101,31 +97,28 @@ sub abort {
 #
 # Determine whether $err (or $@ by default) is an Abort exception.
 #
-sub aborted {
-    my ( $self, $err ) = @_;
-    $err = $@ if !defined($err);
+method aborted($err) {
+    $err = $@
+      if !defined($err);
     return blessed($err) && $err->isa('Mason::Exception::Abort');
 }
 
 #
 # Determine whether $err (or $@ by default) is a Decline exception.
 #
-sub declined {
-    my ( $self, $err ) = @_;
-    $err = $@ if !defined($err);
+method declined($err) {
+    $err = $@
+      if !defined($err);
     return blessed($err) && $err->isa('Mason::Exception::Decline');
 }
 
-sub _aborted_or_declined {
-    my ( $self, $err ) = @_;
+method _aborted_or_declined($err) {
     return $self->aborted($err) || $self->declined($err);
 }
 
 # Return a CHI cache object specific to this component.
 #
-sub cache {
-    my ( $self, %options ) = @_;
-
+method cache(%options) {
     my $chi_root_class = $self->interp->chi_root_class;
     load_class($chi_root_class);
     if ( !exists( $options{namespace} ) ) {
@@ -138,21 +131,18 @@ sub cache {
     return $chi_root_class->new(%options);
 }
 
-sub comp_exists {
-    my ( $self, $path ) = @_;
-
+method comp_exists($path) {
     return $self->load($path) ? 1 : 0;
 }
 
-sub decline {
+method decline() {
 
     # TODO
 }
 
-sub fetch_comp {
-    my $self = shift;
-    my $path = shift;
+method fetch_comp() {
 
+    my $path = shift;
     return undef unless defined($path);
 
     # Make absolute based on current component path
@@ -172,17 +162,14 @@ sub fetch_comp {
     return $comp;
 }
 
-sub fetch_comp_or_die {
-    my $self = shift;
+method fetch_comp_or_die() {
     my $comp = $self->fetch_comp(@_)
       or croak sprintf( "could not find component for path '%s' - component root is [%s]",
         $_[0], join( ", ", @{ $self->interp->comp_root } ) );
     return $comp;
 }
 
-sub print {
-    my $self = shift;
-
+method print() {
     my $buffer = $self->current_buffer;
     for (@_) {
         $$buffer .= $_ if defined;
@@ -191,38 +178,32 @@ sub print {
 
 # Execute the given component
 #
-sub comp {
-    my $self = shift;
-
+method comp() {
     $self->fetch_comp_or_die(@_)->main();
 }
 
 # Like comp, but return component output.
 #
-sub scomp {
-    my $self = shift;
+method scomp() {
     $self->capture( \my $buf, sub { $self->comp(@_) } );
     return $buf;
 }
 
-sub notes {
-    my $self = shift;
-    return $self->{notes} unless @_;
+method notes() {
+    return $self->{notes}
+      unless @_;
     my $key = shift;
     return $self->{notes}->{$key} unless @_;
     return $self->{notes}->{$key} = shift;
 }
 
-sub clear_buffer {
-    my $self = shift;
+method clear_buffer() {
     foreach my $buffer ( $self->buffer_stack ) {
         $$buffer = '';
     }
 }
 
-sub flush_buffer {
-    my $self = shift;
-
+method flush_buffer() {
     my $request_buffer = $self->request_buffer;
     $self->out_method->($$request_buffer)
       if length $$request_buffer;
@@ -237,28 +218,24 @@ sub debug_hook {
     1;
 }
 
-sub log {
-    my ($self) = @_;
+method log() {
     return $self->current_comp->comp_logger();
 }
 
 # Buffer stack
 #
-sub push_buffer { my $s = ''; push( @{ $_[0]->{buffer_stack} }, \$s ) }
-sub pop_buffer { pop( @{ $_[0]->{buffer_stack} } ) }
-sub request_buffer { $_[0]->{buffer_stack}->[0] }
-sub current_buffer { $_[0]->{buffer_stack}->[-1] }
+method push_buffer() { my $s = ''; push( @{ $self->{buffer_stack} }, \$s ); }
+method pop_buffer()     { pop( @{ $self->{buffer_stack} } ) }
+method request_buffer() { $self->{buffer_stack}->[0]; }
+method current_buffer() { $self->{buffer_stack}->[-1] }
 
-sub capture {
-    my ( $self, $output_ref, $code ) = @_;
+method capture( $output_ref, $code ) {
     $self->push_buffer;
     scope_guard { $$output_ref = ${ $self->current_buffer }; $self->pop_buffer };
     $code->();
 }
 
-sub apply_immediate_filter {
-    my ( $self, $filter_code, $code ) = @_;
-
+method apply_immediate_filter( $filter_code, $code ) {
     $self->push_buffer;
     scope_guard {
         my $output = $filter_code->( ${ $self->current_buffer } );

@@ -1,3 +1,4 @@
+## Please see file perltidy.ERR
 # Copyright (c) 1998-2005 by Jonathan Swartz. All rights reserved.
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
@@ -10,6 +11,7 @@ use File::Slurp;
 use Mason::Compilation;
 use Mason::Types;
 use Mason::Util qw(checksum);
+use Method::Signatures::Simple;
 use Moose;
 use strict;
 use warnings;
@@ -32,18 +34,16 @@ has 'valid_flags_hash' => ( is => 'ro', lazy_build => 1, init_arg => undef );
 
 # Default list of blocks - may be augmented in subclass
 #
-sub _build_block_types {
+method _build_block_types () {
     return [qw(class doc flags filter init perl text)];
 }
 
-sub _build_block_regex {
-    my $self = shift;
+method _build_block_regex () {
     my $re = join '|', @{ $self->block_types };
     return qr/$re/i;
 }
 
-sub _build_compiler_id {
-    my $self = shift;
+method _build_compiler_id () {
 
     # TODO - collect all attributes automatically
     my @vals = ( 'Mason::VERSION', $Mason::VERSION );
@@ -55,17 +55,16 @@ sub _build_compiler_id {
     return checksum($dumped_vals);
 }
 
-sub _build_valid_flags_hash {
-    my $self = shift;
+method _build_valid_flags_hash () {
     return { map { ( $_, 1 ) } @{ $self->valid_flags } };
 }
 
 # Like [a-zA-Z_] but respects locales
-sub escape_flag_regex { qr/[[:alpha:]_]\w*/ }
+method escape_flag_regex () {
+    return qr/[[:alpha:]_]\w*/;
+}
 
-sub compile {
-    my ( $self, $interp, $source_file, $path ) = @_;
-
+method compile( $interp, $source_file, $path ) {
     my $compilation = $self->compilation_class->new(
         interp      => $interp,
         source_file => $source_file,
@@ -75,8 +74,7 @@ sub compile {
     return $compilation->compile();
 }
 
-sub compile_to_file {
-    my ( $self, $interp, $source_file, $path, $dest_file ) = @_;
+method compile_to_file( $interp, $source_file, $path, $dest_file ) {
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not

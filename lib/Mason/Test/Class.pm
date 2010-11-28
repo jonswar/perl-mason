@@ -5,6 +5,7 @@ use File::Path;
 use File::Slurp;
 use File::Temp qw(tempdir);
 use Mason::Interp;
+use Method::Signatures::Simple;
 use Test::Exception;
 use Test::More;
 use strict;
@@ -28,26 +29,20 @@ sub _startup : Test(startup) {
     );
 }
 
-sub add_comp {
-    my ( $self, %params ) = @_;
-
+method add_comp(%params) {
     my $path   = $params{path}      || die "must pass path";
     my $source = $params{component} || die "must pass component";
     my $source_file = join( "/", $self->{comp_root}, $path );
-    mkpath_and_write_file( $source_file, $source );
+    $self->mkpath_and_write_file( $source_file, $source );
 }
 
-sub remove_comp {
-    my ( $self, %params ) = @_;
-
+method remove_comp(%params) {
     my $path = $params{path} || die "must pass path";
     my $source_file = join( "/", $self->{comp_root}, $path );
     unlink($source_file);
 }
 
-sub test_comp {
-    my ( $self, %params ) = @_;
-
+method test_comp(%params) {
     my $caller = ( caller(1) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
     my $path         = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) );
@@ -68,9 +63,7 @@ sub test_comp {
     }
 }
 
-sub mkpath_and_write_file {
-    my ( $source_file, $source ) = @_;
-
+method mkpath_and_write_file( $source_file, $source ) {
     mkpath( dirname($source_file), 0, 0775 );
     write_file( $source_file, $source );
 }
