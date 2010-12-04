@@ -1,4 +1,3 @@
-## Please see file perltidy.ERR
 # Copyright (c) 1998-2005 by Jonathan Swartz. All rights reserved.
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
@@ -21,7 +20,8 @@ has 'allow_globals' => ( is => 'ro', default => sub { [] } );
 has 'compilation_class' => ( is => 'ro', default => 'Mason::Compilation' );
 has 'default_escape_flags' => ( is => 'ro', default => sub { [] } );
 has 'internal_component_regex' =>
-  ( is => 'ro', isa => 'Mason::Types::RegexpRefOrStr', default => sub { qr/\.mi$/ }, coerce => 1 );
+( is => 'ro', isa => 'Mason::Types::RegexpRefOrStr', default => sub { qr/\.mi$/ }, coerce => 1 );
+
 has 'no_source_line_numbers' => ( is => 'ro' );
 has 'perltidy_object_files'  => ( is => 'ro' );
 has 'valid_flags'            => ( is => 'ro', default => sub { ['extends'] } );
@@ -64,7 +64,7 @@ method escape_flag_regex () {
     return qr/[[:alpha:]_]\w*/;
 }
 
-method compile( $interp, $source_file, $path ) {
+method compile ( $interp, $source_file, $path ) {
     my $compilation = $self->compilation_class->new(
         interp      => $interp,
         source_file => $source_file,
@@ -74,7 +74,7 @@ method compile( $interp, $source_file, $path ) {
     return $compilation->compile();
 }
 
-method compile_to_file( $interp, $source_file, $path, $dest_file ) {
+method compile_to_file ( $interp, $source_file, $path, $dest_file ) {
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not
