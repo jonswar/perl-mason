@@ -21,7 +21,7 @@ my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
-has 'autohandler_names'        => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ 'autohandler.m', 'autohandler.pm' ] } );
+has 'autohandler_names'        => ( is => 'ro', isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'comp_root'                => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( is => 'ro', lazy_build => 1 );
 has 'compiler_class'           => ( is => 'ro', default    => 'Mason::Compiler' );
@@ -29,11 +29,12 @@ has 'component_class_prefix'   => ( is => 'ro', lazy_build => 1 );
 has 'component_base_class'     => ( is => 'ro', default    => 'Mason::Component' );
 has 'chi_root_class'           => ( is => 'ro' );
 has 'data_dir'                 => ( is => 'ro' );
-has 'dhandler_names'           => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ 'dhandler.pm', 'dhandler.m' ] } );
+has 'dhandler_names'           => ( is => 'ro', isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'object_file_extension'    => ( is => 'ro', default => '.obj.pm' );
 has 'request_class'            => ( is => 'ro', default => 'Mason::Request' );
 has 'static_source'            => ( is => 'ro' );
 has 'static_source_touch_file' => ( is => 'ro' );
+has 'top_level_extensions'     => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
 has 'code_cache'             => ( is => 'ro', init_arg => undef );
@@ -70,12 +71,20 @@ method BUILD ($params) {
     }
 }
 
+method _build_autohandler_names () {
+    return [ map { "autohandler" . $_ } @{ $self->top_level_extensions } ];
+}
+
 method _build_compiler () {
     return $self->compiler_class->new( %{ $self->compiler_params } );
 }
 
 method _build_component_class_prefix () {
     return "MC" . $self->{id};
+}
+
+method _build_dhandler_names () {
+    return [ map { "dhandler" . $_ } @{ $self->top_level_extensions } ];
 }
 
 method run () {
@@ -110,26 +119,18 @@ method flush_load_cache () {
 method load ($path) {
 
     # Canonicalize path
+    #
     $path = Mason::Util::mason_canon_path($path);
-
-    # Split path into dir_path and base_name - validate that it has a
-    # starting slash and ends with at least one non-slash character
-    #
-    my ( $dir_path, $base_name ) = ( $path =~ m{^(/.*?)/?([^/]+)$} )
-      or die "not a valid absolute component path - '$path'";
-
-    # Determine default parent component class for component
-    #
-    my $default_parent_compc =
-      $self->load_upwards( $dir_path, $self->autohandler_names,
-        ( grep { $_ eq $base_name } @{ $self->autohandler_names } ) ? 1 : 0 )
-      || $self->component_base_class;
 
     # Resolve path to source file
     #
     my $source_file = $self->source_file_for_path($path)
       or return undef;
     my $source_lastmod = ( stat($source_file) )[9];
+
+    # Determine default parent comp
+    #
+    my $default_parent_compc = $self->default_parent_compc($path);
 
     # If code cache contains an entry for this source file and it is up to
     # date, return the cached comp.
@@ -155,10 +156,10 @@ method load ($path) {
     my $object_file = $self->object_file_for_path($path);
     my @stat        = stat $object_file;
     if ( @stat && !-f _ ) {
-        die "The object file '$object_file' exists but it is not a file!";
+        die "'$object_file' exists but it is not a file!";
     }
     my $object_lastmod = @stat ? $stat[9] : 0;
-    if ( $object_lastmod < $source_lastmod && !$self->static_source ) {
+    if ( !$object_lastmod || ( $object_lastmod < $source_lastmod && !$self->static_source ) ) {
         $self->compiler->compile_to_file( $self, $source_file, $path, $object_file );
     }
 
@@ -182,24 +183,8 @@ method load ($path) {
 memoize('load');
 
 method load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
-    my $flags = $self->extract_flags_from_object_file($object_file);
-    my $parent_compc;
-    if ( exists( $flags->{extends} ) ) {
-        my $extends = $flags->{extends};
-        if ( defined($extends) ) {
-            $extends = mason_canon_path( join( "/", dirname($path), $extends ) )
-              if substr( $extends, 0, 1 ) ne '/';
-            $parent_compc = $self->load($extends)
-              or die "could not load '$extends' for extends flag";
-        }
-        else {
-            $parent_compc = $self->component_base_class;
-        }
-    }
-    else {
-        $parent_compc = $default_parent_compc;
-    }
-
+    my $parent_compc = $self->determine_parent_compc_from_object_file( $object_file, $path )
+      || $default_parent_compc;
     eval(
         sprintf(
             'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
@@ -214,6 +199,24 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     }
 }
 
+method determine_parent_compc_from_object_file ($object_file, $path) {
+    my $flags = $self->extract_flags_from_object_file($object_file);
+    my $parent_compc;
+    if ( exists( $flags->{extends} ) ) {
+        my $extends = $flags->{extends};
+        if ( defined($extends) ) {
+            $extends = mason_canon_path( join( "/", dirname($path), $extends ) )
+              if substr( $extends, 0, 1 ) ne '/';
+            $parent_compc = $self->load($extends)
+              or die "could not load '$extends' for extends flag";
+        }
+        else {
+            $parent_compc = $self->component_base_class;
+        }
+    }
+    return $parent_compc;
+}
+
 method extract_flags_from_object_file ($object_file) {
     my $flags = {};
     open( my $fh, "<", $object_file );
@@ -224,26 +227,40 @@ method extract_flags_from_object_file ($object_file) {
     return $flags;
 }
 
-# Search for component <names> in the parents of <dir_path>. Return the
-# component class or undef if we reach '/'. Skip <skip> initial directories.
+# Given /foo/bar.m, look for (by default):
+#   /foo/autohandler.pm, /foo/autohandler.m,
+#   /autohandler.pm, /autohandler.m
 #
-method load_upwards ( $dir_path, $names, $skip ) {
-    if ($skip) {
-        $skip--;
-    }
-    elsif (
-        my $compc = first { defined }
-        map { $self->load( $dir_path . ( $dir_path eq '/' ? '' : '/' ) . $_ ) } @$names
-      )
-    {
-        return $compc;
-    }
-    if ( $dir_path eq '/' ) {
-        return undef;
-    }
-    else {
-        $dir_path = dirname($dir_path);
-        return $self->load_upwards( $dir_path, $names, $skip );
+method default_parent_compc ($path) {
+
+    # Split path into dir_path and base_name - validate that it has a
+    # starting slash and ends with at least one non-slash character
+    #
+    my ( $dir_path, $base_name ) = ( $path =~ m{^(/.*?)/?([^/]+)$} )
+      or die "not a valid absolute component path - '$path'";
+    $path = $dir_path;
+
+    my @autohandler_subpaths = map { "/$_" } @{ $self->autohandler_names };
+    my $skip = ( grep { $_ eq $base_name } @{ $self->autohandler_names } ) ? 1 : 0;
+    while (1) {
+        if ($skip) {
+            $skip--;
+        }
+        else {
+            my @candidates =
+              ( $path eq '/' )
+              ? @autohandler_subpaths
+              : ( map { $path . $_ } @autohandler_subpaths );
+            foreach my $candidate (@candidates) {
+                if ( my $compc = $self->load($candidate) ) {
+                    return $compc;
+                }
+            }
+        }
+        if ( $path eq '/' ) {
+            return $self->component_base_class;
+        }
+        $path = dirname($path);
     }
 }
 

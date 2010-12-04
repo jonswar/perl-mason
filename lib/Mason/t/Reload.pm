@@ -9,7 +9,7 @@ sub test_reload : Test(11) {
     my $class;
 
     $self->add_comp(
-        path      => "/reload",
+        path      => "/reload.m",
         component => <<'EOF',
 <%class>
 sub foo { 'foo' }
@@ -19,7 +19,7 @@ Foo
 EOF
     );
     is( $self->{interp}->srun("/reload"), "Foo\n", "before reload" );
-    $class = $self->{interp}->load("/reload");
+    $class = $self->{interp}->load("/reload.m");
     is( $class->foo(), 'foo',  "method foo" );
     is( $class->baz(), 'baz1', "method baz" );
     ok( $class->can('foo'),  "can call foo before reload" );
@@ -29,7 +29,7 @@ EOF
     sleep(1);    # so timestamp will be different
 
     $self->add_comp(
-        path      => "/reload",
+        path      => "/reload.m",
         component => <<'EOF',
 <%class>
 sub bar { 'bar' }

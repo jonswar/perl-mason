@@ -61,14 +61,17 @@ method test_comp (%params) {
     my $expect_error = $params{expect_error};
     croak "must pass either expect or expect_error" unless $expect || $expect_error;
 
+    ( my $run_path = $path ) =~ s/\.m$//;
+    $path .= ".m" if $path !~ /\.m$/;
+
     $self->add_comp( path => $path, component => $source );
     if ($expect_error) {
         $desc ||= $expect_error;
-        throws_ok( sub { $self->{interp}->srun($path) }, $expect_error, $desc );
+        throws_ok( sub { $self->{interp}->srun($run_path) }, $expect_error, $desc );
     }
     else {
         $desc ||= $caller;
-        is( $self->{interp}->srun($path), $expect, $desc );
+        is( $self->{interp}->srun($run_path), $expect, $desc );
     }
 }
 

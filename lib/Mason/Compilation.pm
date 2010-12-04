@@ -68,7 +68,7 @@ method _match_named_block () {
     $self->_match_block( qr/\G(\n?)<%(method)(?:\s+([^\n^>]+))?>/, 1 );
 }
 
-method _match_block( $regex, $named ) {
+method _match_block ( $regex, $named ) {
     if ( $self->{source} =~ /$regex/gcs ) {
         my ( $preceding_newline, $block_type, $name ) = ( $1, $2, $3 );
 
@@ -96,7 +96,7 @@ method _match_block( $regex, $named ) {
     return 0;
 }
 
-method _match_block_end($block_type) {
+method _match_block_end ($block_type) {
     my $re = qr,\G(.*?)</%\Q$block_type\E>(\n?\n?),is;
     if ( $self->{source} =~ /$re/gc ) {
         return ( $1, $2 );
@@ -268,7 +268,7 @@ method _output_comp_info () {
     my %comp_info = (
         comp_dir_path    => $self->dir_path,
         comp_path        => $self->path,
-        comp_is_internal => ( $self->path =~ $self->compiler->internal_component_regex ? 1 : 0 ),
+        comp_is_external => $self->compiler->is_external_comp_path( $self->path ),
     );
     return sprintf( 'sub _comp_info { return %s }', dump_one_line( \%comp_info ) );
 }
@@ -284,7 +284,7 @@ method _output_methods () {
     );
 }
 
-method _output_method($method_name) {
+method _output_method ($method_name) {
     my $path = $self->path;
 
     my $method = $self->{methods}->{$method_name};
@@ -330,16 +330,16 @@ method _output_line_number_comment () {
     return "";
 }
 
-method _handle_class_block($contents) {
+method _handle_class_block ($contents) {
     $self->_assert_not_in_method('<%class>');
     $self->{blocks}->{class} = $self->_output_line_number_comment . $contents;
 }
 
-method _handle_init_block($contents) {
+method _handle_init_block ($contents) {
     $self->{current_method}->{init} = $self->_output_line_number_comment . $contents;
 }
 
-method _handle_method_block( $contents, $name ) {
+method _handle_method_block ( $contents, $name ) {
     $self->_assert_not_in_method('<%method>');
 
     $self->throw_syntax_error("Invalid method name '$name'")
@@ -369,11 +369,11 @@ method _handle_doc_block () {
     # Don't do anything - just discard the comment.
 }
 
-method _handle_filter_block($contents) {
+method _handle_filter_block ($contents) {
     $self->{current_method}->{filter} = $self->_output_line_number_comment . $contents;
 }
 
-method _handle_flags_block($contents) {
+method _handle_flags_block ($contents) {
     my $ending = qr, (?: \n |           # newline or
                          (?= </%flags> ) )   # end of block (don't consume it)
                    ,ix;
@@ -413,13 +413,13 @@ method _handle_flags_block($contents) {
     }
 }
 
-method _handle_perl_block($contents) {
+method _handle_perl_block ($contents) {
     $self->_add_to_current_method($contents);
 
     $self->{last_code_type} = 'perl_block';
 }
 
-method _handle_text_block($contents) {
+method _handle_text_block ($contents) {
     $contents =~ s,([\'\\]),\\$1,g;
 
     $self->_add_to_current_method("\$\$_buffer .= '$contents';\n");
@@ -427,7 +427,7 @@ method _handle_text_block($contents) {
     $self->{last_code_type} = 'text';
 }
 
-method _handle_substitution( $text, $escape ) {
+method _handle_substitution ( $text, $escape ) {
 
     # This is a comment tag if all lines of text contain only whitespace
     # or start with whitespace and a comment marker, e.g.
@@ -476,7 +476,7 @@ method _handle_substitution( $text, $escape ) {
     $self->{last_code_type} = 'substitution';
 }
 
-method _handle_component_call($contents) {
+method _handle_component_call ($contents) {
     my ( $prespace, $call, $postspace ) = ( $contents =~ /(\s*)(.*)(\s*)/s );
     if ( $call =~ m,^[\w/.], ) {
         my $comma = index( $call, ',' );
@@ -491,7 +491,7 @@ method _handle_component_call($contents) {
     $self->{last_code_type} = 'component_call';
 }
 
-method _handle_perl_line($contents) {
+method _handle_perl_line ($contents) {
     my $code = "$contents\n";
 
     $self->_add_to_current_method($code);
@@ -499,7 +499,7 @@ method _handle_perl_line($contents) {
     $self->{last_code_type} = 'perl_line';
 }
 
-method _handle_plain_text($text) {
+method _handle_plain_text ($text) {
 
     # Escape single quotes and backslashes
     #
@@ -509,7 +509,7 @@ method _handle_plain_text($text) {
     $self->_add_to_current_method($code);
 }
 
-method _assert_not_in_method($entity) {
+method _assert_not_in_method ($entity) {
     if ( $self->{in_method_block} ) {
         $self->throw_syntax_error("$entity not permitted inside <%method> block");
     }
@@ -519,7 +519,7 @@ method _new_method_hash () {
     return { body => '', init => '' };
 }
 
-method _add_to_current_method($text) {
+method _add_to_current_method ($text) {
 
     # Don't add a line number comment when following a perl-line.
     # We know a perl-line is always _one_ line, so we know that the
@@ -534,7 +534,7 @@ method _add_to_current_method($text) {
     $self->{current_method}->{body} .= $text;
 }
 
-method throw_syntax_error($msg) {
+method throw_syntax_error ($msg) {
     die sprintf( "%s at %s line %d\n", $msg, $self->source_file, $self->{line_number} );
 }
 

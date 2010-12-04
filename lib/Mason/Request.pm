@@ -55,12 +55,10 @@ method run () {
 
     # Find request component class.
     #
-    my ( $compc, $path_info );
-    if ( !( $compc = $self->fetch_compc($path) ) ) {
-        ( $compc, $path_info ) = $self->fetch_compc_upwards( $path, $self->interp->dhandler_names );
-        $self->comp_not_found($path) if !defined($compc);
-        $self->{path_info} = $path_info;
-    }
+    my ( $compc, $path_info ) = $self->top_level_path_to_component($path);
+    $self->comp_not_found($path) if !defined($compc);
+    $self->{path_info} = $path_info;
+
     my $request_comp = $compc->new( @_, comp_request => $self );
     $self->{request_comp} = $request_comp;
     $log->debugf( "starting request for '%s'", $request_comp->title )
@@ -95,24 +93,30 @@ method run () {
     return $self->aborted($err) ? $err->aborted_value : $retval;
 }
 
-method fetch_compc_upwards ($path, $dhandler_names, $path_info) {
-    my @candidates =
-      $path eq '/'
-      ? ( map { "/$_" } @$dhandler_names )
-      : ( $path, map { "$path/$_" } @$dhandler_names );
-    my ($compc) =
-      grep { defined && !$_->comp_is_internal }
-      map { $self->fetch_compc($_) } @candidates;
-    if ($compc) {
-        return ( $compc, $path_info );
-    }
-    elsif ( $path eq '/' ) {
-        return ();
-    }
-    else {
+# Given /foo/bar, look for (by default):
+#   /foo/bar.pm,  /foo/bar.m, /foo/bar/dhandler.pm, /foo/bar/dhandler.m
+#   /foo.pm,      /foo.m,     /foo/dhandler.pm,     /foo/dhandler.m,
+#   /dhandler.pm, /dhandler.m
+#
+method top_level_path_to_component ($path) {
+    my @dhandler_subpaths    = map { "/$_" } @{ $self->interp->dhandler_names };
+    my @top_level_extensions = @{ $self->interp->top_level_extensions };
+    my $path_info            = '';
+    while (1) {
+        my @candidates =
+          ( $path eq '/' )
+          ? @dhandler_subpaths
+          : ( map { $path . $_ } ( @top_level_extensions, @dhandler_subpaths ) );
+        foreach my $candidate (@candidates) {
+            my $compc = $self->fetch_compc($candidate);
+            if ( defined($compc) && $compc->comp_is_external ) {
+                return ( $compc, $path_info );
+            }
+        }
+        return () if $path eq '/';
         my $name = basename($path);
-        $path_info = join( "/", $name, ( defined($path_info) ? ($path_info) : () ) );
-        return $self->fetch_compc_upwards( dirname($path), $dhandler_names, $path_info );
+        $path_info = length($path_info) ? "$name/$path_info" : $name;
+        $path = dirname($path);
     }
 }
 

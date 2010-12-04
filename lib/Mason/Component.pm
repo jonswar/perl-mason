@@ -22,7 +22,7 @@ method _build_comp_logger () {
     return Log::Any->get_logger( category => $log_category );
 }
 
-foreach my $method qw(comp_path comp_dir_path comp_is_internal) {
+foreach my $method qw(comp_path comp_dir_path comp_is_external) {
     __PACKAGE__->meta->add_method( $method => sub { return $_[0]->_comp_info->{$method} } );
 }
 
