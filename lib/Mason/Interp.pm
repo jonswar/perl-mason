@@ -2,6 +2,7 @@ package Mason::Interp;
 use File::Basename;
 use File::Spec::Functions qw(canonpath catdir catfile);
 use Guard;
+use List::Util qw(first);
 use Mason::Compiler;
 use Mason::Request;
 use Mason::Types;
@@ -20,7 +21,7 @@ my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
-has 'autohandler_name'         => ( is => 'ro', default    => 'autohandler' );
+has 'autohandler_names'        => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ 'autohandler.m', 'autohandler.pm' ] } );
 has 'comp_root'                => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( is => 'ro', lazy_build => 1 );
 has 'compiler_class'           => ( is => 'ro', default    => 'Mason::Compiler' );
@@ -28,7 +29,7 @@ has 'component_class_prefix'   => ( is => 'ro', lazy_build => 1 );
 has 'component_base_class'     => ( is => 'ro', default    => 'Mason::Component' );
 has 'chi_root_class'           => ( is => 'ro' );
 has 'data_dir'                 => ( is => 'ro' );
-has 'dhandler_names'           => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ 'dhandler.m', 'dhandler.pm' ] } );
+has 'dhandler_names'           => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ 'dhandler.pm', 'dhandler.m' ] } );
 has 'object_file_extension'    => ( is => 'ro', default => '.obj.pm' );
 has 'request_class'            => ( is => 'ro', default => 'Mason::Request' );
 has 'static_source'            => ( is => 'ro' );
@@ -120,8 +121,8 @@ method load ($path) {
     # Determine default parent component class for component
     #
     my $default_parent_compc =
-      $self->load_upwards( $dir_path, $self->autohandler_name,
-        $base_name eq $self->autohandler_name ? 1 : 0 )
+      $self->load_upwards( $dir_path, $self->autohandler_names,
+        ( grep { $_ eq $base_name } @{ $self->autohandler_names } ) ? 1 : 0 )
       || $self->component_base_class;
 
     # Resolve path to source file
@@ -223,14 +224,18 @@ method extract_flags_from_object_file ($object_file) {
     return $flags;
 }
 
-# Search for component <name> in the parents of <dir_path>. Return the
+# Search for component <names> in the parents of <dir_path>. Return the
 # component class or undef if we reach '/'. Skip <skip> initial directories.
 #
-method load_upwards ( $dir_path, $name, $skip ) {
+method load_upwards ( $dir_path, $names, $skip ) {
     if ($skip) {
         $skip--;
     }
-    elsif ( my $compc = $self->load( $dir_path . ( $dir_path eq '/' ? '' : '/' ) . $name ) ) {
+    elsif (
+        my $compc = first { defined }
+        map { $self->load( $dir_path . ( $dir_path eq '/' ? '' : '/' ) . $_ ) } @$names
+      )
+    {
         return $compc;
     }
     if ( $dir_path eq '/' ) {
@@ -238,7 +243,7 @@ method load_upwards ( $dir_path, $name, $skip ) {
     }
     else {
         $dir_path = dirname($dir_path);
-        return $self->load_upwards( $dir_path, $name, $skip );
+        return $self->load_upwards( $dir_path, $names, $skip );
     }
 }
 
