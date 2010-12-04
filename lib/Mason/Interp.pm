@@ -20,15 +20,15 @@ my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
-has 'autohandler_name'       => ( is => 'ro', default    => 'autohandler' );
-has 'comp_root'              => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
-has 'compiler'               => ( is => 'ro', lazy_build => 1 );
-has 'compiler_class'         => ( is => 'ro', default    => 'Mason::Compiler' );
-has 'component_class_prefix' => ( is => 'ro', lazy_build => 1 );
-has 'component_base_class'   => ( is => 'ro', default    => 'Mason::Component' );
+has 'autohandler_name'         => ( is => 'ro', default    => 'autohandler' );
+has 'comp_root'                => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
+has 'compiler'                 => ( is => 'ro', lazy_build => 1 );
+has 'compiler_class'           => ( is => 'ro', default    => 'Mason::Compiler' );
+has 'component_class_prefix'   => ( is => 'ro', lazy_build => 1 );
+has 'component_base_class'     => ( is => 'ro', default    => 'Mason::Component' );
 has 'chi_root_class'           => ( is => 'ro' );
 has 'data_dir'                 => ( is => 'ro' );
-has 'dhandler_name'            => ( is => 'ro' );
+has 'dhandler_names'           => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ 'dhandler.m', 'dhandler.pm' ] } );
 has 'object_file_extension'    => ( is => 'ro', default => '.obj.pm' );
 has 'request_class'            => ( is => 'ro', default => 'Mason::Request' );
 has 'static_source'            => ( is => 'ro' );
@@ -40,7 +40,7 @@ has 'compiler_params'        => ( is => 'ro', init_arg => undef );
 has 'default_request_params' => ( is => 'ro', init_arg => undef );
 has 'id'                     => ( is => 'ro', init_arg => undef );
 
-method BUILD($params) {
+method BUILD ($params) {
     $self->{code_cache} = {};
     $self->{id}         = $interp_id++;
 
@@ -69,15 +69,15 @@ method BUILD($params) {
     }
 }
 
-method _build_compiler() {
+method _build_compiler () {
     return $self->compiler_class->new( %{ $self->compiler_params } );
 }
 
-method _build_component_class_prefix() {
+method _build_component_class_prefix () {
     return "MC" . $self->{id};
 }
 
-method run() {
+method run () {
     my %request_params;
     while ( ref( $_[0] ) eq 'HASH' ) {
         %request_params = ( %request_params, %{ shift(@_) } );
@@ -87,16 +87,16 @@ method run() {
     $request->run( $path, @_ );
 }
 
-method srun() {
+method srun () {
     $self->run( { out_method => \my $output }, @_ );
     return $output;
 }
 
-method build_request() {
+method build_request () {
     return $self->request_class->new( interp => $self, %{ $self->default_request_params }, @_ );
 }
 
-method flush_load_cache() {
+method flush_load_cache () {
     Memoize::flush_cache('load');
 }
 
@@ -106,7 +106,7 @@ method flush_load_cache() {
 # The memoize cache is cleared at the beginning of each request, or in
 # static_source_mode, when the purge file is touched.
 #
-method load($path) {
+method load ($path) {
 
     # Canonicalize path
     $path = Mason::Util::mason_canon_path($path);
@@ -180,7 +180,7 @@ method load($path) {
 
 memoize('load');
 
-method load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc ) {
+method load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
     my $flags = $self->extract_flags_from_object_file($object_file);
     my $parent_compc;
     if ( exists( $flags->{extends} ) ) {
@@ -213,7 +213,7 @@ method load_class_from_object_file( $compc, $object_file, $path, $default_parent
     }
 }
 
-method extract_flags_from_object_file($object_file) {
+method extract_flags_from_object_file ($object_file) {
     my $flags = {};
     open( my $fh, "<", $object_file );
     my $line = <$fh>;
@@ -226,11 +226,7 @@ method extract_flags_from_object_file($object_file) {
 # Search for component <name> in the parents of <dir_path>. Return the
 # component class or undef if we reach '/'. Skip <skip> initial directories.
 #
-our $depth = 0;
-
-method load_upwards( $dir_path, $name, $skip ) {
-    local $depth = $depth + 1;
-    die "blah" if $depth > 10;
+method load_upwards ( $dir_path, $name, $skip ) {
     if ($skip) {
         $skip--;
     }
@@ -242,11 +238,11 @@ method load_upwards( $dir_path, $name, $skip ) {
     }
     else {
         $dir_path = dirname($dir_path);
-        return $self->load_upwards( $dir_path, $name, $skip, $depth + 1 );
+        return $self->load_upwards( $dir_path, $name, $skip );
     }
 }
 
-method source_file_for_path($path) {
+method source_file_for_path ($path) {
     foreach my $root_path ( @{ $self->comp_root } ) {
         my $source_file = $root_path . $path;
         return $source_file if -f $source_file;
@@ -254,12 +250,12 @@ method source_file_for_path($path) {
     return undef;
 }
 
-method object_file_for_path($path) {
+method object_file_for_path ($path) {
     return catfile( $self->object_dir, $self->compiler->compiler_id, ( split /\//, $path ), )
       . $self->object_file_extension;
 }
 
-method comp_class_for_path($path) {
+method comp_class_for_path ($path) {
     my $classname = substr( $path, 1 );
     $classname =~ s/[^\w]/_/g;
     $classname =~ s/\//::/g;
@@ -267,15 +263,15 @@ method comp_class_for_path($path) {
     return $classname;
 }
 
-method object_create_marker_file() {
+method object_create_marker_file () {
     return catfile( $self->object_dir, '.__obj_create_marker' );
 }
 
-method object_dir() {
+method object_dir () {
     return catdir( $self->data_dir, 'obj' );
 }
 
-method _make_object_dir() {
+method _make_object_dir () {
     my $object_dir = $self->object_dir;
     if ( !-f $object_dir ) {
         make_path($object_dir);
@@ -289,7 +285,7 @@ method _make_object_dir() {
 # changed since we last checked. If it has, clear the code cache and
 # object files if appropriate.
 #
-method check_static_source_touch_file() {
+method check_static_source_touch_file () {
     if ( my $touch_file = $self->static_source_touch_file ) {
         return unless -f $touch_file;
         my $touch_file_lastmod = ( stat($touch_file) )[9];

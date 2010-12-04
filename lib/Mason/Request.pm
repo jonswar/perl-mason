@@ -1,6 +1,7 @@
 package Mason::Request;
 use autodie qw(:all);
 use Carp;
+use File::Basename;
 use Guard;
 use Log::Any qw($log);
 use Mason::TieHandle;
@@ -8,6 +9,7 @@ use Mason::Types;
 use Method::Signatures::Simple;
 use Moose;
 use Scalar::Util qw(blessed);
+use Try::Tiny;
 use strict;
 use warnings;
 
@@ -16,24 +18,25 @@ my $default_out = sub { print $_[0] };
 # Passed attributes
 has 'interp' => ( is => 'ro', required => 1, weak_ref => 1 );
 has 'out_method' =>
-  ( is => 'ro', isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
+( is => 'ro', isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 
 # Derived attributes
 has 'buffer_stack'       => ( is => 'ro', init_arg => undef );
 has 'current_comp'       => ( is => 'ro', init_arg => undef );
+has 'path_info'          => ( is => 'ro', init_arg => undef, default => '' );
 has 'request_comp'       => ( is => 'ro', init_arg => undef );
 has 'request_code_cache' => ( is => 'ro', init_arg => undef );
 
 # Class attributes
 our $current_request;
-method current_request() { $current_request }
+method current_request () { $current_request }
 
-method BUILD($params) {
+method BUILD ($params) {
     $self->push_buffer();
     $self->{request_code_cache} = {};
 }
 
-method run() {
+method run () {
     my $path      = shift;
     my $wantarray = wantarray();
 
@@ -50,12 +53,22 @@ method run() {
     #
     $self->interp->check_static_source_touch_file();
 
-    # Fetch request component.
+    # Find request component class.
     #
-    my $request_comp = $self->fetch_comp_or_die( $path, @_ );
+    my ( $compc, $path_info );
+    if ( !( $compc = $self->fetch_compc($path) ) ) {
+        ( $compc, $path_info ) = $self->fetch_compc_upwards( $path, $self->interp->dhandler_names );
+        $self->comp_not_found($path) if !defined($compc);
+        $self->{path_info} = $path_info;
+    }
+    my $request_comp = $compc->new( @_, comp_request => $self );
     $self->{request_comp} = $request_comp;
     $log->debugf( "starting request for '%s'", $request_comp->title )
       if $log->is_debug;
+
+    # Flush interp load cache after request
+    #
+    scope_guard { $self->interp->flush_load_cache() };
 
     my ( $retval, $err );
     {
@@ -64,30 +77,51 @@ method run() {
         my $old = select TH;
         scope_guard { select $old };
 
-        $retval = eval { $request_comp->render() };
-        $err = $@;
+        try {
+            $retval = $request_comp->dispatch();
+        }
+        catch {
+            $err = $_;
+            die $err if !$self->_aborted_or_declined($err);
+        };
     }
-    die $err if $err && !$self->_aborted_or_declined;
 
     # Send output to its final destination
     #
     $self->flush_buffer;
-
-    # Flush interp load cache
-    #
-    $self->interp->flush_load_cache();
 
     # Return aborted value or result.
     #
     return $self->aborted($err) ? $err->aborted_value : $retval;
 }
 
-method clear_and_abort() {
+method fetch_compc_upwards ($path, $dhandler_names, $path_info) {
+    my @candidates =
+      $path eq '/'
+      ? ( map { "/$_" } @$dhandler_names )
+      : ( $path, map { "$path/$_" } @$dhandler_names );
+    my ($compc) =
+      grep { defined && !$_->comp_is_internal }
+      map { $self->fetch_compc($_) } @candidates;
+    if ($compc) {
+        return ( $compc, $path_info );
+    }
+    elsif ( $path eq '/' ) {
+        return ();
+    }
+    else {
+        my $name = basename($path);
+        $path_info = join( "/", $name, ( defined($path_info) ? ($path_info) : () ) );
+        return $self->fetch_compc_upwards( dirname($path), $dhandler_names, $path_info );
+    }
+}
+
+method clear_and_abort () {
     $self->clear_buffer;
     $self->abort(@_);
 }
 
-method abort($aborted_value) {
+method abort ($aborted_value) {
     Mason::Exception::Abort->throw(
         error         => 'Request->abort was called',
         aborted_value => $aborted_value
@@ -97,7 +131,7 @@ method abort($aborted_value) {
 #
 # Determine whether $err (or $@ by default) is an Abort exception.
 #
-method aborted($err) {
+method aborted ($err) {
     $err = $@
       if !defined($err);
     return blessed($err) && $err->isa('Mason::Exception::Abort');
@@ -106,19 +140,19 @@ method aborted($err) {
 #
 # Determine whether $err (or $@ by default) is a Decline exception.
 #
-method declined($err) {
+method declined ($err) {
     $err = $@
       if !defined($err);
     return blessed($err) && $err->isa('Mason::Exception::Decline');
 }
 
-method _aborted_or_declined($err) {
+method _aborted_or_declined ($err) {
     return $self->aborted($err) || $self->declined($err);
 }
 
 # Return a CHI cache object specific to this component.
 #
-method cache(%options) {
+method cache (%options) {
     my $chi_root_class = $self->interp->chi_root_class;
     load_class($chi_root_class);
     if ( !exists( $options{namespace} ) ) {
@@ -131,18 +165,16 @@ method cache(%options) {
     return $chi_root_class->new(%options);
 }
 
-method comp_exists($path) {
+method comp_exists ($path) {
     return $self->load($path) ? 1 : 0;
 }
 
-method decline() {
+method decline () {
 
     # TODO
 }
 
-method fetch_comp() {
-
-    my $path = shift;
+method fetch_compc ($path) {
     return undef unless defined($path);
 
     # Make absolute based on current component path
@@ -155,6 +187,14 @@ method fetch_comp() {
     my $compc = $self->interp->load($path)
       or return undef;
 
+    return $compc;
+}
+
+method fetch_comp () {
+    my $path  = shift;
+    my $compc = $self->fetch_compc($path);
+    return undef unless defined($compc);
+
     # Create and return a component instance
     #
     my $comp = $compc->new( @_, comp_request => $self );
@@ -162,14 +202,18 @@ method fetch_comp() {
     return $comp;
 }
 
-method fetch_comp_or_die() {
+method fetch_comp_or_die () {
     my $comp = $self->fetch_comp(@_)
-      or croak sprintf( "could not find component for path '%s' - component root is [%s]",
-        $_[0], join( ", ", @{ $self->interp->comp_root } ) );
+      or $self->comp_not_found( $_[0] );
     return $comp;
 }
 
-method print() {
+method comp_not_found ($path) {
+    croak sprintf( "could not find component for path '%s' - component root is [%s]",
+        $path, join( ", ", @{ $self->interp->comp_root } ) );
+}
+
+method print () {
     my $buffer = $self->current_buffer;
     for (@_) {
         $$buffer .= $_ if defined;
@@ -178,18 +222,18 @@ method print() {
 
 # Execute the given component
 #
-method comp() {
+method comp () {
     $self->fetch_comp_or_die(@_)->main();
 }
 
 # Like comp, but return component output.
 #
-method scomp() {
+method scomp () {
     $self->capture( \my $buf, sub { $self->comp(@_) } );
     return $buf;
 }
 
-method notes() {
+method notes () {
     return $self->{notes}
       unless @_;
     my $key = shift;
@@ -197,13 +241,13 @@ method notes() {
     return $self->{notes}->{$key} = shift;
 }
 
-method clear_buffer() {
+method clear_buffer () {
     foreach my $buffer ( $self->buffer_stack ) {
         $$buffer = '';
     }
 }
 
-method flush_buffer() {
+method flush_buffer () {
     my $request_buffer = $self->request_buffer;
     $self->out_method->($$request_buffer)
       if length $$request_buffer;
@@ -218,24 +262,24 @@ sub debug_hook {
     1;
 }
 
-method log() {
+method log () {
     return $self->current_comp->comp_logger();
 }
 
 # Buffer stack
 #
-method push_buffer() { my $s = ''; push( @{ $self->{buffer_stack} }, \$s ); }
-method pop_buffer()     { pop( @{ $self->{buffer_stack} } ) }
-method request_buffer() { $self->{buffer_stack}->[0]; }
-method current_buffer() { $self->{buffer_stack}->[-1] }
+method push_buffer () { my $s = ''; push( @{ $self->{buffer_stack} }, \$s ); }
+method pop_buffer ()     { pop( @{ $self->{buffer_stack} } ) }
+method request_buffer () { $self->{buffer_stack}->[0]; }
+method current_buffer () { $self->{buffer_stack}->[-1] }
 
-method capture( $output_ref, $code ) {
+method capture ( $output_ref, $code ) {
     $self->push_buffer;
     scope_guard { $$output_ref = ${ $self->current_buffer }; $self->pop_buffer };
     $code->();
 }
 
-method apply_immediate_filter( $filter_code, $code ) {
+method apply_immediate_filter ( $filter_code, $code ) {
     $self->push_buffer;
     scope_guard {
         my $output = $filter_code->( ${ $self->current_buffer } );
