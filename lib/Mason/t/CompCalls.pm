@@ -10,26 +10,27 @@ sub test_ampersand : Test(2) {
         path      => '/support/amper_test.mi',
         component => <<'EOF',
 amper_test.<p>
-% if (%{$self->comp_args}) {
+% if (%{$self->comp_attr}) {
 Arguments:<p>
-%   foreach my $key (sort keys %{$self->comp_args}) {
-<b><% $key %></b>: <% $self->comp_args->{$key} %><br>
+%   foreach my $key (sort keys %{$self->comp_attr}) {
+<b><% $key %></b>: <% $self->comp_attr->{$key} %><br>
 %   }
 % }
 EOF
     );
 
     $self->test_comp(
+        path      => '/support/amper_call.m',
         component => <<'EOF',
-<&support/amper_test.mi&>
-<& support/amper_test.mi &>
-<&  support/amper_test.mi, &>
-<& support/amper_test.mi
+<&/support/amper_test.mi&>
+<& amper_test.mi &>
+<&  amper_test.mi, &>
+<& /support/amper_test.mi
 &>
 <&
-support/amper_test.mi &>
+amper_test.mi &>
 <&
-support/amper_test.mi
+/support/amper_test.mi
 &>
 EOF
         expect => <<'EOF',

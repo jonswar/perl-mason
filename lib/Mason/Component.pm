@@ -13,7 +13,7 @@ has 'comp_attr' => ( is => 'ro', init_arg => undef );
 has 'comp_logger' => ( is => 'ro', init_arg => undef, lazy_build => 1 );
 
 method BUILD ($params) {
-    $self->{comp_args} = { map { /^comp_|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
+    $self->{comp_attr} = { map { /^comp_|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
 }
 
 method _build_comp_logger () {

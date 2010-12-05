@@ -22,7 +22,6 @@ has 'out_method' =>
 
 # Derived attributes
 has 'buffer_stack'       => ( is => 'ro', init_arg => undef );
-has 'current_comp'       => ( is => 'ro', init_arg => undef );
 has 'path_info'          => ( is => 'ro', init_arg => undef, default => '' );
 has 'request_comp'       => ( is => 'ro', init_arg => undef );
 has 'request_code_cache' => ( is => 'ro', init_arg => undef );
@@ -157,6 +156,21 @@ method declined ($err) {
 
 method _aborted_or_declined ($err) {
     return $self->aborted($err) || $self->declined($err);
+}
+
+# Determine current comp based on caller() stack.
+#
+method current_comp  () {
+    my $cnt = 1;
+    while (1) {
+        if ( my $pkg = ( caller($cnt) )[0] ) {
+            return $pkg if $pkg->isa('Mason::Component');
+        }
+        else {
+            confess("cannot determine current_comp from stack");
+        }
+        $cnt++;
+    }
 }
 
 # Return a CHI cache object specific to this component.
