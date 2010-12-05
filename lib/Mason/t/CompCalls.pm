@@ -7,7 +7,7 @@ sub test_ampersand : Test(2) {
     my $self = shift;
 
     $self->add_comp(
-        path      => '/support/amper_test',
+        path      => '/support/amper_test.mi',
         component => <<'EOF',
 amper_test.<p>
 % if (%{$self->comp_args}) {
@@ -21,15 +21,15 @@ EOF
 
     $self->test_comp(
         component => <<'EOF',
-<&support/amper_test&>
-<& support/amper_test &>
-<&  support/amper_test, &>
-<& support/amper_test
+<&support/amper_test.mi&>
+<& support/amper_test.mi &>
+<&  support/amper_test.mi, &>
+<& support/amper_test.mi
 &>
 <&
-support/amper_test &>
+support/amper_test.mi &>
 <&
-support/amper_test
+support/amper_test.mi
 &>
 EOF
         expect => <<'EOF',
@@ -49,13 +49,13 @@ EOF
     );
     $self->test_comp(
         component => <<'EOF',
-<& /support/amper_test, message=>'Hello World!'  &>
-<& support/amper_test, message=>'Hello World!',
+<& /support/amper_test.mi, message=>'Hello World!'  &>
+<& support/amper_test.mi, message=>'Hello World!',
    to=>'Joe' &>
-<& "support/amper_test" &>
+<& "support/amper_test.mi" &>
 % my $dir = "support";
 % my %args = (a=>17, b=>32);
-<& $dir . "/amper_test", %args &>
+<& $dir . "/amper_test.mi", %args &>
 EOF
         expect => <<'EOF',
 amper_test.<p>
