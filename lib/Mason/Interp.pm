@@ -270,10 +270,6 @@ method default_parent_compc ($path) {
     }
 }
 
-method is_external_comp_path ($path) {
-    return ( $path =~ /\.(pm|m)$/ ) ? 1 : 0;
-}
-
 method source_file_for_path ($path) {
     foreach my $root_path ( @{ $self->comp_root } ) {
         my $source_file = $root_path . $path;

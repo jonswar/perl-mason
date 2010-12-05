@@ -104,4 +104,12 @@ method compile_to_file ( $interp, $source_file, $path, $dest_file ) {
     write_file( $dest_file, $object_contents );
 }
 
+method is_external_comp_path ($path) {
+    return ( $path =~ /\.(pm|m)$/ ) ? 1 : 0;
+}
+
+method is_pure_perl_comp_path ($path) {
+    return ( $path =~ /\.pm$/ ) ? 1 : 0;
+}
+
 1;

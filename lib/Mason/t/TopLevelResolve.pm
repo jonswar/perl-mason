@@ -29,21 +29,21 @@ sub test_resolve : Tests(15) {
     };
 
     my $run_path = '/foo/bar/baz';
-    $try->( $run_path, ['/foo/bar/baz.m'],           '/foo/bar/baz.m',           '' );
-    $try->( $run_path, ['/foo/bar/baz/dhandler.pm'], '/foo/bar/baz/dhandler.pm', '' );
-    $try->( $run_path, ['/foo/bar.m'],               '/foo/bar.m',               'baz' );
-    $try->( $run_path, ['/foo/bar/dhandler.pm'],     '/foo/bar/dhandler.pm',     'baz' );
-    $try->( $run_path, ['/foo.m'],                   '/foo.m',                   'bar/baz' );
-    $try->( $run_path, ['/foo/dhandler.pm'],         '/foo/dhandler.pm',         'bar/baz' );
-    $try->( $run_path, ['/dhandler.pm'],             '/dhandler.pm',             'foo/bar/baz' );
-    $try->( $run_path, [ '/dhandler.pm',     '/foo/dhandler.pm' ], '/foo/dhandler.pm', 'bar/baz' );
-    $try->( $run_path, [ '/foo/dhandler.pm', '/foo/bar.m' ],       '/foo/bar.m',       'baz' );
+    $try->( $run_path, ['/foo/bar/baz.m'],          '/foo/bar/baz.m',          '' );
+    $try->( $run_path, ['/foo/bar/baz/dhandler.m'], '/foo/bar/baz/dhandler.m', '' );
+    $try->( $run_path, ['/foo/bar.m'],              '/foo/bar.m',              'baz' );
+    $try->( $run_path, ['/foo/bar/dhandler.m'],     '/foo/bar/dhandler.m',     'baz' );
+    $try->( $run_path, ['/foo.m'],                  '/foo.m',                  'bar/baz' );
+    $try->( $run_path, ['/foo/dhandler.m'],         '/foo/dhandler.m',         'bar/baz' );
+    $try->( $run_path, ['/dhandler.m'],             '/dhandler.m',             'foo/bar/baz' );
+    $try->( $run_path, [ '/dhandler.m',     '/foo/dhandler.m' ], '/foo/dhandler.m', 'bar/baz' );
+    $try->( $run_path, [ '/foo/dhandler.m', '/foo/bar.m' ],      '/foo/bar.m',      'baz' );
 
     # Not found
-    $try->( $run_path, ['/foo/bar/baz/blarg.m'],           undef );
-    $try->( $run_path, ['/foo/bar/baz/blarg/dhandler.pm'], undef );
-    $try->( $run_path, ['/foo/blarg.m'],                   undef );
-    $try->( $run_path, ['/foo/blarg/dhandler.pm'],         undef );
+    $try->( $run_path, ['/foo/bar/baz/blarg.m'],          undef );
+    $try->( $run_path, ['/foo/bar/baz/blarg/dhandler.m'], undef );
+    $try->( $run_path, ['/foo/blarg.m'],                  undef );
+    $try->( $run_path, ['/foo/blarg/dhandler.m'],         undef );
 
     # Can't access autohandler or dhandler directly
     $try->( '/foo/autohandler', ['/foo/autohandler.m'], undef );

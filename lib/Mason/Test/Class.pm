@@ -54,15 +54,14 @@ method remove_comp (%params) {
 method test_comp (%params) {
     my $caller = ( caller(1) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
-    my $path         = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) );
+    my $path         = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
     my $desc         = $params{desc};
     my $source       = $params{component} || croak "must pass component";
     my $expect       = $params{expect};
     my $expect_error = $params{expect_error};
     croak "must pass either expect or expect_error" unless $expect || $expect_error;
 
-    ( my $run_path = $path ) =~ s/\.m$//;
-    $path .= ".m" if $path !~ /\.m$/;
+    ( my $run_path = $path ) =~ s/\.(?:m|pm)$//;
 
     $self->add_comp( path => $path, component => $source );
     if ($expect_error) {

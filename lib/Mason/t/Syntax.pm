@@ -74,4 +74,12 @@ EOF
     );
 }
 
+sub test_pure_perl : Test(1) {
+    shift->test_comp(
+        path      => '/pureperl.pm',
+        component => 'sub main { print "hello from main" }',
+        expect    => 'hello from main',
+    );
+}
+
 1;

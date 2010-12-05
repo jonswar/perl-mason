@@ -6,14 +6,14 @@ use strict;
 use warnings;
 
 # Passed attributes
-has 'comp_request' => ( is => 'ro', required => 1, weak_ref => 1 );
+has 'm' => ( is => 'ro', required => 1, weak_ref => 1 );
 
 # Derived attributes
 has 'comp_args' => ( is => 'ro', init_arg => undef );
 has 'comp_logger' => ( is => 'ro', init_arg => undef, lazy_build => 1 );
 
 method BUILD ($params) {
-    $self->{comp_args} = { map { /^comp_/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
+    $self->{comp_args} = { map { /^comp_|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
 }
 
 method _build_comp_logger () {
@@ -35,7 +35,7 @@ method render () {
 # Default dispatch - reject path_info, otherwise call render
 #
 method dispatch () {
-    my $m = $self->comp_request;
+    my $m = $self->m;
     $m->decline if length( $m->path_info );
     $self->render(@_);
 }

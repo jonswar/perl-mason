@@ -59,7 +59,7 @@ method run () {
     $self->comp_not_found($path) if !defined($compc);
     $self->{path_info} = $path_info;
 
-    my $request_comp = $compc->new( @_, comp_request => $self );
+    my $request_comp = $compc->new( @_, 'm' => $self );
     $self->{request_comp} = $request_comp;
     $log->debugf( "starting request for '%s'", $request_comp->title )
       if $log->is_debug;
@@ -206,7 +206,7 @@ method fetch_comp () {
 
     # Create and return a component instance
     #
-    my $comp = $compc->new( @_, comp_request => $self );
+    my $comp = $compc->new( @_, 'm' => $self );
 
     return $comp;
 }
