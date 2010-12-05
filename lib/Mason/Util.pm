@@ -7,21 +7,10 @@ use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(checksum clear_class dump_one_line in_perl_db mason_canon_path read_file unique_id write_file);
+  qw(checksum clear_class dump_one_line mason_canon_path read_file unique_id write_file);
 
 my $Fetch_Flags = O_RDONLY | O_BINARY;
 my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;
-
-# Define an in_perl_db compile-time constant indicating whether we are
-# in the Perl debugger. This is used in the object file to
-# determine whether to call $m->debug_hook.
-#
-if ( defined($DB::sub) ) {
-    *in_perl_db = sub () { 1 };
-}
-else {
-    *in_perl_db = sub () { 0 };
-}
 
 sub dump_one_line {
     my ($value) = @_;

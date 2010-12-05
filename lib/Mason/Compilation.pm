@@ -314,7 +314,6 @@ method _output_method ($method_name) {
         $filter_sub ? "\$m->apply_immediate_filter($filter_sub, sub {" : "",
 
         "my \$_buffer = \$m->current_buffer;",
-        "\$m->debug_hook( '$path', '$method_name' ) if ( Mason::Util::in_perl_db() );",
 
         # do not add a block around this, it introduces
         # a separate scope and might break cleanup

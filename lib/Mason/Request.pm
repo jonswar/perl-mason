@@ -263,14 +263,6 @@ method flush_buffer () {
     $$request_buffer = '';
 }
 
-#
-# Subroutine called by every component while in debug mode, convenient
-# for breakpointing.
-#
-sub debug_hook {
-    1;
-}
-
 method log () {
     return $self->current_comp->comp_logger();
 }
