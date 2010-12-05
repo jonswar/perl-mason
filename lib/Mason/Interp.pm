@@ -37,6 +37,7 @@ has 'static_source_touch_file' => ( is => 'ro' );
 has 'top_level_extensions'     => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
+has 'autohandler_or_dhandler_regex' => ( is => 'ro', lazy_build => 1 );
 has 'code_cache'             => ( is => 'ro', init_arg => undef );
 has 'compiler_params'        => ( is => 'ro', init_arg => undef );
 has 'default_request_params' => ( is => 'ro', init_arg => undef );
@@ -73,6 +74,11 @@ method BUILD ($params) {
 
 method _build_autohandler_names () {
     return [ map { "autohandler" . $_ } @{ $self->top_level_extensions } ];
+}
+
+method _build_autohandler_or_dhandler_regex () {
+    my $regex = '(' . join( "|", @{ $self->autohandler_names }, @{ $self->dhandler_names } ) . ')$';
+    return qr/$regex/;
 }
 
 method _build_compiler () {
@@ -262,6 +268,10 @@ method default_parent_compc ($path) {
         }
         $path = dirname($path);
     }
+}
+
+method is_external_comp_path ($path) {
+    return ( $path =~ /\.(pm|m)$/ ) ? 1 : 0;
 }
 
 method source_file_for_path ($path) {

@@ -268,7 +268,7 @@ method _output_comp_info () {
     my %comp_info = (
         comp_dir_path    => $self->dir_path,
         comp_path        => $self->path,
-        comp_is_external => $self->compiler->is_external_comp_path( $self->path ),
+        comp_is_external => $self->interp->is_external_comp_path( $self->path ),
     );
     return sprintf( 'sub _comp_info { return %s }', dump_one_line( \%comp_info ) );
 }

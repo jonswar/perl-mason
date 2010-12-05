@@ -99,16 +99,21 @@ method run () {
 #   /dhandler.pm, /dhandler.m
 #
 method top_level_path_to_component ($path) {
-    my @dhandler_subpaths    = map { "/$_" } @{ $self->interp->dhandler_names };
-    my @top_level_extensions = @{ $self->interp->top_level_extensions };
-    my $path_info            = '';
+    my $interp                  = $self->interp;
+    my @dhandler_subpaths       = map { "/$_" } @{ $interp->dhandler_names };
+    my @top_level_extensions    = @{ $interp->top_level_extensions };
+    my $autohandler_or_dhandler = $interp->autohandler_or_dhandler_regex;
+    my $path_info               = '';
     while (1) {
         my @candidates =
           ( $path eq '/' )
           ? @dhandler_subpaths
-          : ( map { $path . $_ } ( @top_level_extensions, @dhandler_subpaths ) );
+          : (
+            ( grep { !/$autohandler_or_dhandler/ } map { $path . $_ } @top_level_extensions ),
+            ( map { $path . $_ } @dhandler_subpaths )
+          );
         foreach my $candidate (@candidates) {
-            my $compc = $self->fetch_compc($candidate);
+            my $compc = $interp->load($candidate);
             if ( defined($compc) && $compc->comp_is_external ) {
                 return ( $compc, $path_info );
             }

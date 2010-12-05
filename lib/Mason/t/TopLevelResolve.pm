@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use base qw(Mason::Test::Class);
 
-sub test_resolve : Tests(13) {
+sub test_resolve : Tests(15) {
     my $self = shift;
 
     my $try = sub {
@@ -44,6 +44,10 @@ sub test_resolve : Tests(13) {
     $try->( $run_path, ['/foo/bar/baz/blarg/dhandler.pm'], undef );
     $try->( $run_path, ['/foo/blarg.m'],                   undef );
     $try->( $run_path, ['/foo/blarg/dhandler.pm'],         undef );
+
+    # Can't access autohandler or dhandler directly
+    $try->( '/foo/autohandler', ['/foo/autohandler.m'], undef );
+    $try->( '/foo/dhandler', ['/foo/dhandler.m'], '/foo/dhandler.m', 'dhandler' );
 }
 
 1;
