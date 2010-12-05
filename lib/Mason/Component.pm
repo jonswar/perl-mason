@@ -9,7 +9,7 @@ use warnings;
 has 'm' => ( is => 'ro', required => 1, weak_ref => 1 );
 
 # Derived attributes
-has 'comp_args' => ( is => 'ro', init_arg => undef );
+has 'comp_attr' => ( is => 'ro', init_arg => undef );
 has 'comp_logger' => ( is => 'ro', init_arg => undef, lazy_build => 1 );
 
 method BUILD ($params) {
