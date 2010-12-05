@@ -1,17 +1,31 @@
 
 =head1 NAME
 
-Mason::Devel - Mason Developer's Manual
+Mason::Manual - Mason Developer's Manual
 
 =head1 DESCRIPTION
 
-=head1 WHAT ARE COMPONENTS?
+Mason is a powerful templating system. Its goal is to let you use Perl to
+generate dynamic content from templates.
 
-The component - a mix of Perl and HTML - is Mason's basic building block and
-computational unit. Under Mason, pages are usually formed by combining the
-output from multiple components.  An article page for a news publication, for
-example, might call separate components for the company masthead, ad banner,
-left table of contents, and article body. Consider this layout sketch:
+Mason can be used for processing any kind of content: HTML, XML, code, plain
+text, etc.  However, it is most often used for generating web content, so this
+documentation will tend to focus on that use-case. When reading, you can
+mentally replace "HTML" with "any kind of content".
+
+Unlike some other templating systems, Mason is proudly Perl-centric and does
+not attempt to define an alternate, "easier" language. It defines a thin layer
+of syntax and features to facilitate template creation, and leaves everything
+else to Perl. That said, Mason does allow some separation of Perl and content
+to make it easier for collaboration with non-Perl developers.
+
+=head1 COMPONENTS
+
+The component - a mix of Perl and HTML - is Mason's basic building block. Under
+Mason, pages are usually formed by combining the output from multiple
+components.  An article page for a news publication, for example, might call
+separate components for the company masthead, ad banner, left table of
+contents, and article body.
 
     +---------+------------------+
     |Masthead | Banner Ad        |
@@ -29,10 +43,10 @@ left table of contents, and article body. Consider this layout sketch:
 
 The top level component decides the overall page layout.  Individual cells are
 then filled by the output of subordinate components, one for the Masthead, one
-for the Footer, etc. In practice pages are built up from as few as one, to as
-many as twenty or more components.
+for the Footer, etc. Pages might be built up from as few as one, to as many as
+hundreds of components, with each component contributing a chunk of HTML.
 
-Splitting up a page into multiple components can give you several benefits. The
+Splitting up a page into multiple components gives you several benefits. The
 first benefit is I<consistency>: by embedding standard design elements in
 components, you ensure a consistent look and make it possible to update the
 entire site with just a few edits. The second benefit is I<concurrency>: in a
@@ -40,10 +54,6 @@ multi-person environment, one person can edit the masthead while another edits
 the table of contents.  A last benefit is I<reuseability>: a component produced
 for one site might be useful on another. You can develop a library of generally
 useful components to employ on your sites and to share with others.
-
-Most components emit chunks of HTML. "Top level" components, invoked from a
-URL, represent an entire web page. Other, subordinate components emit smaller
-bits of HTML destined for inclusion in top level components.
 
 Mason actually compiles components down to Perl classes, which means that many
 of the tools you use to develop regular classes - profilers, debuggers, and the
@@ -102,8 +112,8 @@ of lines.
 
 B<% lines>
 
-Most useful for conditional and loop structures - if, while, foreach, , etc. -
-as well as side-effect commands like assignments. Whitespace after the '%' is
+Most useful for conditional and loop structures - if, while, foreach, etc. - as
+well as side-effect commands like assignments. Whitespace after the '%' is
 required. Examples:
 
 o Conditional code
@@ -163,10 +173,6 @@ Examples:
 B<< <%perl> xxx </%perl> >>
 
 Useful for Perl blocks of more than a few lines.
-
-=head1 PERL BLOCKS
-
-
 
 =head1 CALLING COMPONENTS
 
@@ -255,12 +261,9 @@ empty default return value. To return your own value from a component, you
 I<must> use an explicit C<return> statement. You cannot rely on the usual Perl
 trick of letting return values "fall through".
 
-While it is technically possible for a component to generate output B<and>
-return values, there is very little reason for a component to do both. For
-example, it would not be very friendly for C</shared/calc> to output "hi Mom"
-while it was computing its value, thereby surprising the caller. Conversely,
-any value returned by an output-generating component would typically be
-discarded by the <& &> tag that invoked it.
+Whenever possible, we recommend using regular Perl classes and methods outside
+of Mason rather than returning values from components. The former encourages a
+cleaner design.
 
 =head1 THE PAGE COMPONENT
 
@@ -277,7 +280,7 @@ perhaps controller logic in your web framework. For example, if the URL is
 
 this will likely be translated to
 
-    $interp->run('/product/sales', id => 372);
+    $interp->run('/product/sales.m', id => 372);
 
 =head2 dhandlers
 
@@ -395,31 +398,16 @@ and can access them in the following ways.
     has 'b' => ... ;
     </%class>
 
-2. Using an C<< <%args> >> section:
+2. Using an C<< <%attr> >> section:
 
-    <%args>
+    <%attr>
     $a
-    @b       # a comment
-    %c
-
-    # another comment
-    $d => 5
-    $e => $d*2
-    @f => ('foo', 'baz')
-    %g => (joe => 1, bob => 2)
-    </%args>
-
-Here, I<$a>, I<@b>, and I<%c> are required arguments; the component generates
-an error if the caller leaves them unspecified. I<$d>, I<$e>, I<@f> and I<%g>
-are optional arguments; they are assigned the specified default values if
-unspecified.  All the arguments are available as lexically scoped ("my")
-variables in the rest of the component.
+    $b => 'default value'
+    $c => (isa => 'Str', default => 'something')
+    </%attr>
 
 Arguments are separated by one or more newlines. Comments may be used at the
 end of a line or on their own line.
-
-Default expressions are evaluated in top-to-bottom order, and one expression
-may reference an earlier one (as $e references $d above).
 
 3. C<< $self->comp_attr >> will return a hashref of all of the attributes
 passed to the component when it was created.
@@ -442,9 +430,44 @@ This code executes once when the component is loaded, in the main body of the
 class outside of any methods. This is the place to use modules, declare
 attributes, and do other things on a class level.
 
-=head2 <%method I<name>>
+=head1 METHODS
 
-Each instance of this block creates a new method with the specified name.
+Components are compiled to Moose classes. By default a component has a single
+method, 'main', which contains all of the HTML and Perl in the main body of the
+component, but you can add as many other methods as you like. Methods that
+output HTML can be added via the C<< <$method> >> section.
+
+    <%method leftcol>
+      <table><tr>
+        <td><% $foo %></td>
+        ...
+      </tr></table>
+    </%method>
+
+    ...
+
+    <% # call leftcol method and insert HTML here %>
+    <% $self->leftcol %>
+
+Pure-Perl methods that return a value can be added within the << <%class> >>
+section:
+
+    <%class>
+    method compute_value {
+        # calcualate $value
+        return $value;
+    }
+
+    method some_other_method {
+        ...
+    }
+    </%class>
+
+    ...
+
+    <%init>
+    my $value = $self->compute_value;
+    </%init>
 
 =head1 FILTERING
 
