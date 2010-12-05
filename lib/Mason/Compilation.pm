@@ -308,7 +308,7 @@ method _output_method ($method_name) {
         "\n",
         "sub $method_name {",
         "my \$self = shift;",
-        "my \$m = \$Mason::Request::current_request;",
+        "my \$m = \$self->m;",
 
         $filter_sub ? "\$m->apply_immediate_filter($filter_sub, sub {" : "",
 
