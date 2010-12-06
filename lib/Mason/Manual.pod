@@ -23,7 +23,7 @@ to make it easier for collaboration with non-Perl developers.
 
 The component - a mix of Perl and HTML - is Mason's basic building block. Under
 Mason, pages are usually formed by combining the output from multiple
-components.  An article page for a news publication, for example, might call
+components.  An article page for a online magazine, for example, might call
 separate components for the company masthead, ad banner, left table of
 contents, and article body.
 
@@ -108,7 +108,7 @@ of lines.
 
 =back
 
-=head2 Examples and Recommended Usage
+=head2 In-line Perl examples
 
 B<% lines>
 
@@ -179,8 +179,6 @@ Useful for Perl blocks of more than a few lines.
 Mason pages often are built not from a single component, but from multiple
 components that call each other in a hierarchical fashion.
 
-=head2 Components that output HTML
-
 To call one component from another, use the <& &> tag:
 
     <& comp_path, [name=>value, ...] &>
@@ -239,31 +237,6 @@ component output, allowing the caller to examine and modify it before printing:
     my $masthead = $m->scomp('/shared/masthead', color=>'salmon');
     $masthead =~ ...;
     $m->print($masthead);
-
-=head2 Components that Return Values
-
-It is technically possible for components to return values, without outputting
-anything. C<< $m->comp >> returns whatever the component returned.
-
-  /shared/calc:
-
-    <%init>
-    # calcualate $value
-    return $value;
-    </%init>
-
-  and in another component:
-
-    % my $result = $m->comp('/shared/calc');
-
-Mason adds a C<return undef> to the bottom of each component to provide an
-empty default return value. To return your own value from a component, you
-I<must> use an explicit C<return> statement. You cannot rely on the usual Perl
-trick of letting return values "fall through".
-
-Whenever possible, we recommend using regular Perl classes and methods outside
-of Mason rather than returning values from components. The former encourages a
-cleaner design.
 
 =head1 THE PAGE COMPONENT
 
@@ -379,38 +352,52 @@ handle your pages and you want to augment them with a template/filter. Use a
 dhandler when you want to create a set of "virtual URLs" that don't correspond
 to any actual components, or to provide default behavior for a directory.
 
-dhandlers and autohandlers can even be used in the same directory. For example,
-you might have a mix of real URLs and virtual URLs to which you would like to
-apply a common template/filter.
+dhandlers and autohandlers can be used in the same directory. For example, you
+might have a mix of real URLs and virtual URLs to which you would like to apply
+a common template/filter.
 
 =head1 ATTRIBUTES
 
-You may pass name/value attributes in a component call:
+As we saw above, you can pass name/value attributes when calling components.
+Here's how to access them.
 
-    <& /sales/header, s => 'dog', l => [2, 3, 4], h => {a => 7, b => 8} &>
+=head2 Declared attributes
 
-and can access them in the following ways.
-
-1.  Declaring via Moose syntax:
-
-    <%class>
-    has 'a' => ... ;
-    has 'b' => ... ;
-    </%class>
-
-2. Using an C<< <%attr> >> section:
+Mason's C<< <%attr> >> section is the most convenient way to declare
+attributes:
 
     <%attr>
-    $a
-    $b => 'default value'
-    $c => (isa => 'Str', default => 'something')
+    a
+    b => 'default value'
+    c => (isa => 'Str', default => 'something')
     </%attr>
 
-Arguments are separated by one or more newlines. Comments may be used at the
-end of a line or on their own line.
+This is equivalent to the following Moose syntax (which you can also use):
 
-3. C<< $self->comp_attr >> will return a hashref of all of the attributes
-passed to the component when it was created.
+    <%class>
+    has 'a' => ();
+    has 'b' => (default => 5);
+    has 'c' => (isa => 'Str',
+                default => 'something');
+    </%class>
+
+A declared attribute 'foo' can be accessed inside the component via the
+Perl6-ish syntax
+
+    $.foo
+
+which translates directly to
+
+    $self->foo()
+
+These are both read-only. To write to the attribute, you must use
+
+    $self->{foo} = 5;
+
+=head2 Accessing all attributes
+
+C<< $self->comp_attr >> will return a hashref of all of the attributes passed
+to the component when it was created.
 
 =head1 PERL BLOCKS
 
@@ -421,8 +408,10 @@ The following sections contain blocks of Perl to execute at specific times.
 This section contains initialization code that executes as soon as the
 component is called. Technically an C<< <%init> >> block is equivalent to a C<<
 <%perl> >> block at the beginning of the component, but there can be an
-aesthetic advantage to placing this block at the end of the component rather
-than the beginning.
+aesthetic advantage to placing this block at the end rather than the beginning.
+
+You can also include an C<< <%init> >> block inside any C<< <%method> >>; it is
+equivalent to a C<< <%perl> >> block at the beginning of the method.
 
 =head2 <%class>
 
