@@ -210,7 +210,7 @@ components that call each other in a hierarchical fashion.
 
 To call one component from another, use the <& &> tag:
 
-    <& comp_path, [name=>value, ...] &>
+    <& /path/to/comp.mi, [name=>value, ...] &>
 
 =over
 
@@ -236,14 +236,14 @@ comp_path is assumed to be a literal string running up to the first comma or
 Here are some examples:
 
     # relative component paths
-    <& topimage &>
-    <& tools/searchbox &>
+    <& topimage.mi &>
+    <& tools/searchbox.mi &>
 
     # absolute component path
-    <& /shared/masthead, color=>'salmon' &>
+    <& /shared/masthead.mi, color=>'salmon' &>
 
     # this component path MUST have quotes because it contains a comma
-    <& "sugar,eggs", mix=>1 &>
+    <& "sugar,eggs.mi", mix=>1 &>
 
     # variable component path
     <& $comp &>
@@ -253,17 +253,17 @@ Here are some examples:
 
     # you can use arbitrary expression for component path, but it cannot
     # begin with a letter or number; delimit with () to remedy this
-    <& (int(rand(2)) ? 'thiscomp' : 'thatcomp'), id=>123 &>
+    <& (int(rand(2)) ? 'thiscomp.mi' : 'thatcomp.mi'), id=>123 &>
 
 Several request methods also exist for calling components.  C<< $m->comp >>
 performs the equivalent action to <& &>:
 
-    $m->comp('/shared/masthead', color=>'salmon');
+    $m->comp('/shared/masthead.mi', color=>'salmon');
 
 C<< $m->scomp >> is like the sprintf version of C<< $m->comp >>: it returns the
 component output, allowing the caller to examine and modify it before printing:
 
-    my $masthead = $m->scomp('/shared/masthead', color=>'salmon');
+    my $masthead = $m->scomp('/shared/masthead.mi', color=>'salmon');
     $masthead =~ ...;
     $m->print($masthead);
 
@@ -313,6 +313,9 @@ to the component when it was created.
 =head1 THE PAGE COMPONENT
 
 The first component invoked in a Mason request is called the I<page> component.
+
+=head2 Determining the page component
+
 If you called C<< $interp->run >> directly, then the page component is
 determined by the first argument to C<run>:
 
@@ -321,50 +324,37 @@ determined by the first argument to C<run>:
 In a web environment, the page component will be determined by the URL and
 perhaps controller logic in your web framework.
 
-    /product/sales?id=372
+In either case, Mason searches under the component root for the provided path
+with either a ".pm" or a ".m" attached, and then for a component called
+"dhandler.pm" or "dhandler.m" ("directory handler").
 
-=head2 dhandlers
+If it cannot find any of these, then Mason scans backwards through the path,
+checking each directory upwards for the same set of files. In this case it sets
+$m->path_info to the unmatched latter part of the path.
 
-If you request a page that doesn't exist, then Mason scans backwards through
-the path, checking each directory for a component named I<dhandler> ("default
-handler" or "directory handler").  If found, the dhandler is invoked and is
-expected to use C<< $m->dhandler_arg >> to test the remainder of the path.
-dhandlers allow you to handle a set of paths with a single component.
+For example, given the path
 
-B<NOTE:> modern web frameworks have more sophisticated mechanisms than
-dhandlers for mapping URLs to page components. If you are using such a
-fremework you encouraged to explore those mechanisms.
+    /news/sports
 
-For example, if the following path does not exist,
+Mason searches for the following components in order, setting $m->path_info as
+noted.
 
-    /news/sports/story1
-
-then Mason constructs the following search path:
-
-    /news/sports/story1         => no such thing
-    /news/sports/dhandler       => no such thing
-    /news/dhandler              => found! (search ends)
-    /dhandler
-
-The found dhandler would read "LocalNews/Story1" from C<< $m->dhandler_arg >>
-and use it as a retrieval argument.
-
-  /newsfeeds/dhandler:
-
-    <b><% $article->headline %></b><p>
-    <% $article->body %>
-
-    <%init>
-    my ($section, $story) = split("/", $m->dhandler_arg);
-    my $article =
-       MyApp::Articles->retrieve(section => $section, story => $story);
-    </%init>
+    /news/sports.pm
+    /news/sports.m
+    /news/sports/dhandler.pm
+    /news/sports/dhandler.m
+    /news.pm                  # $m->path_info = sports
+    /news.m                   # $m->path_info = sports
+    /news/dhandler.pm         # $m->path_info = sports
+    /news/dhandler.m          # $m->path_info = sports
+    /dhandler.pm              # $m->path_info = news/sports
+    /dhandler.m               # $m->path_info = news/sports
 
 A component or dhandler that does not want to handle a particular request may
 defer control to the next dhandler by calling C<< $m->decline >>.
 
-You can customize the file names used for dhandlers with the
-L<Mason::Params/dhandler_names> parameter.
+You can customize the way Mason resolves top-level paths with the parameters
+L<Mason::Params/top_level_extensions> and L<Mason::Params/dhandler_names>.
 
 =head2 autohandlers
 
@@ -397,9 +387,9 @@ underneath its directory:
 Same idea, using components for the header/footer:
 
     <%method render>
-    <& /shared/header &>
+    <& /shared/header.mi &>
     % inner();
-    <& /shared/footer &>
+    <& /shared/footer.mi &>
     </%method>
 
 If more than one autohandler applies to a page, each autohandler gets a chance
@@ -586,7 +576,7 @@ They do not block component calls and other code from running, so don't try to
 use them to comment out code!
 
    <!-- Oops, the code below will still run
-      <& /shared/expensive.mhtml &>
+      <& /shared/expensive.mi &>
    -->
 
 =back
