@@ -5,13 +5,14 @@ Mason::Manual - Mason Developer's Manual
 
 =head1 DESCRIPTION
 
-Mason is a powerful templating system. Its goal is to let you use Perl to
-generate dynamic content from templates.
+Mason is a powerful Perl-based templating system, designed to generate dynamic
+content from templates.
 
-Mason can be used for processing any kind of content: HTML, XML, code, plain
-text, etc.  However, it is most often used for generating web content, so this
+Mason can be used for processing any kind of content: HTML, XML, plain text,
+etc.  However, it is most often used for generating web pages, so this
 documentation will tend to focus on that use-case. When reading, you can
-mentally replace "HTML" with "any kind of content".
+mentally replace "page" with "any kind of document", and "HTML" with "any kind
+of content".
 
 Unlike some other templating systems, Mason is proudly Perl-centric and does
 not attempt to define an alternate, "easier" language. It defines a thin layer
@@ -21,8 +22,8 @@ to make it easier for collaboration with non-Perl developers.
 
 =head1 COMPONENTS
 
-The component - a mix of Perl and HTML - is Mason's basic building block. Under
-Mason, pages are usually formed by combining the output from multiple
+The component - a file with a mix of Perl and HTML - is Mason's basic building
+block. Pages are usually formed by combining the output from multiple
 components.  An article page for a online magazine, for example, might call
 separate components for the company masthead, ad banner, left table of
 contents, and article body.
@@ -55,9 +56,37 @@ the table of contents.  A last benefit is I<reuseability>: a component produced
 for one site might be useful on another. You can develop a library of generally
 useful components to employ on your sites and to share with others.
 
-Mason actually compiles components down to Perl classes, which means that many
-of the tools you use to develop regular classes - profilers, debuggers, and the
-like - can be used with Mason components with slight tweaking.
+Mason actually compiles components down to Perl/Moose classes, which means that
+many of the tools you use to develop regular classes - profilers, debuggers,
+and the like - can be used with Mason components with slight tweaking.
+
+=head2 The component root and component paths
+
+When you use Mason, you specify a component root that all component files live
+under. Thereafter, any component will be referred to by its I<path> relative to
+the root. For example, if the component root is '/opt/web/comps', a component
+'/opt/web/comps/foo/bar.m' has the path '/foo/bar.m'.
+
+=head2 Component file extensions
+
+By default Mason facilitates and enforces standard file extensions for
+components.
+
+=over
+
+=item .m
+
+A public component - can be accessed as the main page component
+
+=item .mi
+
+A private component - can only be accessed from other components
+
+=item .pm
+
+A public component that contains only Perl code - see L</Perl-only components>.
+
+=back
 
 =head1 IN-LINE PERL
 
@@ -238,124 +267,6 @@ component output, allowing the caller to examine and modify it before printing:
     $masthead =~ ...;
     $m->print($masthead);
 
-=head1 THE PAGE COMPONENT
-
-The first component invoked in a Mason request is called the I<page> component.
-If you called C<< $interp->run >> directly, then the page component is
-determined by the first argument to C<run>:
-
-    $interp->run('/company/about');
-
-In a web environment, the page component will be determined by the URL and
-perhaps controller logic in your web framework. For example, if the URL is
-
-    /product/sales?id=372
-
-this will likely be translated to
-
-    $interp->run('/product/sales.m', id => 372);
-
-=head2 dhandlers
-
-If you request a page that doesn't exist, then Mason scans backwards through
-the path, checking each directory for a component named I<dhandler> ("default
-handler" or "directory handler").  If found, the dhandler is invoked and is
-expected to use C<< $m->dhandler_arg >> to test the remainder of the path.
-dhandlers allow you to handle a set of paths with a single component.
-
-B<NOTE:> modern web frameworks have more sophisticated mechanisms than
-dhandlers for mapping URLs to page components. If you are using such a
-fremework you encouraged to explore those mechanisms.
-
-For example, if the following path does not exist,
-
-    /news/sports/story1
-
-then Mason constructs the following search path:
-
-    /news/sports/story1         => no such thing
-    /news/sports/dhandler       => no such thing
-    /news/dhandler              => found! (search ends)
-    /dhandler
-
-The found dhandler would read "LocalNews/Story1" from C<< $m->dhandler_arg >>
-and use it as a retrieval argument.
-
-  /newsfeeds/dhandler:
-
-    <b><% $article->headline %></b><p>
-    <% $article->body %>
-
-    <%init>
-    my ($section, $story) = split("/", $m->dhandler_arg);
-    my $article =
-       MyApp::Articles->retrieve(section => $section, story => $story);
-    </%init>
-
-A component or dhandler that does not want to handle a particular request may
-defer control to the next dhandler by calling C<< $m->decline >>.
-
-The administrator can customize the file name used for dhandlers with the
-L<Mason::Params/dhandler_name> parameter.
-
-=head2 autohandlers
-
-Autohandlers allow you to grab control and perform some action before and after
-Mason calls the page component. This might mean adding a standard header and
-footer, applying an output filter, or setting up global variables.
-
-Autohandlers are directory based.  When Mason determines the top-level
-component, it checks that directory and all parent directories for a component
-called F<autohandler>. If found, the autohandler is called first.  After
-performing its actions, the autohandler typically calls C<< inner() >> to
-transfer control to the original intended component.
-
-Here is an autohandler that adds a common header and footer to each page
-underneath its directory:
-
-    <html>
-    <head><title>McHuffy Incorporated</title></head>
-    <body style="background-color: pink">
-
-    % inner();
-
-    <hr />
-    Copyright 1999 McHuffy Inc.
-    </body>
-    </html>
-
-Same idea, using components for the header/footer:
-
-    <& /shared/header &>
-    % inner();
-    <& /shared/footer &>
-
-If more than one autohandler applies to a page, each autohandler gets a chance
-to run.  The top-most autohandler runs first; each C<< inner() >> transfers
-control to the next autohandler and finally to the originally called component.
-This allows you, for example, to combine general site-wide templates and more
-specific section-based templates.
-
-The administrator can customize the file name used for autohandlers with the
-L<Mason::Params/autohandler_name> parameter.
-
-=head2 dhandlers vs. autohandlers
-
-dhandlers and autohandlers both provide a way to exert control over a large set
-of URLs. However, each specializes in a very different application.  The key
-difference is that dhandlers are invoked only when no appropriate component
-exists, while autohandlers are invoked only in conjunction with a matching
-component.
-
-As a rule of thumb: use an autohandler when you have a set of components to
-handle your pages and you want to augment them with a template/filter. Use a
-dhandler when you want to create a set of "virtual URLs" that don't correspond
-to any actual components, or to provide default behavior for a directory.
-
-dhandlers and autohandlers can be used in the same directory. For example, you
-might have a mix of real URLs and virtual URLs to which you would like to apply
-a common template/filter.
-
 =head1 ATTRIBUTES
 
 As we saw above, you can pass name/value attributes when calling components.
@@ -398,6 +309,124 @@ These are both read-only. To write to the attribute, you must use
 
 C<< $self->comp_attr >> will return a hashref of all of the attributes passed
 to the component when it was created.
+
+=head1 THE PAGE COMPONENT
+
+The first component invoked in a Mason request is called the I<page> component.
+If you called C<< $interp->run >> directly, then the page component is
+determined by the first argument to C<run>:
+
+    $interp->run('/company/about');
+
+In a web environment, the page component will be determined by the URL and
+perhaps controller logic in your web framework.
+
+    /product/sales?id=372
+
+=head2 dhandlers
+
+If you request a page that doesn't exist, then Mason scans backwards through
+the path, checking each directory for a component named I<dhandler> ("default
+handler" or "directory handler").  If found, the dhandler is invoked and is
+expected to use C<< $m->dhandler_arg >> to test the remainder of the path.
+dhandlers allow you to handle a set of paths with a single component.
+
+B<NOTE:> modern web frameworks have more sophisticated mechanisms than
+dhandlers for mapping URLs to page components. If you are using such a
+fremework you encouraged to explore those mechanisms.
+
+For example, if the following path does not exist,
+
+    /news/sports/story1
+
+then Mason constructs the following search path:
+
+    /news/sports/story1         => no such thing
+    /news/sports/dhandler       => no such thing
+    /news/dhandler              => found! (search ends)
+    /dhandler
+
+The found dhandler would read "LocalNews/Story1" from C<< $m->dhandler_arg >>
+and use it as a retrieval argument.
+
+  /newsfeeds/dhandler:
+
+    <b><% $article->headline %></b><p>
+    <% $article->body %>
+
+    <%init>
+    my ($section, $story) = split("/", $m->dhandler_arg);
+    my $article =
+       MyApp::Articles->retrieve(section => $section, story => $story);
+    </%init>
+
+A component or dhandler that does not want to handle a particular request may
+defer control to the next dhandler by calling C<< $m->decline >>.
+
+You can customize the file names used for dhandlers with the
+L<Mason::Params/dhandler_names> parameter.
+
+=head2 autohandlers
+
+Autohandlers allow you to grab control and perform some action before and after
+Mason calls the page component. This might mean adding a standard header and
+footer, applying an output filter, or setting up global variables.
+
+Autohandlers are directory based.  When Mason determines the top-level
+component, it checks that directory and all parent directories for a component
+called F<autohandler>. If found, the autohandler is called first.  After
+performing its actions, the autohandler typically calls C<< inner() >> to
+transfer control to the original intended component.
+
+Here is an autohandler that adds a common header and footer to each page
+underneath its directory:
+
+    <%method render>
+    <html>
+    <head><title>McHuffy Incorporated</title></head>
+    <body style="background-color: pink">
+
+    % inner();
+
+    <hr />
+    Copyright 1999 McHuffy Inc.
+    </body>
+    </html>
+    </%method>
+
+Same idea, using components for the header/footer:
+
+    <%method render>
+    <& /shared/header &>
+    % inner();
+    <& /shared/footer &>
+    </%method>
+
+If more than one autohandler applies to a page, each autohandler gets a chance
+to run.  The top-most autohandler runs first; each C<< inner() >> transfers
+control to the next autohandler and finally to the originally called component.
+This allows you, for example, to combine general site-wide templates and more
+specific section-based templates.
+
+You can customize the file names used for autohandlers with the
+L<Mason::Params/autohandler_names> parameter.
+
+=head2 dhandlers vs. autohandlers
+
+dhandlers and autohandlers both provide a way to exert control over a large set
+of URLs. However, each specializes in a very different application.  The key
+difference is that dhandlers are invoked only when no appropriate component
+exists, while autohandlers are invoked only in conjunction with a matching
+component.
+
+As a rule of thumb: use an autohandler when you have a set of components to
+handle your pages and you want to augment them with a template/filter. Use a
+dhandler when you want to create a set of "virtual URLs" that don't correspond
+to any actual components, or to provide default behavior for a directory.
+
+dhandlers and autohandlers can be used in the same directory. For example, you
+might have a mix of real URLs and virtual URLs to which you would like to apply
+a common template/filter.
 
 =head1 PERL BLOCKS
 
@@ -496,7 +525,7 @@ A filter block does not have access to variables declared in a component's C<<
 You should not call Perl's C<return()> function inside a filter section, or you
 will not see any output at all.
 
-=head1 COMMENT MARKERS
+=head1 COMMENTS
 
 There are several ways to place comments in components, i.e. arbitrary text
 that is ignored by the parser.
