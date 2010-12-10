@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use base qw(Mason::Test::Class);
 
-sub test_autohandler : Test(20) {
+sub test_autohandler : Test(19) {
     my $self   = shift;
     my $interp = $self->{interp};
 

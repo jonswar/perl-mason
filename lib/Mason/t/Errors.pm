@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use base qw(Mason::Test::Class);
 
-sub test_errors : Test(10) {
+sub test_errors : Test(5) {
     my $self = shift;
     $self->test_comp(
         component    => '%my $i = 1;',
