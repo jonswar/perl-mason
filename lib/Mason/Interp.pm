@@ -10,6 +10,7 @@ use Mason::Util qw(mason_canon_path);
 use Memoize;
 use Method::Signatures::Simple;
 use Moose::Util::TypeConstraints;
+use Moose;
 use Mason::Moose;
 use MooseX::StrictConstructor;
 use JSON;
@@ -21,27 +22,27 @@ my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
-has 'autohandler_names'        => ( is => 'ro', isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'comp_root'                => ( is => 'ro', isa        => 'Mason::Types::CompRoot', coerce => 1 );
-has 'compiler'                 => ( is => 'ro', lazy_build => 1 );
-has 'compiler_class'           => ( is => 'ro', default    => 'Mason::Compiler' );
-has 'component_class_prefix'   => ( is => 'ro', lazy_build => 1 );
-has 'component_base_class'     => ( is => 'ro', default    => 'Mason::Component' );
+has 'autohandler_names'        => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
+has 'compiler'                 => ( lazy_build => 1 );
+has 'compiler_class'           => ( default    => 'Mason::Compiler' );
+has 'component_class_prefix'   => ( lazy_build => 1 );
+has 'component_base_class'     => ( default    => 'Mason::Component' );
 has 'chi_root_class'           => ( is => 'ro' );
 has 'data_dir'                 => ( is => 'ro' );
-has 'dhandler_names'           => ( is => 'ro', isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'object_file_extension'    => ( is => 'ro', default => '.obj.pm' );
-has 'request_class'            => ( is => 'ro', default => 'Mason::Request' );
+has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'object_file_extension'    => ( default => '.obj.pm' );
+has 'request_class'            => ( default => 'Mason::Request' );
 has 'static_source'            => ( is => 'ro' );
 has 'static_source_touch_file' => ( is => 'ro' );
-has 'top_level_extensions'     => ( is => 'ro', isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
+has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
-has 'autohandler_or_dhandler_regex' => ( is => 'ro', lazy_build => 1 );
-has 'code_cache'             => ( is => 'ro', init_arg => undef );
-has 'compiler_params'        => ( is => 'ro', init_arg => undef );
-has 'default_request_params' => ( is => 'ro', init_arg => undef );
-has 'id'                     => ( is => 'ro', init_arg => undef );
+has 'autohandler_or_dhandler_regex' => ( lazy_build => 1 );
+has 'code_cache'             => ( init_arg => undef );
+has 'compiler_params'        => ( init_arg => undef );
+has 'default_request_params' => ( init_arg => undef );
+has 'id'                     => ( init_arg => undef );
 
 method BUILD ($params) {
     $self->{code_cache} = {};

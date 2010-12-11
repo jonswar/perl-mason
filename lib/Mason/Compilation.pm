@@ -8,19 +8,20 @@ use Guard;
 use JSON;
 use Mason::Util qw(dump_one_line read_file unique_id);
 use Method::Signatures::Simple;
+use Moose;
 use Mason::Moose;
 use Text::Trim qw(trim);
 use strict;
 use warnings;
 
 # Passed attributes
-has 'compiler' => ( is => 'ro', required => 1, weak_ref => 1 );
-has 'interp'   => ( is => 'ro', required => 1 );
-has 'path'     => ( is => 'ro', required => 1 );
-has 'source_file' => ( is => 'ro', required => 1 );
+has 'compiler' => ( required => 1, weak_ref => 1 );
+has 'interp'   => ( required => 1 );
+has 'path'     => ( required => 1 );
+has 'source_file' => ( required => 1 );
 
 # Derived attributes
-has 'dir_path' => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'dir_path' => ( lazy_build => 1, init_arg => undef );
 
 method BUILD () {
 

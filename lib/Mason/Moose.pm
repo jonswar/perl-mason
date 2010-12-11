@@ -1,7 +1,5 @@
 package Mason::Moose;
-use Moose                     ();
-use MooseX::HasDefaults::RO   ();
-use MooseX::StrictConstructor ();
+use MooseX::HasDefaults::RO ();
 use Moose::Exporter;
 Moose::Exporter->setup_import_methods( also => ['MooseX::HasDefaults::RO'] );
 

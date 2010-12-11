@@ -7,6 +7,7 @@ use Log::Any qw($log);
 use Mason::TieHandle;
 use Mason::Types;
 use Method::Signatures::Simple;
+use Moose;
 use Mason::Moose;
 use Scalar::Util qw(blessed);
 use Try::Tiny;
@@ -16,15 +17,15 @@ use warnings;
 my $default_out = sub { print $_[0] };
 
 # Passed attributes
-has 'interp' => ( is => 'ro', required => 1, weak_ref => 1 );
+has 'interp' => ( required => 1, weak_ref => 1 );
 has 'out_method' =>
-( is => 'ro', isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
+( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 
 # Derived attributes
-has 'buffer_stack'       => ( is => 'ro', init_arg => undef );
-has 'path_info'          => ( is => 'ro', init_arg => undef, default => '' );
-has 'request_comp'       => ( is => 'ro', init_arg => undef );
-has 'request_code_cache' => ( is => 'ro', init_arg => undef );
+has 'buffer_stack'       => ( init_arg => undef );
+has 'path_info'          => ( init_arg => undef, default => '' );
+has 'request_comp'       => ( init_arg => undef );
+has 'request_code_cache' => ( init_arg => undef );
 
 # Class attributes
 our $current_request;

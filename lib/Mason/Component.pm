@@ -1,16 +1,17 @@
 package Mason::Component;
 use Method::Signatures::Simple;
+use Moose;
 use Mason::Moose;
 use Log::Any;
 use strict;
 use warnings;
 
 # Passed attributes
-has 'm' => ( is => 'ro', required => 1, weak_ref => 1 );
+has 'm' => ( required => 1, weak_ref => 1 );
 
 # Derived attributes
-has 'comp_attr' => ( is => 'ro', init_arg => undef );
-has 'comp_logger' => ( is => 'ro', init_arg => undef, lazy_build => 1 );
+has 'comp_attr' => ( init_arg => undef );
+has 'comp_logger' => ( init_arg => undef, lazy_build => 1 );
 
 method BUILD ($params) {
     $self->{comp_attr} = { map { /^comp_|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };

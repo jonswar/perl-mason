@@ -11,26 +11,27 @@ use Mason::Compilation;
 use Mason::Types;
 use Mason::Util qw(checksum);
 use Method::Signatures::Simple;
+use Moose;
 use Mason::Moose;
 use strict;
 use warnings;
 
 # Passed attributes
-has 'allow_globals' => ( is => 'ro', default => sub { [] } );
-has 'compilation_class' => ( is => 'ro', default => 'Mason::Compilation' );
-has 'default_escape_flags' => ( is => 'ro', default => sub { [] } );
+has 'allow_globals' => ( default => sub { [] } );
+has 'compilation_class' => ( default => 'Mason::Compilation' );
+has 'default_escape_flags' => ( default => sub { [] } );
 has 'internal_component_regex' =>
-( is => 'ro', isa => 'Mason::Types::RegexpRefOrStr', default => sub { qr/\.mi$/ }, coerce => 1 );
+( isa => 'Mason::Types::RegexpRefOrStr', default => sub { qr/\.mi$/ }, coerce => 1 );
 
 has 'no_source_line_numbers' => ( is => 'ro' );
 has 'perltidy_object_files'  => ( is => 'ro' );
-has 'valid_flags'            => ( is => 'ro', default => sub { ['extends'] } );
+has 'valid_flags'            => ( default => sub { ['extends'] } );
 
 # Derived attributes
-has 'block_regex'      => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'block_types'      => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'compiler_id'      => ( is => 'ro', lazy_build => 1, init_arg => undef );
-has 'valid_flags_hash' => ( is => 'ro', lazy_build => 1, init_arg => undef );
+has 'block_regex'      => ( lazy_build => 1, init_arg => undef );
+has 'block_types'      => ( lazy_build => 1, init_arg => undef );
+has 'compiler_id'      => ( lazy_build => 1, init_arg => undef );
+has 'valid_flags_hash' => ( lazy_build => 1, init_arg => undef );
 
 # Default list of blocks - may be augmented in subclass
 #
