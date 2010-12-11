@@ -1,16 +1,40 @@
 package Mason::Util;
 use Carp;
+use Class::MOP;
 use Data::UUID;
 use Fcntl qw( :DEFAULT );
+use Try::Tiny;
 use strict;
 use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(checksum clear_class dump_one_line mason_canon_path read_file unique_id write_file);
+  qw(can_load checksum clear_class dump_one_line mason_canon_path read_file unique_id write_file);
 
 my $Fetch_Flags = O_RDONLY | O_BINARY;
 my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;
+
+# Load $class_name if possible. Return 1 if successful, 0 if it could not be
+# found, and rethrow load error (other than not found).
+#
+sub can_load {
+    my ($class_name) = @_;
+
+    my $result;
+    try {
+        Class::MOP::load_class($class_name);
+        $result = 1;
+    }
+    catch {
+        if (/Can\'t locate .* in \@INC/) {
+            $result = 0;
+        }
+        else {
+            die $_;
+        }
+    };
+    return $result;
+}
 
 sub dump_one_line {
     my ($value) = @_;

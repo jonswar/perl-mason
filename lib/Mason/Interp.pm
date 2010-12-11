@@ -25,14 +25,16 @@ my $interp_id = 0;
 has 'autohandler_names'        => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( lazy_build => 1 );
-has 'compiler_class'           => ( default    => 'Mason::Compiler' );
+has 'compiler_class'           => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'component_base_class'     => ( default    => 'Mason::Component' );
 has 'chi_root_class'           => ( is => 'ro' );
 has 'data_dir'                 => ( is => 'ro' );
 has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'mason_root_class'         => ( is => 'ro', required => 1 );
 has 'object_file_extension'    => ( default => '.obj.pm' );
-has 'request_class'            => ( default => 'Mason::Request' );
+has 'request_class'            => ( lazy_build => 1 );
+has 'request_count'            => ( is => 'ro', default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
 has 'static_source'            => ( is => 'ro' );
 has 'static_source_touch_file' => ( is => 'ro' );
 has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
@@ -86,12 +88,20 @@ method _build_compiler () {
     return $self->compiler_class->new( %{ $self->compiler_params } );
 }
 
+method _build_compiler_class () {
+    return $self->mason_root_class->find_subclass('Compiler');
+}
+
 method _build_component_class_prefix () {
     return "MC" . $self->{id};
 }
 
 method _build_dhandler_names () {
     return [ map { "dhandler" . $_ } @{ $self->top_level_extensions } ];
+}
+
+method _build_request_class () {
+    return $self->mason_root_class->find_subclass('Request');
 }
 
 method run () {

@@ -4,7 +4,7 @@ use File::Basename;
 use File::Path;
 use File::Slurp;
 use File::Temp qw(tempdir);
-use Mason::Interp;
+use Mason;
 use Method::Signatures::Simple;
 use Test::Exception;
 use Test::More;
@@ -31,7 +31,7 @@ sub setup_dirs {
     $self->{data_dir}  = $self->{temp_dir} . "/data";
     mkpath( [ $self->{comp_root}, $self->{data_dir} ], 0, 0775 );
 
-    $self->{interp} = Mason::Interp->new(
+    $self->{interp} = Mason->new(
         comp_root => $self->{comp_root},
         data_dir  => $self->{data_dir},
     );

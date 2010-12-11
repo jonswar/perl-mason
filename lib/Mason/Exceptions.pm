@@ -10,12 +10,6 @@ use Exception::Class (
         description => 'a component called $m->abort'
     },
 
-    'Mason::Exception::Decline' => {
-        isa         => 'Mason::Exception',
-        fields      => [qw(declined_value)],
-        description => 'a component called $m->decline'
-    },
-
     'Mason::Exception::TopLevelNotFound' => {
         isa         => 'Mason::Exception',
         description => 'the top level component could not be found'
