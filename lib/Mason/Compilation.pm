@@ -69,6 +69,13 @@ method parse () {
     }
 }
 
+# Can be overriden to arbitrarily process Perl code in
+# <%perl>, <%class>, <%init>, <% %>, and %-lines
+#
+method process_perl_code ($code) {
+    return $code;
+}
+
 method _match_unnamed_block () {
     my $block_regex = $self->compiler->block_regex;
     $self->_match_block( qr/\G(\n?)<%($block_regex)>/, 0 );
@@ -341,11 +348,13 @@ method _output_line_number_comment () {
 
 method _handle_class_block ($contents) {
     $self->_assert_not_in_method('<%class>');
-    $self->{blocks}->{class} = $self->_output_line_number_comment . $contents;
+    $self->{blocks}->{class} =
+      $self->_output_line_number_comment . $self->process_perl_code($contents);
 }
 
 method _handle_init_block ($contents) {
-    $self->{current_method}->{init} = $self->_output_line_number_comment . $contents;
+    $self->{current_method}->{init} =
+      $self->_output_line_number_comment . $self->process_perl_code($contents);
 }
 
 method _handle_method_block ( $contents, $name ) {
@@ -423,7 +432,7 @@ method _handle_flags_block ($contents) {
 }
 
 method _handle_perl_block ($contents) {
-    $self->_add_to_current_method($contents);
+    $self->_add_to_current_method( $self->process_perl_code($contents) );
 
     $self->{last_code_type} = 'perl_block';
 }
@@ -452,6 +461,8 @@ method _handle_substitution ( $text, $escape ) {
         return;
     }
 
+    $text = $self->process_perl_code($text);
+
     if ( ( defined $escape )
         || @{ $self->compiler->default_escape_flags } )
     {
@@ -474,11 +485,11 @@ method _handle_substitution ( $text, $escape ) {
               grep { $_ ne 'n' } @flags
         );
 
-        $text = "\$m->apply_escapes( (join '', ($text)), $flags )"
+        $text = "\$m->apply_escapes( $text, $flags )"
           if $flags;
     }
 
-    my $code = "for ( $text ) { \$\$_buffer .= \$_ if defined }\n";
+    my $code = "{ \$\$_buffer .= $text if defined($text) }\n";
 
     $self->_add_to_current_method($code);
 
@@ -501,7 +512,7 @@ method _handle_component_call ($contents) {
 }
 
 method _handle_perl_line ($contents) {
-    my $code = "$contents\n";
+    my $code = $self->process_perl_code( $contents . "\n" );
 
     $self->_add_to_current_method($code);
 
