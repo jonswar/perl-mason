@@ -7,7 +7,7 @@ use Log::Any qw($log);
 use Mason::TieHandle;
 use Mason::Types;
 use Method::Signatures::Simple;
-use Moose;
+use Mason::Moose;
 use Scalar::Util qw(blessed);
 use Try::Tiny;
 use strict;
@@ -160,7 +160,7 @@ method _aborted_or_declined ($err) {
 
 # Determine current comp based on caller() stack.
 #
-method current_comp  () {
+method current_comp () {
     my $cnt = 1;
     while (1) {
         if ( my $pkg = ( caller($cnt) )[0] ) {

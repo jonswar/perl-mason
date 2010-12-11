@@ -1,6 +1,6 @@
 package Mason::Component;
 use Method::Signatures::Simple;
-use Moose;
+use Mason::Moose;
 use Log::Any;
 use strict;
 use warnings;

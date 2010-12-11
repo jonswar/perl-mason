@@ -11,7 +11,7 @@ use Mason::Compilation;
 use Mason::Types;
 use Mason::Util qw(checksum);
 use Method::Signatures::Simple;
-use Moose;
+use Mason::Moose;
 use strict;
 use warnings;
 

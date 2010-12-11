@@ -8,7 +8,7 @@ use Guard;
 use JSON;
 use Mason::Util qw(dump_one_line read_file unique_id);
 use Method::Signatures::Simple;
-use Moose;
+use Mason::Moose;
 use Text::Trim qw(trim);
 use strict;
 use warnings;

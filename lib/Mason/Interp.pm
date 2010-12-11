@@ -10,7 +10,7 @@ use Mason::Util qw(mason_canon_path);
 use Memoize;
 use Method::Signatures::Simple;
 use Moose::Util::TypeConstraints;
-use Moose;
+use Mason::Moose;
 use MooseX::StrictConstructor;
 use JSON;
 use autodie qw(:all);
