@@ -28,23 +28,24 @@ has 'compiler'                 => ( lazy_build => 1 );
 has 'compiler_class'           => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'component_base_class'     => ( default    => 'Mason::Component' );
-has 'chi_root_class'           => ( is => 'ro' );
-has 'data_dir'                 => ( is => 'ro' );
+has 'chi_root_class'           => ( default => 'CHI' );
+has 'chi_default_params'       => ( lazy_build => 1 );
+has 'data_dir'                 => ( );
 has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'mason_root_class'         => ( is => 'ro', required => 1 );
-has 'object_file_extension'    => ( default => '.obj.pm' );
+has 'mason_root_class'         => ( required => 1 );
+has 'object_file_extension'    => ( default => '.mobj' );
 has 'request_class'            => ( lazy_build => 1 );
-has 'request_count'            => ( is => 'ro', default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
-has 'static_source'            => ( is => 'ro' );
-has 'static_source_touch_file' => ( is => 'ro' );
+has 'static_source'            => ( );
+has 'static_source_touch_file' => ( );
 has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
-has 'autohandler_or_dhandler_regex' => ( lazy_build => 1 );
+has 'autohandler_or_dhandler_regex' => ( lazy_build => 1, init_arg => undef );
 has 'code_cache'             => ( init_arg => undef );
 has 'compiler_params'        => ( init_arg => undef );
-has 'default_request_params' => ( init_arg => undef );
+has 'request_params' => ( init_arg => undef );
 has 'id'                     => ( init_arg => undef );
+has 'request_count'          => ( init_arg => undef, default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
 
 method BUILD ($params) {
     $self->{code_cache} = {};
@@ -65,12 +66,12 @@ method BUILD ($params) {
             $self->{compiler_params}->{$key} = delete( $params->{$key} );
         }
     }
-    $self->{default_request_params} = {};
+    $self->{request_params} = {};
     my %is_request_attribute =
       map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
     foreach my $key ( keys(%$params) ) {
         if ( $is_request_attribute{$key} ) {
-            $self->{default_request_params}->{$key} = delete( $params->{$key} );
+            $self->{request_params}->{$key} = delete( $params->{$key} );
         }
     }
 }
@@ -82,6 +83,13 @@ method _build_autohandler_names () {
 method _build_autohandler_or_dhandler_regex () {
     my $regex = '(' . join( "|", @{ $self->autohandler_names }, @{ $self->dhandler_names } ) . ')$';
     return qr/$regex/;
+}
+
+method _build_chi_default_params () {
+    return {
+        driver   => 'File',
+        root_dir => catdir( $self->data_dir, 'cache' )
+    };
 }
 
 method _build_compiler () {
@@ -120,7 +128,7 @@ method srun () {
 }
 
 method build_request () {
-    return $self->request_class->new( interp => $self, %{ $self->default_request_params }, @_ );
+    return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
 }
 
 method flush_load_cache () {
@@ -358,3 +366,201 @@ method check_static_source_touch_file () {
 __PACKAGE__->meta->make_immutable();
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mason::Interp - Mason Interpreter
+
+=head1 SYNOPSIS
+
+    my $i = Mason->new (comp_root => '/path/to/comps',
+                        data_dir  => '/path/to/data',
+                        ...);
+
+=head1 DESCRIPTION
+
+Interp is the central Mason object, returned from C<< Mason->new >>. It is
+responsible for creating new Request objects and maintaining the cache of
+loaded components.
+
+=head1 PARAMETERS TO THE new() CONSTRUCTOR
+
+=over
+
+=item autohandler_names
+
+Array reference of autohandler file names to check in order when determining a
+component's parent. Default is ["autohandler.pm", "autohandler.m"].
+
+=item comp_root
+
+The component root marks the top of your component hierarchy and defines how
+component paths are translated into real file paths. For example, if your
+component root is F</usr/local/httpd/docs>, a component path of
+F</products/index.html> translates to the file
+F</usr/local/httpd/docs/products/index.html>.
+
+This parameter may be either a scalar or an array reference.  If it is a
+scalar, it should be a filesystem path indicating the component root. If it is
+an array reference, it should be of the following form:
+
+ [ [ foo => '/usr/local/foo' ],
+   [ bar => '/usr/local/bar' ] ]
+
+This is an array of two-element array references, not a hash.  The "keys" for
+each path must be unique and their "values" must be filesystem paths.  These
+paths will be searched in the provided order whenever a component path is
+resolved. For example, given the above component roots and a component path of
+F</products/index.html>, Mason would search first for
+F</usr/local/foo/products/index.html>, then for
+F</usr/local/bar/products/index.html>.
+
+The keys are used in several ways. They help to distinguish component caches
+and object files between different component roots, and they appear in the
+C<title()> of a component.
+
+When you specify a single path for a component root, this is actually
+translated into
+
+  [ [ MAIN => path ] ]
+
+=item compiler
+
+The Compiler object to associate with this Interpreter.  By default a new
+object of class L</compiler_class> will be created.
+
+=item compiler_class
+
+The class to use when creating a compiler. Defaults to
+L<Mason::Compiler|Mason::Compiler>.
+
+=item component_class_prefix
+
+Prefix to use in generated component classnames. Defaults to 'MC' plus a unique
+number for the interpreter, e.g. MC0. So a component '/foo/bar' would get a
+classname like 'MC0::foo::bar'.
+
+=item component_base_class
+
+The base class for components that do not inherit from another component.
+Defaults to L<Mason::Component|Mason::Component>.
+
+=item chi_default_params
+
+A hashref of parameters that L<$m-E<gt>cache|cache> should pass to each cache
+constructor. Defaults to C<< { driver => 'File', root_dir => 'DATA_DIR/cache' }
+>>.
+
+=item chi_root_class
+
+The class that L<$m-E<gt>cache|cache> should use for creating cache objects.
+Defaults to 'CHI'.
+
+=item data_dir
+
+The data directory is a writable directory that Mason uses for various features
+and optimizations: for example, component object files and data cache files.
+Mason will create the directory on startup if necessary.
+
+=item dhandler_names
+
+Array reference of dhandler file names to check in order when resolving a
+top-level path. Default is C<< ["dhandler.pm", "dhandler.m"] >>.
+
+=item object_file_extension
+
+Extension to add to the end of object files. Default is ".mobj".
+
+=item request_class
+
+The class to use when creating requests. Defaults to
+L<Mason::Request|Mason::Request>.
+
+=item static_source
+
+True or false, default is false. When false, Mason checks the timestamp of the
+component source file each time the component is used to see if it has changed.
+This provides the instant feedback for source changes that is expected for
+development.  However it does entail a file stat for each component executed.
+
+When true, Mason assumes that the component source tree is unchanging: it will
+not check component source files to determine if the memory cache or object
+file has expired.  This can save many file stats per request. However, in order
+to get Mason to recognize a component source change, you must flush the memory
+cache and remove object files. See L</static_source_touch_file> for one easy
+way to arrange this.
+
+We recommend turning this mode on in your production sites if possible, if
+performance is of any concern.
+
+=item static_source_touch_file
+
+Specifies a filename that Mason will check once at the beginning of of every
+request. When the file timestamp changes, Mason will (1) clear its in-memory
+component cache, and (2) remove object files if they have not already been
+deleted by another process.
+
+This provides a convenient way to implement L</static_source> mode. All you
+need to do is make sure that a single file gets touched whenever components
+change. For Mason's part, checking a single file at the beginning of a request
+is much cheaper than checking every component file when static_source=0.
+
+=item top_level_extensions
+
+Array reference of filename extensions for top-level components. Default is C<<
+[".pm", ".m"] >>.
+
+=back
+
+=head1 REQUEST AND COMPILER PARAMETERS
+
+Constructor parameters for Compiler and Request objects (Mason::Compiler and
+Mason::Request by default) may be passed to the Interp constructor, and they
+will be passed along whenever a compiler or request is created.
+
+=head1 ACCESSOR METHODS
+
+All of the above properties have standard read-only accessor methods of the
+same name.
+
+=head1 OTHER METHODS
+
+=over
+
+=item comp_exists (path)
+
+Given an I<absolute> component path, this method returns a boolean value
+indicating whether or not a component exists for that path.
+
+=item run (path, args...)
+
+Creates a new Mason::Request object for the given I<path> and I<args>, and
+executes it. Request output is sent to the default L<Request/out_method>. The
+return value is the return value of the request's top level component, if any.
+
+=item srun (path, args...)
+
+Same as L</run>, but returns request output as a string (think sprintf versus
+printf).
+
+=item flush_code_cache
+
+Empties the component cache. When using Perl 5.00503 or earlier, you should
+call this when finished with an interpreter, in order to remove circular
+references that would prevent the interpreter from being destroyed.
+
+=item load (path)
+
+Returns the component object corresponding to an absolute component I<path>, or
+undef if none exists. Dies with an error if the component fails to load because
+of a syntax error.
+
+=back
+
+=head1 SEE ALSO
+
+L<Mason|Mason>
+
+=cut

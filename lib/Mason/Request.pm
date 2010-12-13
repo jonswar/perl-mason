@@ -162,15 +162,12 @@ method current_comp_class () {
 
 # Return a CHI cache object specific to this component.
 #
-method cache (%options) {
+method cache () {
     my $chi_root_class = $self->interp->chi_root_class;
     load_class($chi_root_class);
+    my %options = ( %{ $self->interp->chi_default_params }, @_ );
     if ( !exists( $options{namespace} ) ) {
         $options{namespace} = $self->current_comp_class->comp_id;
-    }
-    if ( !exists( $options{driver} ) && !exists( $options{driver_class} ) ) {
-        $options{driver} = 'File';
-        $options{root_dir} ||= catdir( $self->interp->data_dir, "cache" );
     }
     return $chi_root_class->new(%options);
 }
@@ -391,11 +388,9 @@ C<abort> exceptions pass through:
 =for html <a name="item_cache"></a>
 
 C<$m-E<gt>cache> returns a new L<CHI object|CHI> with a namespace specific to
-this component. Any parameters are combined with the I<default_cache_options>
-parameter and passed along to the constructor.
-
-I<chi_root_class> is a special parameter which specifies the factory class that
-will be called to create cache objects. The default is 'CHI'.
+this component. Any parameters are combined with
+L<Interp/chi_default_parameters> and passed along to the
+L<Interp/chi_root_class> constructor.
 
 =item clear_buffer
 

@@ -17,20 +17,15 @@ use strict;
 use warnings;
 
 # Passed attributes
-has 'allow_globals' => ( default => sub { [] } );
 has 'compilation_class' => ( default => 'Mason::Compilation' );
-has 'default_escape_flags' => ( default => sub { [] } );
-has 'internal_component_regex' =>
-( isa => 'Mason::Types::RegexpRefOrStr', default => sub { qr/\.mi$/ }, coerce => 1 );
-
-has 'no_source_line_numbers' => ( is => 'ro' );
-has 'perltidy_object_files'  => ( is => 'ro' );
-has 'valid_flags'            => ( default => sub { ['extends'] } );
+has 'no_source_line_numbers' => ( );
+has 'perltidy_object_files'  => ( );
 
 # Derived attributes
 has 'block_regex'      => ( lazy_build => 1, init_arg => undef );
 has 'block_types'      => ( lazy_build => 1, init_arg => undef );
 has 'compiler_id'      => ( lazy_build => 1, init_arg => undef );
+has 'valid_flags'      => ( init_arg => undef, default => sub { ['extends'] } );
 has 'valid_flags_hash' => ( lazy_build => 1, init_arg => undef );
 
 # Default list of blocks - may be augmented in subclass
@@ -114,3 +109,43 @@ method is_pure_perl_comp_path ($path) {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mason::Compiler - Mason Compiler
+
+=head1 DESCRIPTION
+
+Compiler is the Mason object responsible for compiling components into Perl
+classes. Each Interp creates a single persistent Compiler. The Compiler in turn
+creates a Compilation object to compile each component.
+
+=head1 PARAMETERS TO THE new() CONSTRUCTOR
+
+=over
+
+=item compilation_class
+
+The class to use when compiling a new component. Defaults to
+L<Mason::Compilation|Mason::Compilation>.
+
+=item no_source_line_numbers
+
+Do not put in source line number comments when generating code.  Setting this
+to true will cause error line numbers to reflect the real object file, rather
+than the source component.
+
+=back
+
+=head1 ACCESSOR METHODS
+
+All of the above properties have standard read-only accessor methods of the
+same name.
+
+=head1 SEE ALSO
+
+L<Mason|Mason>
+
+=cut

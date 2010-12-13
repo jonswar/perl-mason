@@ -286,8 +286,8 @@ attributes:
 This is equivalent to the following Moose syntax (which you can also use):
 
     <%class>
-    has 'a' => ();
-    has 'b' => (default => 5);
+    has 'a' => (required => 1);
+    has 'b' => (default => 'default value');
     has 'c' => (isa => 'Str',
                 default => 'something');
     </%class>

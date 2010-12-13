@@ -256,8 +256,8 @@ method output_compiled_component () {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_flag_comment, $self->_output_use_vars,    $self->_output_strictures,
-            $self->_output_comp_info,    $self->_output_class_block, $self->_output_methods,
+            $self->_output_flag_comment, $self->_output_strictures, $self->_output_comp_info,
+            $self->_output_class_block,  $self->_output_methods,
         )
     ) . "\n";
 }
@@ -269,13 +269,6 @@ method _output_flag_comment () {
             return "# FLAGS: " . $json->encode($flags) . "\n\n";
         }
     }
-}
-
-method _output_use_vars () {
-    my @allow_globals = @{ $self->compiler->allow_globals };
-    return @allow_globals
-      ? sprintf( "use vars qw(%s);", join( ' ', @allow_globals ) )
-      : "";
 }
 
 method _output_strictures () {
