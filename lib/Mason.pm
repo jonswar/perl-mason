@@ -1,8 +1,10 @@
 package Mason;
+use Carp;
 use Log::Any qw($log);
 use List::Util qw(first);
 use Mason::Interp;
-use Mason::Util;
+use Mason::Plugin;
+use Mason::Util qw(can_load);
 use Memoize;
 use Moose::Meta::Class;
 use strict;
@@ -12,7 +14,9 @@ $Mason::VERSION = '0.01';
 
 sub new {
     my ( $class, %params ) = @_;
-    my $plugins = $class->process_plugins( delete( $params{plugins} ) || [] );
+    my $plugins = delete( $params{plugins} ) || [];
+    croak 'plugins must be an array reference' unless ref($plugins) eq 'ARRAY';
+    $plugins = $class->process_plugins($plugins);
     my $interp_class = $class->find_subclass( 'Interp', $plugins );
     return $interp_class->new( mason_root_class => $class, plugins => $plugins, %params );
 }
@@ -31,7 +35,7 @@ sub process_plugin {
         : map { join( "::", $_, "Plugin", $plugin ) }
           ( $class eq 'Mason' ? ($class) : ( $class, 'Mason' ) )
     );
-    return first { can_load($_) } @candidates
+    return ( first { can_load($_) } @candidates )
       || die "could not find plugin '$plugin' in " . join( " or ", @candidates );
 }
 

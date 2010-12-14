@@ -16,7 +16,6 @@ use warnings;
 
 # Passed attributes
 has 'compiler' => ( required => 1, weak_ref => 1 );
-has 'interp'   => ( required => 1 );
 has 'path'     => ( required => 1 );
 has 'source_file' => ( required => 1 );
 
@@ -38,7 +37,7 @@ method BUILD () {
 }
 
 method _build_compilation_class () {
-    return $self->interp->find_subclass('Compilation');
+    return $self->compiler->interp->find_subclass('Compilation');
 }
 
 method _build_dir_path () {
@@ -67,9 +66,6 @@ method parse () {
 
         $self->throw_syntax_error(
             "could not parse next element at position " . pos( $self->{source} ) );
-    }
-
-    if ( $self->{is_pure_perl} ) {
     }
 }
 

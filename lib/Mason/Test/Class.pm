@@ -23,17 +23,20 @@ sub _startup : Test(startup) {
     $self->setup_dirs;
 }
 
-sub setup_dirs {
-    my $self = shift;
-
+method setup_dirs () {
     $self->{temp_dir}  = join( "/", $self->{temp_root}, $temp_dir_count++ );
     $self->{comp_root} = $self->{temp_dir} . "/comps";
     $self->{data_dir}  = $self->{temp_dir} . "/data";
     mkpath( [ $self->{comp_root}, $self->{data_dir} ], 0, 0775 );
 
-    $self->{interp} = Mason->new(
+    $self->{interp} = $self->create_interp();
+}
+
+method create_interp () {
+    return Mason->new(
         comp_root => $self->{comp_root},
         data_dir  => $self->{data_dir},
+        @_
     );
 }
 

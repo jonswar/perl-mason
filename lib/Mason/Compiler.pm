@@ -64,9 +64,8 @@ method escape_flag_regex () {
     return qr/[[:alpha:]_]\w*/;
 }
 
-method compile ( $interp, $source_file, $path ) {
+method compile ( $source_file, $path ) {
     my $compilation = $self->compilation_class->new(
-        interp      => $interp,
         source_file => $source_file,
         path        => $path,
         compiler    => $self
@@ -74,7 +73,7 @@ method compile ( $interp, $source_file, $path ) {
     return $compilation->compile();
 }
 
-method compile_to_file ( $interp, $source_file, $path, $object_file ) {
+method compile_to_file ( $source_file, $path, $object_file ) {
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not
@@ -89,7 +88,7 @@ method compile_to_file ( $interp, $source_file, $path, $object_file ) {
         }
         rmtree($object_file) if ( -d $object_file );
     }
-    my $object_contents = $self->compile( $interp, $source_file, $path );
+    my $object_contents = $self->compile( $source_file, $path );
 
     $self->write_object_file( $object_file, $object_contents );
 }

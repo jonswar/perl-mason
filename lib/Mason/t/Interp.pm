@@ -17,8 +17,7 @@ sub test_component_class_prefix : Test(6) {
     $self->add_comp( path => '/foo.m', component => 'foo' );
 
     my @interp =
-      map { Mason->new( comp_root => $self->{comp_root}, data_dir => $self->{data_dir}, ); }
-      ( 0 .. 1 );
+      map { $self->create_interp() } ( 0 .. 1 );
     ok( $interp[0]->component_class_prefix ne $interp[1]->component_class_prefix,
         "different prefixes" );
     ok( $interp[0]->load('/foo.m') ne $interp[1]->load('/foo.m'), "different classnames" );
@@ -26,11 +25,7 @@ sub test_component_class_prefix : Test(6) {
     $check_prefix->( $interp[0] );
     $check_prefix->( $interp[1] );
 
-    $interp[2] = Mason->new(
-        component_class_prefix => 'Blah',
-        comp_root              => $self->{comp_root},
-        data_dir               => $self->{data_dir}
-    );
+    $interp[2] = $self->create_interp( component_class_prefix => 'Blah' );
     is( $interp[2]->component_class_prefix, 'Blah', 'specified prefix' );
     $check_prefix->( $interp[2] );
 }

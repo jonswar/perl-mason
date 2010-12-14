@@ -194,7 +194,7 @@ method load ($path) {
     }
     my $object_lastmod = @stat ? $stat[9] : 0;
     if ( !$object_lastmod || ( $object_lastmod < $source_lastmod && !$self->static_source ) ) {
-        $self->compiler->compile_to_file( $self, $source_file, $path, $object_file );
+        $self->compiler->compile_to_file( $source_file, $path, $object_file );
     }
 
     my $compc = $self->comp_class_for_path($path);
