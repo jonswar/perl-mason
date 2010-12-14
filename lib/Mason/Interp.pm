@@ -27,13 +27,14 @@ has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coer
 has 'compiler'                 => ( lazy_build => 1 );
 has 'compiler_class'           => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
-has 'component_base_class'     => ( default    => 'Mason::Component' );
+has 'component_base_class'     => ( lazy_build => 1 );
 has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( );
 has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
+has 'plugins'                  => ( default => sub { [] } );
 has 'request_class'            => ( lazy_build => 1 );
 has 'static_source'            => ( );
 has 'static_source_touch_file' => ( );
@@ -93,11 +94,15 @@ method _build_chi_default_params () {
 }
 
 method _build_compiler () {
-    return $self->compiler_class->new( %{ $self->compiler_params } );
+    return $self->compiler_class->new( interp => $self, %{ $self->compiler_params } );
 }
 
 method _build_compiler_class () {
-    return $self->mason_root_class->find_subclass('Compiler');
+    return $self->find_subclass('Compiler');
+}
+
+method _build_component_base_class () {
+    return $self->find_subclass('Component');
 }
 
 method _build_component_class_prefix () {
@@ -109,7 +114,11 @@ method _build_dhandler_names () {
 }
 
 method _build_request_class () {
-    return $self->mason_root_class->find_subclass('Request');
+    return $self->find_subclass('Request');
+}
+
+method find_subclass ($name) {
+    return $self->mason_root_class->find_subclass( $name, $self->plugins );
 }
 
 method run () {

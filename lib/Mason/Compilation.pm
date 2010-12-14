@@ -37,6 +37,10 @@ method BUILD () {
     $self->{is_pure_perl}    = $self->compiler->is_pure_perl_comp_path( $self->path );
 }
 
+method _build_compilation_class () {
+    return $self->interp->find_subclass('Compilation');
+}
+
 method _build_dir_path () {
     return dirname( $self->path );
 }
@@ -455,32 +459,6 @@ method _handle_substitution ( $text, $escape ) {
     }
 
     $text = $self->process_perl_code($text);
-
-    if ( ( defined $escape )
-        || @{ $self->compiler->default_escape_flags } )
-    {
-        my @flags;
-        if ( defined $escape ) {
-            $escape =~ s/\s+$//;
-
-            @flags = split /\s*,\s*/, $escape;
-        }
-
-        # is there any way to check the flags for validity and still
-        # allow them to be dynamically set from components?
-
-        unshift @flags, @{ $self->compiler->default_escape_flags }
-          unless grep { $_ eq 'n' } @flags;
-
-        my %seen;
-        my $flags = (
-            join ', ', map { $seen{$_}++ ? () : "'$_'" }
-              grep { $_ ne 'n' } @flags
-        );
-
-        $text = "\$m->apply_escapes( $text, $flags )"
-          if $flags;
-    }
 
     my $code = "{ \$\$_buffer .= $text if defined($text) }\n";
 

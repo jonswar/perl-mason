@@ -17,9 +17,9 @@ use strict;
 use warnings;
 
 # Passed attributes
-has 'compilation_class' => ( default => 'Mason::Compilation' );
+has 'compilation_class' => ( lazy_build => 1 );
 has 'no_source_line_numbers' => ( );
-has 'perltidy_object_files'  => ( );
+has 'interp'   => ( required => 1, weak_ref => 1 );
 
 # Derived attributes
 has 'block_regex'      => ( lazy_build => 1, init_arg => undef );
@@ -37,6 +37,10 @@ method _build_block_types () {
 method _build_block_regex () {
     my $re = join '|', @{ $self->block_types };
     return qr/$re/i;
+}
+
+method _build_compilation_class () {
+    return $self->interp->find_subclass('Compilation');
 }
 
 method _build_compiler_id () {
@@ -70,34 +74,28 @@ method compile ( $interp, $source_file, $path ) {
     return $compilation->compile();
 }
 
-method compile_to_file ( $interp, $source_file, $path, $dest_file ) {
+method compile_to_file ( $interp, $source_file, $path, $object_file ) {
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not
     # every case is handled; to be complete, mkpath would have to unlink
     # any existing file in its way.
     #
-    if ( defined $dest_file && !-f $dest_file ) {
-        my ($dirname) = dirname($dest_file);
+    if ( defined $object_file && !-f $object_file ) {
+        my ($dirname) = dirname($object_file);
         if ( !-d $dirname ) {
             unlink($dirname) if ( -e _ );
             mkpath( $dirname, 0, 0775 );
         }
-        rmtree($dest_file) if ( -d $dest_file );
+        rmtree($object_file) if ( -d $object_file );
     }
     my $object_contents = $self->compile( $interp, $source_file, $path );
-    if ( my $perltidy_options = $self->perltidy_object_files ) {
-        require Perl::Tidy;
-        my $argv = ( $perltidy_options eq '1' ? '' : $perltidy_options );
-        my $source = $object_contents;
-        Perl::Tidy::perltidy(
-            'perltidyrc' => '/dev/null',
-            source       => \$source,
-            destination  => \$object_contents,
-            argv         => $argv
-        );
-    }
-    write_file( $dest_file, $object_contents );
+
+    $self->write_object_file( $object_file, $object_contents );
+}
+
+method write_object_file ($object_file, $object_contents) {
+    write_file( $object_file, $object_contents );
 }
 
 method is_external_comp_path ($path) {
