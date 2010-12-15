@@ -18,7 +18,7 @@ Unlike some other templating systems, Mason is proudly Perl-centric and does
 not attempt to define an alternate, "easier" language. It defines a thin layer
 of syntax and features to facilitate template creation, and leaves everything
 else to Perl. That said, Mason does allow some separation of Perl and content
-to make it easier for collaboration with non-Perl developers.
+to make it easier to collaborate with non-Perl developers.
 
 =head1 COMPONENTS
 
@@ -84,11 +84,11 @@ A private component - can only be accessed from other components
 
 =item .pm
 
-A public component that contains only Perl code - see L</Perl-only components>.
+A public component that contains only Perl code - see L</Pure-perl components>.
 
 =back
 
-=head1 IN-LINE PERL
+=head1 BASIC SYNTAX
 
 Here is a simple component example:
 
@@ -124,7 +124,8 @@ inner expression is required.
 
 =item 2.
 
-Lines beginning with a '%' character are treated as Perl.
+Lines beginning with a '%' character are treated as Perl. The '%' must be
+followed by at least one whitespace character.
 
 =item 3.
 
@@ -248,8 +249,8 @@ Here are some examples:
     # variable component path
     <& $comp &>
 
-    # variable component and arguments
-    <& $comp, %args &>
+    # variable component and attributes
+    <& $comp, %attr &>
 
     # you can use arbitrary expression for component path, but it cannot
     # begin with a letter or number; delimit with () to remedy this
@@ -356,78 +357,71 @@ defer control to the next dhandler by calling C<< $m->decline >>.
 You can customize the way Mason resolves top-level paths with the parameters
 L<Mason::Params/top_level_extensions> and L<Mason::Params/dhandler_names>.
 
-=head2 autohandlers
+=head2 Accessing the page component
 
-Autohandlers allow you to grab control and perform some action before and after
-Mason calls the page component. This might mean adding a standard header and
-footer, applying an output filter, or setting up global variables.
+You can access the page component from any component with C<< $m->page() >>.
 
-Autohandlers are directory based.  When Mason determines the top-level
-component, it checks that directory and all parent directories for a component
-called F<autohandler>. If found, the autohandler is called first.  After
-performing its actions, the autohandler typically calls C<< inner() >> to
-transfer control to the original intended component.
+=head1 INHERITANCE
 
-Here is an autohandler that adds a common header and footer to each page
-underneath its directory:
+Because components correspond to classes, each component inherits from (or
+'extends') a superclass. The default superclass for components is
+L<Mason::Component|Mason::Component>, but this may be overriden in two ways:
+the I<extends flag> and I<autobase components>.
 
-    <%method render>
-    <html>
-    <head><title>McHuffy Incorporated</title></head>
-    <body style="background-color: pink">
+=head2 Extends flag
 
-    % inner();
+A component can declare its superclass via the C<extends> flag:
 
-    <hr />
-    Copyright 1999 McHuffy Inc.
-    </body>
-    </html>
-    </%method>
+    <%flags>
+    extends => '/some/other/component'
+    </%flags>
 
-Same idea, using components for the header/footer:
+The path may be absolute as shown above, or relative to the component's path.
 
-    <%method render>
-    <& /shared/header.mi &>
-    % inner();
-    <& /shared/footer.mi &>
-    </%method>
+Note that including a raw 'extends' keyword in a C<< <%class> >> section will
+not work reliably.
 
-If more than one autohandler applies to a page, each autohandler gets a chance
-to run.  The top-most autohandler runs first; each C<< inner() >> transfers
-control to the next autohandler and finally to the originally called component.
-This allows you, for example, to combine general site-wide templates and more
-specific section-based templates.
+=head2 Autobase components
 
-You can customize the file names used for autohandlers with the
-L<Mason::Params/autohandler_names> parameter.
+Autobase components are specially named components that automatically become
+the superclass of all components in their directory and subdirectories. The
+default names are "Base.pm" and "Base.m" - you can customize this with the
+C<autobase_names> parameter.
 
-=head2 dhandlers vs. autohandlers
+For example, in this directory hierarchy
 
-dhandlers and autohandlers both provide a way to exert control over a large set
-of URLs. However, each specializes in a very different application.  The key
-difference is that dhandlers are invoked only when no appropriate component
-exists, while autohandlers are invoked only in conjunction with a matching
-component.
+    Base.pm
+    main.m
+    colors/
+       red.m
+       blue.m
+    flavors/
+       Base.m
+       vanilla.m
+       chocolate.m
 
-As a rule of thumb: use an autohandler when you have a set of components to
-handle your pages and you want to augment them with a template/filter. Use a
-dhandler when you want to create a set of "virtual URLs" that don't correspond
-to any actual components, or to provide default behavior for a directory.
+=over
 
-dhandlers and autohandlers can be used in the same directory. For example, you
-might have a mix of real URLs and virtual URLs to which you would like to apply
-a common template/filter.
+=item *
 
-=head1 PERL BLOCKS
+/Base.pm is the superclass of /main.m, /colors/red.m, /colors/blue.m, and
+/flavors/Base.m.
 
-The following sections contain blocks of Perl to execute at specific times.
+=item *
+
+/flavors/Base.m is the superclass of vanilla.m and chocolate.m.
+
+=back
+
+=head1 PERL BLOCKS AND COMPONENTS
 
 =head2 <%init>
 
 This section contains initialization code that executes as soon as the
 component is called. Technically an C<< <%init> >> block is equivalent to a C<<
-<%perl> >> block at the beginning of the component, but there can be an
-aesthetic advantage to placing this block at the end rather than the beginning.
+<%perl> >> block at the beginning of the C<< main >> method, but there can be
+an aesthetic advantage to placing this block at the end rather than the
+beginning.
 
 You can also include an C<< <%init> >> block inside any C<< <%method> >>; it is
 equivalent to a C<< <%perl> >> block at the beginning of the method.
@@ -438,12 +432,22 @@ This code executes once when the component is loaded, in the main body of the
 class outside of any methods. This is the place to use modules, declare
 attributes, and do other things on a class level.
 
+=head2 Pure-perl components
+
+A component with a ".pm" extension is treated as if its entire content was
+surrounded by <%class> tags. You do not need to (and are not allowed to)
+include Mason tags in this component, and it will not produce any output if
+called. This is just a way of defining a class that other components can easily
+interact with and extend. Some applications include: controller logic, web form
+handlers, and L<autobase components|Autobase components>.
+
 =head1 METHODS
 
 Components are compiled to Moose classes. By default a component has a single
 method, 'main', which contains all of the HTML and Perl in the main body of the
 component, but you can add as many other methods as you like. Methods that
-output HTML can be added via the C<< <$method> >> section.
+output HTML can be added via the C<< <$method> >> section; these methods
+automatically have access to C<$self> and C<$m>.
 
     <%method leftcol>
       <table><tr>
@@ -458,15 +462,16 @@ output HTML can be added via the C<< <$method> >> section.
     <% $self->leftcol %>
 
 Pure-Perl methods that return a value can be added within the << <%class> >>
-section:
+section. These methods automatically have access to C<$self>, but must call
+C<$self->m> to get the request object.
 
     <%class>
-    method compute_value {
-        # calcualate $value
-        return $value;
+    method multiply ($a, $b) {
+        return $a * $b;
     }
 
-    method some_other_method {
+    method some_other_method () {
+        my $m = $self->m;
         ...
     }
     </%class>
@@ -474,46 +479,19 @@ section:
     ...
 
     <%init>
-    my $value = $self->compute_value;
+    my $value = $self->multiply(5, 6);
     </%init>
 
-=head1 FILTERING
+Note that we are using L<Method::Signatures::Simple|Method::Signatures::Simple>
+to provide the C<method> keyword and argument lists; this is used throughout
+Mason internals as well. If you prefer straight-up Perl subroutines:
 
-This section describes several ways to filter the output, or part of the
-output, of a component.
-
-=head2 <%filter> section
-
-The C<< <%filter> >> section allows you to filter the entire output of the
-current component. Upon entry to this code, C<$_> contains the component
-output, and you are expected to modify it in place. The code has access to
-component acessors and can invoke subroutines, call other components or
-methods, etc.
-
-This simple filter converts the component output to UPPERCASE:
-
-    <%filter>
-    tr/a-z/A-Z/
-    </%filter>
-
-The following navigation bar uses a filter to "unlink" and highlight the item
-corresponding to the current page:
-
-    <a href="/">Home</a> | <a href="/products/">Products</a> |
-    <a href="/bg.html">Background</a> | <a href="/finance/">Financials</a> |
-    <a href="/support/">Tech Support</a> | <a href="/contact.html">Contact Us</a>
-
-    <%filter>
-    my $uri = $r->uri;
-    s{<a href="$uri/?">(.*?)</a>} {<b>$1</b>}i;
-    </%filter>
-
-A filter block does not have access to variables declared in a component's C<<
-<%init> >> section, though variables declared in the C<< <%args> >>, C<<
-<%once> >> or C<< <%shared> >> blocks are usable in a filter.
-
-You should not call Perl's C<return()> function inside a filter section, or you
-will not see any output at all.
+    <%class>
+    sub multiply {
+        my ($self, $a, $b) = @_;
+        return $a * $b;
+    }
+    </%class>
 
 =head1 COMMENTS
 
@@ -597,75 +575,6 @@ This works for almost everything, but doesn't let you output C<< </%text> >>
 itself! When all else fails, use C<< $m->print >>:
 
     % $m->print('The tags are <%text> and </%text>.');
-
-=head2 Escaping expressions
-
-Mason has facilities for I<escaping> the output from C<< <% %> >> tags, on
-either a site-wide or a per-expression basis.
-
-Any C<< <% %> >> expression may be terminated by a '|' and one or more escape
-flags (plus arbitrary whitespace), separated by commas:
-
-    <% $file_data |h %>
-
-The current valid flags are:
-
-=over
-
-=item * h
-
-Escape HTML ('<' => '&lt;', etc.) using C<HTML::Entities::encode()>. Before
-Perl 5.8.0 this module assumes that text is in the ISO-8859-1 character set;
-see L<the next section|HTML::Mason::Devel/"User-defined Escapes"> for how to
-override this escaping. After 5.8.0, the encoding assumes that text is in
-Unicode.
-
-=item * u
-
-Escape a URL query string (':' => '%3A', etc.) - all but [a-zA-Z0-9_.-]
-
-=item * n
-
-This is a special flag indicating that the default escape flags should I<not>
-be used for this substitution.
-
-=back
-
-The administrator may specify a set of default escape flags via the
-L<Mason::Params/default_escape_flags> parameter. For example, if the
-administrator sets L<Mason::Params/default_escape_flags> to C<['h']>, then all
-<% %> expressions will automatically be HTML-escaped.  In this case you would
-use the C<n> flag to turn off HTML-escaping for a specific expression:
-
-    <% $html_block |n %>
-
-Multiple escapes can be specified as a comma-separated list:
-
-    <% $uri | u, n %>
-
-=head3 User-defined Escapes
-
-Besides the default escapes mentioned above, it is possible for the user to
-define their own escapes or to override the built-in 'h' and 'u' escapes.
-
-This is done via the Interp object's L<Mason::Params/escape_flags> parameter or
-L<set_escape()|HTML::Mason::Interp/item_set_escape> method.  Escape names may
-be any number of characters as long as it matches the regex C</^[\w-]+$/>.  The
-one exception is that you cannot override the 'n' flag.
-
-Each escape flag is associated with a subroutine reference.  The subroutine
-should expect to receive a scalar reference, which should be manipulated in
-place.  Any return value from this subroutine is ignored.
-
-Escapes can be defined at any time but using an escape that is not defined will
-cause an error when executing that component.
-
-=head3 Manually applying escapes
-
-You can manually apply one or more escapes to text using the L<Interp object's
-C<apply_escapes()> method|HTML::Mason::Interp/item_apply_escapes>. e.g.
-
-    $m->interp->apply_escapes( 'some html content', 'h' );
 
 =head2 Backslash at end of line
 

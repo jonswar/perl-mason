@@ -22,7 +22,7 @@ my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
-has 'autohandler_names'        => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'autobase_names'           => ( isa => 'ArrayRef[Str]', default => sub { ['Base.pm', 'Base.m'] } );
 has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( lazy_build => 1 );
 has 'compiler_class'           => ( lazy_build => 1 );
@@ -41,12 +41,12 @@ has 'static_source_touch_file' => ( );
 has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
-has 'autohandler_or_dhandler_regex' => ( lazy_build => 1, init_arg => undef );
-has 'code_cache'             => ( init_arg => undef );
-has 'compiler_params'        => ( init_arg => undef );
-has 'request_params' => ( init_arg => undef );
-has 'id'                     => ( init_arg => undef );
-has 'request_count'          => ( init_arg => undef, default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
+has 'autobase_or_dhandler_regex'    => ( lazy_build => 1, init_arg => undef );
+has 'code_cache'                    => ( init_arg => undef );
+has 'compiler_params'               => ( init_arg => undef );
+has 'request_params'                => ( init_arg => undef );
+has 'id'                            => ( init_arg => undef );
+has 'request_count'                 => ( init_arg => undef, default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
 
 method BUILD ($params) {
     $self->{code_cache} = {};
@@ -77,12 +77,8 @@ method BUILD ($params) {
     }
 }
 
-method _build_autohandler_names () {
-    return [ map { "autohandler" . $_ } @{ $self->top_level_extensions } ];
-}
-
-method _build_autohandler_or_dhandler_regex () {
-    my $regex = '(' . join( "|", @{ $self->autohandler_names }, @{ $self->dhandler_names } ) . ')$';
+method _build_autobase_or_dhandler_regex () {
+    my $regex = '(' . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names } ) . ')$';
     return qr/$regex/;
 }
 
@@ -262,8 +258,8 @@ method extract_flags_from_object_file ($object_file) {
 }
 
 # Given /foo/bar.m, look for (by default):
-#   /foo/autohandler.pm, /foo/autohandler.m,
-#   /autohandler.pm, /autohandler.m
+#   /foo/Base.pm, /foo/Base.m,
+#   /Base.pm, /Base.m
 #
 method default_parent_compc ($path) {
 
@@ -274,8 +270,8 @@ method default_parent_compc ($path) {
       or die "not a valid absolute component path - '$path'";
     $path = $dir_path;
 
-    my @autohandler_subpaths = map { "/$_" } @{ $self->autohandler_names };
-    my $skip = ( grep { $_ eq $base_name } @{ $self->autohandler_names } ) ? 1 : 0;
+    my @autobase_subpaths = map { "/$_" } @{ $self->autobase_names };
+    my $skip = ( grep { $_ eq $base_name } @{ $self->autobase_names } ) ? 1 : 0;
     while (1) {
         if ($skip) {
             $skip--;
@@ -283,8 +279,8 @@ method default_parent_compc ($path) {
         else {
             my @candidates =
               ( $path eq '/' )
-              ? @autohandler_subpaths
-              : ( map { $path . $_ } @autohandler_subpaths );
+              ? @autobase_subpaths
+              : ( map { $path . $_ } @autobase_subpaths );
             foreach my $candidate (@candidates) {
                 if ( my $compc = $self->load($candidate) ) {
                     return $compc;
@@ -398,10 +394,11 @@ loaded components.
 
 =over
 
-=item autohandler_names
+=item autobase_names
 
-Array reference of autohandler file names to check in order when determining a
-component's parent. Default is ["autohandler.pm", "autohandler.m"].
+Array reference of L<autobase|Mason::Manual/Autobase components> filenames to
+check in order when determining a component's superclass. Default is
+["Base.pm", "Base.m"].
 
 =item comp_root
 

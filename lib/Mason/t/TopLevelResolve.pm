@@ -45,8 +45,8 @@ sub test_resolve : Tests(15) {
     $try->( $run_path, ['/foo/blarg.m'],                  undef );
     $try->( $run_path, ['/foo/blarg/dhandler.m'],         undef );
 
-    # Can't access autohandler or dhandler directly
-    $try->( '/foo/autohandler', ['/foo/autohandler.m'], undef );
+    # Can't access autobase or dhandler directly
+    $try->( '/foo/Base', ['/foo/Base.m'], undef );
     $try->( '/foo/dhandler', ['/foo/dhandler.m'], '/foo/dhandler.m', 'dhandler' );
 }
 

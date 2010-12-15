@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use base qw(Mason::Test::Class);
 
-sub test_autohandler : Test(19) {
+sub test_autobase : Test(19) {
     my $self   = shift;
     my $interp = $self->{interp};
 
@@ -27,7 +27,7 @@ sub test_autohandler : Test(19) {
         );
     };
 
-    # Add components with no autohandlers, make sure they inherit from
+    # Add components with no autobases, make sure they inherit from
     # Mason::Component
     #
     $add->('/comp.m');
@@ -40,48 +40,48 @@ sub test_autohandler : Test(19) {
     $check_parent->( '/foo/bar/comp.m',     'Mason::Component' );
     $check_parent->( '/foo/bar/baz/comp.m', 'Mason::Component' );
 
-    $add->('/autohandler.m');
-    $add->('/foo/autohandler.m');
-    $add->('/foo/bar/baz/autohandler.m');
+    $add->('/Base.m');
+    $add->('/foo/Base.m');
+    $add->('/foo/bar/baz/Base.m');
 
-    # Add autohandlers, test the parents of the components and autohandlers
+    # Add autobases, test the parents of the components and autobases
     #
     $self->{interp}->flush_load_cache();
-    $check_parent->( '/autohandler.m',             'Mason::Component' );
-    $check_parent->( '/foo/autohandler.m',         '/autohandler.m' );
-    $check_parent->( '/foo/bar/baz/autohandler.m', '/foo/autohandler.m' );
-    $check_parent->( '/comp.m',                    '/autohandler.m' );
-    $check_parent->( '/foo/comp.m',                '/foo/autohandler.m' );
-    $check_parent->( '/foo/bar/comp.m',            '/foo/autohandler.m' );
-    $check_parent->( '/foo/bar/baz/comp.m',        '/foo/bar/baz/autohandler.m' );
+    $check_parent->( '/Base.m',             'Mason::Component' );
+    $check_parent->( '/foo/Base.m',         '/Base.m' );
+    $check_parent->( '/foo/bar/baz/Base.m', '/foo/Base.m' );
+    $check_parent->( '/comp.m',             '/Base.m' );
+    $check_parent->( '/foo/comp.m',         '/foo/Base.m' );
+    $check_parent->( '/foo/bar/comp.m',     '/foo/Base.m' );
+    $check_parent->( '/foo/bar/baz/comp.m', '/foo/bar/baz/Base.m' );
 
     $add->( '/foo/bar/baz/none.m', "undef" );
     $check_parent->( '/foo/bar/baz/none.m', 'Mason::Component' );
 
-    $add->( '/foo/bar/baz/top.m', "'/autohandler.m'" );
-    $check_parent->( '/foo/bar/baz/top.m', '/autohandler.m' );
+    $add->( '/foo/bar/baz/top.m', "'/Base.m'" );
+    $check_parent->( '/foo/bar/baz/top.m', '/Base.m' );
 
-    $add->( '/foo/bar/baz/top2.m', "'../../autohandler.m'" );
-    $check_parent->( '/foo/bar/baz/top2.m', '/foo/autohandler.m' );
+    $add->( '/foo/bar/baz/top2.m', "'../../Base.m'" );
+    $check_parent->( '/foo/bar/baz/top2.m', '/foo/Base.m' );
 
-    $self->remove_comp( path => '/autohandler.m' );
-    $self->remove_comp( path => '/foo/autohandler.m' );
+    $self->remove_comp( path => '/Base.m' );
+    $self->remove_comp( path => '/foo/Base.m' );
 
-    # Remove most autohandlers, test parents again
+    # Remove most autobases, test parents again
     #
     $self->{interp}->flush_load_cache();
-    $check_parent->( '/comp.m',                    'Mason::Component' );
-    $check_parent->( '/foo/comp.m',                'Mason::Component' );
-    $check_parent->( '/foo/bar/comp.m',            'Mason::Component' );
-    $check_parent->( '/foo/bar/baz/comp.m',        '/foo/bar/baz/autohandler.m' );
-    $check_parent->( '/foo/bar/baz/autohandler.m', 'Mason::Component' );
+    $check_parent->( '/comp.m',             'Mason::Component' );
+    $check_parent->( '/foo/comp.m',         'Mason::Component' );
+    $check_parent->( '/foo/bar/comp.m',     'Mason::Component' );
+    $check_parent->( '/foo/bar/baz/comp.m', '/foo/bar/baz/Base.m' );
+    $check_parent->( '/foo/bar/baz/Base.m', 'Mason::Component' );
 
 }
 
 sub test_wrapping : Tests(2) {
     my $self = shift;
     $self->add_comp(
-        path      => '/wrap/autohandler.m',
+        path      => '/wrap/Base.m',
         component => <<EOF,
 <%method render>
 <body>

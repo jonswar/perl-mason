@@ -101,17 +101,17 @@ method run () {
 #   /dhandler.pm, /dhandler.m
 #
 method top_level_path_to_component ($path) {
-    my $interp                  = $self->interp;
-    my @dhandler_subpaths       = map { "/$_" } @{ $interp->dhandler_names };
-    my @top_level_extensions    = @{ $interp->top_level_extensions };
-    my $autohandler_or_dhandler = $interp->autohandler_or_dhandler_regex;
-    my $path_info               = '';
+    my $interp               = $self->interp;
+    my @dhandler_subpaths    = map { "/$_" } @{ $interp->dhandler_names };
+    my @top_level_extensions = @{ $interp->top_level_extensions };
+    my $autobase_or_dhandler = $interp->autobase_or_dhandler_regex;
+    my $path_info            = '';
     while (1) {
         my @candidates =
           ( $path eq '/' )
           ? @dhandler_subpaths
           : (
-            ( grep { !/$autohandler_or_dhandler/ } map { $path . $_ } @top_level_extensions ),
+            ( grep { !/$autobase_or_dhandler/ } map { $path . $_ } @top_level_extensions ),
             ( map { $path . $_ } @dhandler_subpaths )
           );
         foreach my $candidate (@candidates) {
