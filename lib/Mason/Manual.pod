@@ -328,7 +328,7 @@ A component can declare its superclass via the C<extends> flag:
 
 The path may be absolute as shown above, or relative to the component's path.
 
-Note that including a raw 'extends' keyword in a C<< <%class> >> section will
+Note that including a raw C<extends> keyword in a C<< <%class> >> section will
 not work reliably.
 
 =head2 Autobase components
@@ -336,9 +336,9 @@ not work reliably.
 Autobase components are specially named components that automatically become
 the superclass of all components in their directory and subdirectories. The
 default names are "Base.pm" and "Base.m" - you can customize this with the
-C<autobase_names> parameter.
+C<autobase_names> parameter. (In Mason 1 these were called autohandlers.)
 
-For example, in this directory hierarchy
+For example, in this directory hierarchy,
 
     Base.pm
     main.m
@@ -349,6 +349,8 @@ For example, in this directory hierarchy
        Base.m
        vanilla.m
        chocolate.m
+
+assuming that no components have C<extends> flags,
 
 =over
 
@@ -428,7 +430,8 @@ superclasses down to subclasses. This is useful for creating general templates
 that wrap around more specific pages.
 
 By default, every component gets a C<render> method which will call C<inner()>
-until the innermost component is reached, at which point it calls C<main()>.
+until the innermost component is reached, at which point it calls C<main()>
+which displays the main component body.
 
 For example:
 
@@ -470,6 +473,12 @@ outermost in /Base.pm, and the next one in /product/Base.pm.
 Note that neither /product/sales/Base.pm nor /product/sales/display.m need to
 define a C<render> method. A default render will be defined automatically and
 will do the right thing.
+
+If you want a component to ignore its superclass's wrappers, just override
+C<render> to call C<main>:
+
+    <%class>
+    <%method render><% $self->main %></%method>
 
 =head2 Accessing the page component
 
