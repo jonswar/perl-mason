@@ -84,9 +84,9 @@ sub test_wrapping : Tests(2) {
         path      => '/wrap/Base.m',
         component => '
 <%augment render>
-<body>
+<html>
 % inner();
-</body>
+</html>
 </%augment>
 '
     );
@@ -94,24 +94,39 @@ sub test_wrapping : Tests(2) {
         path      => '/wrap/subdir/Base.m',
         component => '
 
+% # <%augment render><% inner() %></%augment>
+
 <%method hello>
 Hello world
 </%method>
 
 '
     );
+    $self->add_comp(
+        path      => '/wrap/subdir/subdir2/Base.m',
+        component => '
+<%augment render>
+<body>
+% inner();
+</body>
+</%augment>
+'
+    );
     $self->test_comp(
-        path      => '/wrap/subdir/wrap_me.m',
+        path      => '/wrap/subdir/subdir2/wrap_me.m',
         component => '<% $self->hello %>',
         expect    => '
+<html>
+
 <body>
 
 Hello world
 </body>
+</html>
 '
     );
     $self->test_comp(
-        path      => '/wrap/subdir/dont_wrap_me.m',
+        path      => '/wrap/subdir/subdir2/dont_wrap_me.m',
         component => '
 <%class>method render { $self->main() }</%class>
 <% $self->hello() %>

@@ -273,7 +273,10 @@ method _output_flag_comment () {
 }
 
 method _output_class_header () {
-    return join( "\n", "no warnings 'redefine';", "use Method::Signatures::Simple;" );
+    return join( "\n",
+        "no warnings 'redefine';",
+        "use Method::Signatures::Simple;",
+        "sub comp_inner { inner() }" );
 }
 
 method _output_comp_info () {

@@ -233,8 +233,8 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
         $compc->meta->add_augment_method_modifier(
             render => sub {
                 my $self = shift;
-                if   ($Moose::INNER_BODY) { inner() }
-                else                      { $self->main(@_) }
+                if   ( ref($self) ne $compc ) { $compc->comp_inner() }
+                else                          { $self->main(@_) }
             }
         );
     }
