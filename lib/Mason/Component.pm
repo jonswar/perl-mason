@@ -1,7 +1,7 @@
 package Mason::Component;
 use Method::Signatures::Simple;
-use Moose;
-use Mason::Moose;
+use Moose;    # Not Mason::Moose - we don't want strict constructor
+use MooseX::HasDefaults::RO;
 use Log::Any;
 use strict;
 use warnings;

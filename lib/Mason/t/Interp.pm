@@ -2,7 +2,7 @@ package Mason::t::Interp;
 use strict;
 use warnings;
 use File::Temp qw(tempdir);
-use Test::More;
+use Test::Most;
 use base qw(Mason::Test::Class);
 
 sub test_component_class_prefix : Test(6) {
@@ -28,6 +28,11 @@ sub test_component_class_prefix : Test(6) {
     $interp[2] = $self->create_interp( component_class_prefix => 'Blah' );
     is( $interp[2]->component_class_prefix, 'Blah', 'specified prefix' );
     $check_prefix->( $interp[2] );
+}
+
+sub test_bad_param : Test(1) {
+    my $self = shift;
+    throws_ok { $self->create_interp( foo => 5 ) } qr/Found unknown attribute/;
 }
 
 1;
