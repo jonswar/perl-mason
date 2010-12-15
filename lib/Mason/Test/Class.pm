@@ -5,6 +5,7 @@ use File::Path;
 use File::Slurp;
 use File::Temp qw(tempdir);
 use Mason;
+use Mason::Util qw(trim);
 use Method::Signatures::Simple;
 use Test::Exception;
 use Test::More;
@@ -60,7 +61,7 @@ method test_comp (%params) {
     my $path         = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
     my $desc         = $params{desc};
     my $source       = $params{component} || croak "must pass component";
-    my $expect       = $params{expect};
+    my $expect       = trim( $params{expect} );
     my $expect_error = $params{expect_error};
     croak "must pass either expect or expect_error" unless $expect || $expect_error;
 
@@ -73,7 +74,8 @@ method test_comp (%params) {
     }
     else {
         $desc ||= $caller;
-        is( $self->{interp}->srun($run_path), $expect, $desc );
+        my $output = trim( $self->{interp}->srun($run_path) );
+        is( $output, $expect, $desc );
     }
 }
 

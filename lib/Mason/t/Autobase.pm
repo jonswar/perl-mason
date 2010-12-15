@@ -1,4 +1,4 @@
-package Mason::t::Autohandler;
+package Mason::t::Autobase;
 use strict;
 use warnings;
 use Test::Most;
@@ -82,35 +82,56 @@ sub test_wrapping : Tests(2) {
     my $self = shift;
     $self->add_comp(
         path      => '/wrap/Base.m',
-        component => <<EOF,
-<%method render>
+        component => '
+<%augment render>
 <body>
 % inner();
 </body>
+</%augment>
+'
+    );
+    $self->add_comp(
+        path      => '/wrap/subdir/Base.m',
+        component => '
+
+<%method hello>
+Hello world
 </%method>
-EOF
+
+'
     );
     $self->test_comp(
-        path      => '/wrap/wrap_me.m',
-        component => <<EOF,
-Hello world
-EOF
-        expect => <<EOF,
-
+        path      => '/wrap/subdir/wrap_me.m',
+        component => '<% $self->hello %>',
+        expect    => '
 <body>
+
 Hello world
 </body>
-EOF
+'
     );
     $self->test_comp(
-        path      => '/wrap/dont_wrap_me.m',
-        component => <<EOF,
-<%class>sub render { shift->main() }</%class>
-Hello world
-EOF
-        expect => <<EOF,
-Hello world
-EOF
+        path      => '/wrap/subdir/dont_wrap_me.m',
+        component => '
+<%class>method render { $self->main() }</%class>
+<% $self->hello() %>
+',
+        expect => 'Hello world'
+    );
+}
+
+# not yet implemented
+sub _test_no_main_in_autobase {
+    my $self = shift;
+
+    $self->test_comp(
+        path      => '/wrap/Base.m',
+        component => '
+<body>
+% inner();
+</body>
+',
+        expect_error => qr/content found in main body of autobase/,
     );
 }
 

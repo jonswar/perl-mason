@@ -17,27 +17,18 @@ use strict;
 use warnings;
 
 # Passed attributes
-has 'compilation_class' => ( lazy_build => 1 );
+has 'compilation_class'      => ( lazy_build => 1 );
+has 'interp'                 => ( required => 1, weak_ref => 1 );
 has 'no_source_line_numbers' => ( );
-has 'interp'   => ( required => 1, weak_ref => 1 );
 
 # Derived attributes
-has 'block_regex'      => ( lazy_build => 1, init_arg => undef );
-has 'block_types'      => ( lazy_build => 1, init_arg => undef );
-has 'compiler_id'      => ( lazy_build => 1, init_arg => undef );
-has 'valid_flags'      => ( init_arg => undef, default => sub { ['extends'] } );
-has 'valid_flags_hash' => ( lazy_build => 1, init_arg => undef );
-
-# Default list of blocks - may be augmented in subclass
-#
-method _build_block_types () {
-    return [qw(class doc flags filter init perl text)];
-}
-
-method _build_block_regex () {
-    my $re = join '|', @{ $self->block_types };
-    return qr/$re/i;
-}
+has 'compiler_id'         => ( lazy_build => 1, init_arg => undef );
+has 'named_block_regex'   => ( lazy_build => 1, init_arg => undef );
+has 'named_block_types'   => ( lazy_build => 1, init_arg => undef );
+has 'unnamed_block_regex' => ( lazy_build => 1, init_arg => undef );
+has 'unnamed_block_types' => ( lazy_build => 1, init_arg => undef );
+has 'valid_flags'         => ( init_arg => undef, default => sub { ['extends'] } );
+has 'valid_flags_hash'    => ( lazy_build => 1, init_arg => undef );
 
 method _build_compilation_class () {
     return $self->interp->find_subclass('Compilation');
@@ -53,6 +44,24 @@ method _build_compiler_id () {
     }
     my $dumped_vals = Data::Dumper->new( \@vals )->Indent(0)->Dump;
     return checksum($dumped_vals);
+}
+
+method _build_named_block_regex () {
+    my $re = join '|', @{ $self->named_block_types };
+    return qr/$re/i;
+}
+
+method _build_named_block_types () {
+    return [qw(after around augment before method)];
+}
+
+method _build_unnamed_block_regex () {
+    my $re = join '|', @{ $self->unnamed_block_types };
+    return qr/$re/i;
+}
+
+method _build_unnamed_block_types () {
+    return [qw(class doc flags filter init perl text)];
 }
 
 method _build_valid_flags_hash () {

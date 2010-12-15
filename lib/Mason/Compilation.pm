@@ -31,7 +31,7 @@ method BUILD () {
     $self->{ending}          = qr/\G\z/;
     $self->{in_method_block} = undef;
     $self->{line_number}     = 1;
-    $self->{methods}         = { main => $self->_new_method_hash() };
+    $self->{methods}         = { main => $self->_new_method_hash( name => 'main' ) };
     $self->{current_method}  = $self->{methods}->{main};
     $self->{is_pure_perl}    = $self->compiler->is_pure_perl_comp_path( $self->path );
 }
@@ -77,12 +77,13 @@ method process_perl_code ($code) {
 }
 
 method _match_unnamed_block () {
-    my $block_regex = $self->compiler->block_regex;
-    $self->_match_block( qr/\G(\n?)<%($block_regex)>/, 0 );
+    my $unnamed_block_regex = $self->compiler->unnamed_block_regex;
+    $self->_match_block( qr/\G(\n?)<%($unnamed_block_regex)>/, 0 );
 }
 
 method _match_named_block () {
-    $self->_match_block( qr/\G(\n?)<%(method)(?:\s+([^\n^>]+))?>/, 1 );
+    my $named_block_regex = $self->compiler->named_block_regex;
+    $self->_match_block( qr/\G(\n?)<%($named_block_regex)(?:\s+([^\n^>]+))?>/, 1 );
 }
 
 method _match_block ( $regex, $named ) {
@@ -256,7 +257,7 @@ method output_compiled_component () {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_flag_comment, $self->_output_strictures, $self->_output_comp_info,
+            $self->_output_flag_comment, $self->_output_class_header, $self->_output_comp_info,
             $self->_output_class_block,  $self->_output_methods,
         )
     ) . "\n";
@@ -271,8 +272,8 @@ method _output_flag_comment () {
     }
 }
 
-method _output_strictures () {
-    return join( "\n", "no warnings 'redefine';" );
+method _output_class_header () {
+    return join( "\n", "no warnings 'redefine';", "use Method::Signatures::Simple;" );
 }
 
 method _output_comp_info () {
@@ -289,25 +290,28 @@ method _output_class_block () {
 }
 
 method _output_methods () {
-    return join(
-        "\n", map { $self->_output_method($_) }
-          sort( keys( %{ $self->{methods} } ) )
-    );
+    return join( "\n",
+        map { $self->_output_method( $self->{methods}->{$_} ) }
+        sort( keys( %{ $self->{methods} } ) ) );
 }
 
-method _output_method ($method_name) {
+method _output_method ($method) {
     my $path = $self->path;
 
-    my $method = $self->{methods}->{$method_name};
+    my $name     = $method->{name};
+    my $modifier = $method->{modifier};
     my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
     my $filter_sub;
     if ( $method->{filter} ) {
         $filter_sub = join( "\n", 'sub { local $_ = $_[0];', $method->{filter}, 'return $_ }' );
     }
 
+    my $start = $modifier ? "$modifier '$name' => sub {" : "sub $name {";
+    my $end = $modifier ? "};" : "}";
+
     return join(
         "\n",
-        "sub $method_name {",
+        $start,
         "my \$self = shift;",
         "my \$m = \$self->m;",
 
@@ -325,7 +329,7 @@ method _output_method ($method_name) {
         # don't return values explicitly. semi before return will help catch
         # syntax errors in component body.
         ";return;",
-        "}",
+        $end,
     );
 }
 
@@ -350,29 +354,55 @@ method _handle_init_block ($contents) {
       $self->_output_line_number_comment . $self->process_perl_code($contents);
 }
 
-method _handle_method_block ( $contents, $name ) {
-    $self->_assert_not_in_method('<%method>');
-
-    $self->throw_syntax_error("Invalid method name '$name'")
-      if $name =~ /[^.\w-]/;
-
-    $self->throw_syntax_error("Duplicate definition of method '$name'")
-      if exists $self->{methods}->{$name};
-
-    $self->{methods}->{$name} = $self->_new_method_hash();
-
-    # Save current regex position, then locally set source to the method's
-    # contents and recursively parse.
-    #
+# Save current regex position, then locally set source to the contents and
+# recursively parse.
+#
+method _recursive_parse ($contents, $method_key) {
     my $save_pos = pos( $self->{source} );
     scope_guard { pos( $self->{source} ) = $save_pos };
     {
         local $self->{source}          = $contents;
-        local $self->{current_method}  = $self->{methods}->{$name};
-        local $self->{in_method_block} = $name;
+        local $self->{current_method}  = $self->{methods}->{$method_key};
+        local $self->{in_method_block} = $method_key;
 
         $self->parse();
     }
+}
+
+method _handle_method_block ( $contents, $name ) {
+    $self->_assert_not_in_method("<%method>");
+
+    $self->throw_syntax_error("Invalid method name '$name'")
+      if $name =~ /[^\w]/;
+
+    $self->throw_syntax_error("Duplicate definition of method '$name'")
+      if exists $self->{methods}->{$name};
+
+    $self->{methods}->{$name} = $self->_new_method_hash( name => $name );
+
+    $self->_recursive_parse( $contents, $name );
+}
+
+method _handle_after_block ()   { $self->_handle_method_modifier_block( 'after',   @_ ) }
+method _handle_around_block ()  { $self->_handle_method_modifier_block( 'around',  @_ ) }
+method _handle_augment_block () { $self->_handle_method_modifier_block( 'augment', @_ ) }
+method _handle_before_block ()  { $self->_handle_method_modifier_block( 'before',  @_ ) }
+
+method _handle_method_modifier_block ( $modifier, $contents, $name ) {
+    $self->_assert_not_in_method("<%$modifier>");
+
+    $self->throw_syntax_error("Invalid method modifier name '$name'")
+      if $name =~ /[^\w]/;
+
+    my $method_key = "$modifier $name";
+
+    $self->throw_syntax_error("Duplicate definition of method modifier '$method_key'")
+      if exists $self->{method}->{"$method_key"};
+
+    $self->{methods}->{"$method_key"} =
+      $self->_new_method_hash( name => $name, modifier => $modifier );
+
+    $self->_recursive_parse( $contents, $method_key );
 }
 
 method _handle_doc_block () {
@@ -503,7 +533,7 @@ method _assert_not_in_method ($entity) {
 }
 
 method _new_method_hash () {
-    return { body => '', init => '' };
+    return { body => '', init => '', @_ };
 }
 
 method _add_to_current_method ($text) {

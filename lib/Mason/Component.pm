@@ -27,10 +27,10 @@ foreach my $method qw(comp_path comp_dir_path comp_is_external) {
     __PACKAGE__->meta->add_method( $method => sub { return $_[0]->_comp_info->{$method} } );
 }
 
-# Default render in case of no wrappers
+# Top render
 #
 method render () {
-    $self->main();
+    inner();
 }
 
 # Default dispatch - reject path_info, otherwise call render

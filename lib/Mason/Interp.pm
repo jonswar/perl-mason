@@ -41,6 +41,7 @@ has 'static_source_touch_file' => ( );
 has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
+has 'autobase_regex'                => ( lazy_build => 1, init_arg => undef );
 has 'autobase_or_dhandler_regex'    => ( lazy_build => 1, init_arg => undef );
 has 'code_cache'                    => ( init_arg => undef );
 has 'compiler_params'               => ( init_arg => undef );
@@ -79,6 +80,11 @@ method BUILD ($params) {
 
 method _build_autobase_or_dhandler_regex () {
     my $regex = '(' . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names } ) . ')$';
+    return qr/$regex/;
+}
+
+method _build_autobase_regex () {
+    my $regex = '(' . join( "|", @{ $self->autobase_names } ) . ')$';
     return qr/$regex/;
 }
 
@@ -225,7 +231,12 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
 
     unless ( $compc->meta->has_method('render') ) {
         $compc->meta->add_augment_method_modifier(
-            render => sub { my $self = shift; $self->main(@_) } );
+            render => sub {
+                my $self = shift;
+                if   ($Moose::INNER_BODY) { inner() }
+                else                      { $self->main(@_) }
+            }
+        );
     }
 }
 

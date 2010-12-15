@@ -311,56 +311,6 @@ These are both read-only. To write to the attribute, you must use
 C<< $self->comp_attr >> will return a hashref of all of the attributes passed
 to the component when it was created.
 
-=head1 THE PAGE COMPONENT
-
-The first component invoked in a Mason request is called the I<page> component.
-
-=head2 Determining the page component
-
-If you called C<< $interp->run >> directly, then the page component is
-determined by the first argument to C<run>:
-
-    $interp->run('/company/about');
-
-In a web environment, the page component will be determined by the URL and
-perhaps controller logic in your web framework.
-
-In either case, Mason searches under the component root for the provided path
-with either a ".pm" or a ".m" attached, and then for a component called
-"dhandler.pm" or "dhandler.m" ("directory handler").
-
-If it cannot find any of these, then Mason scans backwards through the path,
-checking each directory upwards for the same set of files. In this case it sets
-$m->path_info to the unmatched latter part of the path.
-
-For example, given the path
-
-    /news/sports
-
-Mason searches for the following components in order, setting $m->path_info as
-noted.
-
-    /news/sports.pm
-    /news/sports.m
-    /news/sports/dhandler.pm
-    /news/sports/dhandler.m
-    /news.pm                  # $m->path_info = sports
-    /news.m                   # $m->path_info = sports
-    /news/dhandler.pm         # $m->path_info = sports
-    /news/dhandler.m          # $m->path_info = sports
-    /dhandler.pm              # $m->path_info = news/sports
-    /dhandler.m               # $m->path_info = news/sports
-
-A component or dhandler that does not want to handle a particular request may
-defer control to the next dhandler by calling C<< $m->decline >>.
-
-You can customize the way Mason resolves top-level paths with the parameters
-L<Mason::Params/top_level_extensions> and L<Mason::Params/dhandler_names>.
-
-=head2 Accessing the page component
-
-You can access the page component from any component with C<< $m->page() >>.
-
 =head1 INHERITANCE
 
 Because components correspond to classes, each component inherits from (or
@@ -412,6 +362,121 @@ For example, in this directory hierarchy
 /flavors/Base.m is the superclass of vanilla.m and chocolate.m.
 
 =back
+
+=head1 THE PAGE COMPONENT
+
+The first component invoked in a Mason request is called the I<page> component.
+
+=head2 Determining the page component
+
+If you called C<< $interp->run >> directly, then the page component is
+determined by the first argument to C<run>:
+
+    $interp->run('/company/about');
+
+In a web environment, the page component will be determined by the URL and
+perhaps controller logic in your web framework.
+
+In either case, Mason searches under the component root for the provided path
+with either a ".pm" or a ".m" attached, and then for a component called
+"dhandler.pm" or "dhandler.m" ("directory handler").
+
+If it cannot find any of these, then Mason scans backwards through the path,
+checking each directory upwards for the same set of files. In this case it sets
+$m->path_info to the unmatched latter part of the path.
+
+For example, given the path
+
+    /news/sports
+
+Mason searches for the following components in order, setting $m->path_info as
+noted.
+
+    /news/sports.pm
+    /news/sports.m
+    /news/sports/dhandler.pm
+    /news/sports/dhandler.m
+    /news.pm                  # $m->path_info = sports
+    /news.m                   # $m->path_info = sports
+    /news/dhandler.pm         # $m->path_info = sports
+    /news/dhandler.m          # $m->path_info = sports
+    /dhandler.pm              # $m->path_info = news/sports
+    /dhandler.m               # $m->path_info = news/sports
+
+A component or dhandler that does not want to handle a particular request may
+defer control to the next dhandler by calling C<< $m->decline >>.
+
+You can customize the way Mason resolves top-level paths with the parameters
+L<Mason::Params/top_level_extensions> and L<Mason::Params/dhandler_names>.
+
+=head2 The dispatch method
+
+Once the page component has been determined, Mason creates an instance of that
+component and calls C<dispatch> on it. C<dispatch> is a good place to do
+processing before content rendering starts: analyze the path_info, implement
+security restrictions, forward control to another page, etc.
+
+The default C<dispatch> calls C<render> (see below) if path_info is empty, and
+otherwise declines the request. That is, by default, components will only
+handle their exact path with nothing extra on it. If you want to accept and
+parse the path_info, you'll have to implement a C<dispatch>.
+
+=head2 The render method and content wrapping
+
+The C<render> method is designed to be called in an inverted manner, from
+superclasses down to subclasses. This is useful for creating general templates
+that wrap around more specific pages.
+
+By default, every component gets a C<render> method which will call C<inner()>
+until the innermost component is reached, at which point it calls C<main()>.
+
+For example:
+
+    # /Base.m - top-most template
+    #
+    <%augment render>
+      <html>
+        <body>
+          <% inner() %>
+          <div class="footer">Copyright 2010 McHuffy Inc.</div>
+        </body>
+      </html>
+    </%augment>
+    
+    # /product/Base.m - product-specific template
+    #
+    <%augment render>
+      <h2>Products</h2>
+      <div class="products_body">
+        <% inner() %>
+      </div>
+    </%augment>
+    
+    # /product/sales/Base.pm - utility methods, no additional template
+    #
+    <%method some_utility_method>
+       ...
+    </%method>
+    
+    # /product/sales/display.m:
+    #
+    <b>Product page content goes here</b>
+    ...
+
+Requesting /product/sales/display will ultimately cause Mason to call render on
+/product/sales/display.m. Its content will be wrapped by two templates: the
+outermost in /Base.pm, and the next one in /product/Base.pm.
+
+Note that neither /product/sales/Base.pm nor /product/sales/display.m need to
+define a C<render> method. A default render will be defined automatically and
+will do the right thing.
+
+=head2 Accessing the page component
+
+You can access the page component with C<< $m->page() >>. For example, to set
+the page's 'title' from any component:
+
+    $m->page->title('The title');
 
 =head1 PERL BLOCKS AND COMPONENTS
 

@@ -12,31 +12,48 @@ This should not get printed.
 </%doc>
 
 <%init>
-my $message2 = "Goodbye...";
+my $init_message = $self->init_message();
 </%init>
 
 <%class>
-my $message = "Hello World!";
+my $class_message = "class message";
+method init_message  () { "init message" }
 </%class>
 
 <BODY>
-<% $message %>
-% $self->foo();
+<% $class_message %>
+% $self->method_call();
 <%perl>
-print "$message2\n";
+print "$init_message\n";
 </%perl>
 </BODY>
 
-<%method foo>
+<%before method_call>
+before method call
+</%before>
+
+<%after method_call>
+after method call
+</%after>
+
+<%method method_call>
 <% $message %>
+
+<%init>
+my $message = "method call";
+</%init>
 </%method>
 EOF
         expect => <<'EOF',
 <BODY>
-Hello World!
+class message
 
-Hello World!
-Goodbye...
+before method call
+
+method call
+
+after method call
+init message
 </BODY>
 EOF
     );

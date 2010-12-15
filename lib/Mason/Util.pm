@@ -9,7 +9,7 @@ use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(can_load checksum clear_class dump_one_line mason_canon_path read_file unique_id write_file);
+  qw(can_load checksum clear_class dump_one_line mason_canon_path read_file trim unique_id write_file);
 
 my $Fetch_Flags = O_RDONLY | O_BINARY;
 my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;
@@ -155,6 +155,14 @@ sub delete_package ($) {
     my $leaf_symtab = *{ $stem_symtab->{$leaf} }{HASH};
     %$leaf_symtab = ();
     delete $stem_symtab->{$leaf};
+}
+
+sub trim {
+    my ($str) = @_;
+    if ( defined($str) ) {
+        for ($str) { s/^\s+//; s/\s+$// }
+    }
+    return $str;
 }
 
 1;

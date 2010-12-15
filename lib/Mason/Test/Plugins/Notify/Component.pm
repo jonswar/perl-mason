@@ -3,9 +3,11 @@ use Moose::Role;
 use strict;
 use warnings;
 
-before 'render' => sub {
-    my ($self) = @_;
-    print STDERR "starting component render - " . $self->comp_path . "\n";
-};
+# This doesn't work - it interrupts the inner() chain. Investigate later.
+#
+#  before 'render' => sub {
+#      my ($self) = @_;
+#      print STDERR "starting component render - " . $self->comp_path . "\n";
+#  };
 
 1;
