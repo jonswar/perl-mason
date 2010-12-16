@@ -25,7 +25,7 @@ has 'out_method' =>
 has 'buffer_stack'       => ( init_arg => undef );
 has 'count'              => ( init_arg => undef );
 has 'path_info'          => ( init_arg => undef, default => '' );
-has 'request_comp'       => ( init_arg => undef );
+has 'page'               => ( init_arg => undef );
 has 'request_code_cache' => ( init_arg => undef );
 
 # Class attributes
@@ -61,9 +61,9 @@ method run () {
     $self->comp_not_found($path) if !defined($compc);
     $self->{path_info} = $path_info;
 
-    my $request_comp = $compc->new( @_, 'm' => $self );
-    $self->{request_comp} = $request_comp;
-    $log->debugf( "starting request for '%s'", $request_comp->title )
+    my $page = $compc->new( @_, 'm' => $self );
+    $self->{page} = $page;
+    $log->debugf( "starting request for '%s'", $page->title )
       if $log->is_debug;
 
     # Flush interp load cache after request
@@ -78,7 +78,7 @@ method run () {
         scope_guard { select $old };
 
         try {
-            $retval = $request_comp->dispatch();
+            $retval = $page->dispatch();
         }
         catch {
             $err = $_;
