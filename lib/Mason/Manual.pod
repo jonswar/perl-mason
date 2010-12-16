@@ -649,6 +649,17 @@ use them to comment out code!
 
 =head1 OTHER SYNTAX
 
+=head2 <%flags>
+
+Specifies flags that affect the compilation of the component. e.g.
+
+    <%flags>
+    extends => '/foo/bar'
+    ignore_wrap => 1
+    </%flags>
+
+C<extends> and C<ignore_wrap> are currently the only flags.
+
 =head2 <%text>
 
 Text in this section is printed as-is with all Mason syntax ignored. This is

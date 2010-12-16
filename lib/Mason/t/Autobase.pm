@@ -126,7 +126,9 @@ Hello world
     $self->test_comp(
         path      => '/wrap/subdir/subdir2/dont_wrap_me.m',
         component => '
-<%class>method render { $self->main() }</%class>
+<%flags>
+ignore_wrap=>1
+</%flags>
 <% $self->hello() %>
 ',
         expect => 'Hello world'

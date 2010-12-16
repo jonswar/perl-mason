@@ -219,7 +219,8 @@ method load ($path) {
 memoize('load');
 
 method load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
-    my $parent_compc = $self->determine_parent_compc_from_object_file( $object_file, $path )
+    my $flags = $self->extract_flags_from_object_file($object_file);
+    my $parent_compc = $self->determine_parent_compc( $path, $flags )
       || $default_parent_compc;
     eval(
         sprintf(
@@ -229,23 +230,27 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     );
     die $@ if $@;
 
-    $self->add_default_render_method($compc);
+    $self->add_default_render_method( $compc, $flags );
 }
 
-method add_default_render_method ($compc) {
+method add_default_render_method ($compc, $flags) {
     unless ( $compc->meta->has_method('render') ) {
-        $compc->meta->add_augment_method_modifier(
-            render => sub {
-                my $self = shift;
-                if   ( ref($self) ne $compc ) { $compc->comp_inner() }
-                else                          { $self->main(@_) }
-            }
-        );
+        my $code = sub {
+            my $self = shift;
+            if   ( ref($self) ne $compc ) { $compc->comp_inner() }
+            else                          { $self->main(@_) }
+        };
+        my $meta = $compc->meta;
+        if ( $flags->{ignore_wrap} ) {
+            $meta->add_method( render => $code );
+        }
+        else {
+            $meta->add_augment_method_modifier( render => $code );
+        }
     }
 }
 
-method determine_parent_compc_from_object_file ($object_file, $path) {
-    my $flags = $self->extract_flags_from_object_file($object_file);
+method determine_parent_compc ($path, $flags) {
     my $parent_compc;
     if ( exists( $flags->{extends} ) ) {
         my $extends = $flags->{extends};

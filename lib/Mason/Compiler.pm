@@ -27,7 +27,7 @@ has 'named_block_regex'   => ( lazy_build => 1, init_arg => undef );
 has 'named_block_types'   => ( lazy_build => 1, init_arg => undef );
 has 'unnamed_block_regex' => ( lazy_build => 1, init_arg => undef );
 has 'unnamed_block_types' => ( lazy_build => 1, init_arg => undef );
-has 'valid_flags'         => ( init_arg => undef, default => sub { ['extends'] } );
+has 'valid_flags'         => ( lazy_build => 1, init_arg => undef );
 has 'valid_flags_hash'    => ( lazy_build => 1, init_arg => undef );
 
 method _build_compilation_class () {
@@ -62,6 +62,10 @@ method _build_unnamed_block_regex () {
 
 method _build_unnamed_block_types () {
     return [qw(class doc flags filter init perl text)];
+}
+
+method _build_valid_flags () {
+    return [qw(extends ignore_wrap)];
 }
 
 method _build_valid_flags_hash () {
