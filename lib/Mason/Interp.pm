@@ -229,6 +229,10 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     );
     die $@ if $@;
 
+    $self->add_default_render_method($compc);
+}
+
+method add_default_render_method ($compc) {
     unless ( $compc->meta->has_method('render') ) {
         $compc->meta->add_augment_method_modifier(
             render => sub {

@@ -145,6 +145,10 @@ method aborted ($err) {
     return blessed($err) && $err->isa('Mason::Exception::Abort');
 }
 
+method call_next () {
+    return $self->current_comp_class->comp_inner();
+}
+
 # Determine current comp class based on caller() stack.
 #
 method current_comp_class () {

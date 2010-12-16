@@ -52,7 +52,7 @@ method _build_named_block_regex () {
 }
 
 method _build_named_block_types () {
-    return [qw(after around augment before method)];
+    return [qw(after around before method wrap)];
 }
 
 method _build_unnamed_block_regex () {

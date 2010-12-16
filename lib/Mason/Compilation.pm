@@ -273,10 +273,14 @@ method _output_flag_comment () {
 }
 
 method _output_class_header () {
-    return join( "\n",
+    return join(
+        "\n",
         "no warnings 'redefine';",
         "use Method::Signatures::Simple;",
-        "sub comp_inner { inner() }" );
+
+        # Must be defined here since inner relies on caller()
+        "sub comp_inner { inner() }"
+    );
 }
 
 method _output_comp_info () {
@@ -386,18 +390,20 @@ method _handle_method_block ( $contents, $name ) {
     $self->_recursive_parse( $contents, $name );
 }
 
-method _handle_after_block ()   { $self->_handle_method_modifier_block( 'after',   @_ ) }
-method _handle_around_block ()  { $self->_handle_method_modifier_block( 'around',  @_ ) }
-method _handle_augment_block () { $self->_handle_method_modifier_block( 'augment', @_ ) }
-method _handle_before_block ()  { $self->_handle_method_modifier_block( 'before',  @_ ) }
+method _handle_after_block ()  { $self->_handle_method_modifier_block( 'after',  @_ ) }
+method _handle_around_block () { $self->_handle_method_modifier_block( 'around', @_ ) }
+method _handle_wrap_block ()   { $self->_handle_method_modifier_block( 'wrap',   @_ ) }
+method _handle_before_block () { $self->_handle_method_modifier_block( 'before', @_ ) }
 
-method _handle_method_modifier_block ( $modifier, $contents, $name ) {
-    $self->_assert_not_in_method("<%$modifier>");
+method _handle_method_modifier_block ( $block_type, $contents, $name ) {
+    my $modifier = ( $block_type eq 'wrap' ? 'augment' : $block_type );
+
+    $self->_assert_not_in_method("<%$block_type>");
 
     $self->throw_syntax_error("Invalid method modifier name '$name'")
       if $name =~ /[^\w]/;
 
-    my $method_key = "$modifier $name";
+    my $method_key = "$block_type $name";
 
     $self->throw_syntax_error("Duplicate definition of method modifier '$method_key'")
       if exists $self->{method}->{"$method_key"};

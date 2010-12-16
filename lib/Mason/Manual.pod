@@ -411,49 +411,46 @@ defer control to the next dhandler by calling C<< $m->decline >>.
 You can customize the way Mason resolves top-level paths with the parameters
 L<Mason::Params/top_level_extensions> and L<Mason::Params/dhandler_names>.
 
-=head2 The dispatch method
+=head2 The dispatch and render methods
 
 Once the page component has been determined, Mason creates an instance of that
 component and calls C<dispatch> on it. C<dispatch> is a good place to do
 processing before content rendering starts: analyze the path_info, implement
 security restrictions, forward control to another page, etc.
 
-The default C<dispatch> calls C<render> (see below) if path_info is empty, and
-otherwise declines the request. That is, by default, components will only
-handle their exact path with nothing extra on it. If you want to accept and
-parse the path_info, you'll have to implement a C<dispatch>.
+The default C<dispatch> calls C<render> if path_info is empty, and otherwise
+declines the request. That is, by default, components will only handle their
+exact path with nothing extra on it. If you want to accept and parse the
+path_info, you'll have to implement a C<dispatch>.
 
-=head2 The render method and content wrapping
+The default C<render> method just calls C<main>, which executes the main body
+of the component.
 
-The C<render> method is designed to be called in an inverted manner, from
-superclasses down to subclasses. This is useful for creating general templates
-that wrap around more specific pages.
+=head2 Content wrapping
 
-By default, every component gets a C<render> method which will call C<inner()>
-until the innermost component is reached, at which point it calls C<main()>
-which displays the main component body.
-
-For example:
+You can use the C<< <%wrap> >> section in superclasses to wrap content before
+and/or after the subclass content. This is useful for creating cascading web
+page templates, for example:
 
     # /Base.m - top-most template
     #
-    <%augment render>
+    <%wrap render>
       <html>
         <body>
-          <% inner() %>
+          <% $self->call_next %>
           <div class="footer">Copyright 2010 McHuffy Inc.</div>
         </body>
       </html>
-    </%augment>
+    </%wrap>
     
     # /product/Base.m - product-specific template
     #
-    <%augment render>
+    <%wrap render>
       <h2>Products</h2>
       <div class="products_body">
-        <% inner() %>
+        <% $self->call_next %>
       </div>
-    </%augment>
+    </%wrap>
     
     # /product/sales/Base.pm - utility methods, no additional template
     #
@@ -466,19 +463,36 @@ For example:
     <b>Product page content goes here</b>
     ...
 
-Requesting /product/sales/display will ultimately cause Mason to call render on
-/product/sales/display.m. Its content will be wrapped by two templates: the
-outermost in /Base.pm, and the next one in /product/Base.pm.
+When Mason calls render on /product/sales/display.m, its content will be
+wrapped by two templates: the outermost in /Base.pm, and the next one in
+/product/Base.pm. C<< <% $self->call_next %> >> passes control to the next
+inner component. The final output will be (with indentation added for
+readability):
+
+      <html>
+        <body>
+          <h2>Products</h2>
+          <div class="products_body">
+            <b>Product page content goes here</b>
+            ...
+          </div>
+          <div class="footer">Copyright 2010 McHuffy Inc.</div>
+        </body>
+      </html>
 
 Note that neither /product/sales/Base.pm nor /product/sales/display.m need to
-define a C<render> method. A default render will be defined automatically and
-will do the right thing.
+define a C<render> method or C<< <%wrap> >> section. A default render will be
+defined automatically and will do the right thing.
 
-If you want a component to ignore its superclass's wrappers, just override
-C<render> to call C<main>:
+If you want a page component or a superclass to ignore its superclass's
+wrappers, use the ignore_wrap flag:
 
-    <%class>
-    <%method render><% $self->main %></%method>
+    <%flags>
+    ignore_wrap => 1
+    </%flags>
+
+Note: Wrapping currently uses Moose's augment/render underneath, but this is
+subject to change and should not be depended on.
 
 =head2 Accessing the page component
 

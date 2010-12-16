@@ -83,18 +83,16 @@ sub test_wrapping : Tests(2) {
     $self->add_comp(
         path      => '/wrap/Base.m',
         component => '
-<%augment render>
+<%wrap render>
 <html>
-% inner();
+% $m->call_next;
 </html>
-</%augment>
+</%wrap>
 '
     );
     $self->add_comp(
         path      => '/wrap/subdir/Base.m',
         component => '
-
-% # <%augment render><% inner() %></%augment>
 
 <%method hello>
 Hello world
@@ -105,11 +103,11 @@ Hello world
     $self->add_comp(
         path      => '/wrap/subdir/subdir2/Base.m',
         component => '
-<%augment render>
+<%wrap render>
 <body>
-% inner();
+% $m->call_next;
 </body>
-</%augment>
+</%wrap>
 '
     );
     $self->test_comp(
