@@ -41,7 +41,9 @@ method render () {
 #
 method dispatch () {
     my $m = $self->m;
-    $m->decline if length( $m->path_info );
+
+    # Not sure about this.
+    # $m->decline if length( $m->path_info );
     $self->render(@_);
 }
 

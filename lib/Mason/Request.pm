@@ -4,6 +4,7 @@ use Carp;
 use File::Basename;
 use Guard;
 use Log::Any qw($log);
+use Mason::Exceptions;
 use Mason::TieHandle;
 use Mason::Types;
 use Method::Signatures::Simple;
@@ -18,15 +19,17 @@ my $default_out = sub { print $_[0] };
 
 # Passed attributes
 has 'interp' => ( required => 1, weak_ref => 1 );
-has 'out_method' =>
-( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
+has 'out_method' => ( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
+has 'declined_paths' => ( default => sub { {} } );
 
 # Derived attributes
 has 'buffer_stack'       => ( init_arg => undef );
 has 'count'              => ( init_arg => undef );
 has 'path_info'          => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
+has 'request_args'       => ( init_arg => undef );
 has 'request_code_cache' => ( init_arg => undef );
+has 'request_path'       => ( init_arg => undef );
 
 # Class attributes
 our $current_request;
@@ -50,6 +53,11 @@ method run () {
     #
     local $current_request = $self;
 
+    # Save off the requested path and args, e.g. for decline.
+    #
+    $self->{request_path} = $path;
+    $self->{request_args} = [@_];
+
     # Check the static_source touch file, if it exists, before the
     # first component is loaded.
     #
@@ -57,7 +65,12 @@ method run () {
 
     # Find request component class.
     #
-    my ( $compc, $path_info ) = $self->top_level_path_to_component($path);
+    my ( $compc, $path_info ) = $self->resolve_request_path_to_component($path);
+    if ( !defined($compc) ) {
+        croak sprintf( "could not find top-level component for path '%s' - component root is [%s]",
+            $path, join( ", ", @{ $self->interp->comp_root } ) );
+    }
+
     $self->comp_not_found($path) if !defined($compc);
     $self->{path_info} = $path_info;
 
@@ -102,23 +115,27 @@ method run () {
 #   /foo.{pm,m}
 #   /dhandler.{pm,m}
 #
-method top_level_path_to_component ($path) {
+method resolve_request_path_to_component ($request_path) {
     my $interp               = $self->interp;
     my @dhandler_subpaths    = map { "/$_" } @{ $interp->dhandler_names };
     my @index_subpaths       = map { "/$_" } @{ $interp->index_names };
     my @top_level_extensions = @{ $interp->top_level_extensions };
     my $autobase_or_dhandler = $interp->autobase_or_dhandler_regex;
+    my $path                 = $request_path;
     my $path_info            = '';
+    my $declined_paths       = $self->declined_paths;
+
     while (1) {
-        my @candidates =
+        my @candidate_paths =
             ( $path eq '/' )
           ? ( @index_subpaths, @dhandler_subpaths )
           : (
             ( grep { !/$autobase_or_dhandler/ } map { $path . $_ } @top_level_extensions ),
             ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
           );
-        foreach my $candidate (@candidates) {
-            my $compc = $interp->load($candidate);
+        foreach my $candidate_path (@candidate_paths) {
+            next if $declined_paths->{$candidate_path};
+            my $compc = $interp->load($candidate_path);
             if ( defined($compc) && $compc->comp_is_external ) {
                 return ( $compc, $path_info );
             }
@@ -159,7 +176,7 @@ method current_comp_class () {
     my $cnt = 1;
     while (1) {
         if ( my $pkg = ( caller($cnt) )[0] ) {
-            return $pkg if $pkg->isa('Mason::Component');
+            return $pkg if $pkg->isa('Mason::Component') && $pkg ne 'Mason::Component';
         }
         else {
             confess("cannot determine current_comp_class from stack");
@@ -182,11 +199,6 @@ method cache () {
 
 method comp_exists ($path) {
     return $self->load($path) ? 1 : 0;
-}
-
-method decline () {
-
-    # TODO
 }
 
 method fetch_compc ($path) {
@@ -235,14 +247,10 @@ method print () {
     }
 }
 
-# Execute the given component
-#
 method comp () {
     $self->fetch_comp_or_die(@_)->main();
 }
 
-# Like comp, but return component output.
-#
 method scomp () {
     $self->capture( \my $buf, sub { $self->comp(@_) } );
     return $buf;
@@ -256,8 +264,25 @@ method notes () {
     return $self->{notes}->{$key} = shift;
 }
 
+method visit () {
+    my $retval = $self->interp->run( { out_method => \my $buf }, @_ );
+    $self->print($buf);
+    return $retval;
+}
+
+method go () {
+    $self->clear_buffer;
+    my $retval = $self->interp->run( { out_method => $self->out_method }, @_ );
+    $self->abort($retval);
+}
+
+method decline () {
+    $self->go( { declined_paths => { %{ $self->declined_paths }, $self->page->comp_path => 1 } },
+        $self->request_path, @{ $self->request_args } );
+}
+
 method clear_buffer () {
-    foreach my $buffer ( $self->buffer_stack ) {
+    foreach my $buffer ( @{ $self->buffer_stack } ) {
         $$buffer = '';
     }
 }
@@ -375,8 +400,8 @@ point is not sent to the client.
 Returns true or undef indicating whether the specified C<$err> was generated by
 C<abort>. If no C<$err> was passed, uses C<$@>.
 
-In this Try::Tiny code, we catch and process fatal errors while letting
-C<abort> exceptions pass through:
+In this L<Try::Tiny|Try::Tiny> code, we catch and process fatal errors while
+letting C<abort> exceptions pass through:
 
     try {
         code_that_may_fail_or_abort()
@@ -385,12 +410,19 @@ C<abort> exceptions pass through:
         # handle fatal errors...
     };
 
-=item cache
+=item cache ([params])
 
 C<$m-E<gt>cache> returns a new L<CHI object|CHI> with a namespace specific to
 this component. Any parameters are combined with
 L<Interp/chi_default_parameters> and passed along to the
 L<Interp/chi_root_class> constructor.
+
+=item capture (scalarref, code)
+
+Execute the I<code>, capturing any Mason output into the I<scalarref>. e.g.
+
+    $m->capture(\my $buf, sub { $m->comp(...) });
+    # $buf contains the output of the $m->comp call
 
 =item clear_buffer
 
@@ -435,11 +467,19 @@ when no Mason request is active it will return C<undef>.
 
 =item decline
 
-Used from a top-level component or dhandler, this method clears the output
-buffer, aborts the current request and restarts with the next applicable
-component up the tree. If there are no more applicable components, throws a not
-found error (same as if no applicable component had been found in the first
-place)
+Clears the output buffer and issues the current request again, but acting as if
+the previously chosen page component(s) do not exist.
+
+For example, if the following components exist:
+
+    /news/sports.m
+    /news/dhandler.m
+    /dhandler.m
+
+then a request for path C</news/sports> will initially resolve to
+C</news/sports.m>.  A call to C<< $m->decline >> would restart the request and
+resolve to C</news/dhandler.m>, a second C<< $m->decline >> would resolve to
+C</dhandler.m>, and a third would throw a "not found" error.
 
 =item fetch_comp (path)
 
@@ -453,10 +493,16 @@ the request's L</out_method>.
 Attempts to flush the buffers are ignored within the context of a call to C<<
 $m->scomp >> or C<< $m->capture >>, or within a filter.
 
-=item path_info
+=item go ([request params], path, args...)
 
-Returns the remainder of the top level path beyond the path of the page
-component.
+Performs an internal redirect. Clears the output buffer, runs a new request for
+the given I<path> and I<args>, and then L<aborts|/abort> when that request is
+done.
+
+The first argument may optionally be a hashref of parameters which are passed
+to the C<Mason::Request> constructor.
+
+See also L</visit>.
 
 =item interp
 
@@ -468,17 +514,25 @@ Returns a C<Log::Any> logger with a log category specific to the current
 component.  The category for a component "/foo/bar" would be
 "Mason::Component::foo::bar".
 
-=item notes (key, value)
+=item notes ([key[, value]])
 
-The C<notes()> method provides a place to store application data, giving
-developers a way to share data among multiple components.  Any data stored here
-persists for the duration of the request, i.e. the same lifetime as the Request
-object.
+The C<notes()> method provides a place to store application data between
+components - essentially, a hash which persists for the duration of the
+request.
 
-Conceptually, C<notes()> contains a hash of key-value pairs. C<notes($key,
-$value)> stores a new entry in this hash. C<notes($key)> returns a previously
-stored value.  C<notes()> without any arguments returns a reference to the
-entire hash of key-value pairs.
+C<notes($key, $value)> stores a new entry in the hash; C<notes($key)> returns a
+previously stored value; and C<notes()> without any arguments returns a
+reference to the entire hash of key-value pairs.
+
+Consider storing this kind of data in a read-write attribute of the page
+component.
+
+=item path_info
+
+Returns the remainder of the top level path beyond the path of the page
+component, with no leading slash. e.g. If a request for '/foo/bar/baz' resolves
+to "/foo.m", the path_info is "bar/baz". Defaults to the empty string for an
+exact match.
 
 =item print (string)
 
@@ -491,10 +545,21 @@ Returns the page component originally called in the request.
 
 =item scomp (comp, args...)
 
-=for html <a name="item_scomp"></a>
-
 Like L<comp|Mason::Request/item_comp>, but returns the component output as a
 string instead of printing it. (Think sprintf versus printf.)
+
+=item visit ([request params], path, args...)
+
+Performs a subrequest with the given I<path> and I<args>, with output being
+sent to the current output buffer.
+
+The first argument may optionally be a hashref of parameters which are passed
+to the C<Mason::Request> constructor. e.g. to capture the output of the
+subrequest:
+
+    $m->visit({out_method => \my $buffer}, ...);
+
+See also L</go>.
 
 =back
 

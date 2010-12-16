@@ -36,4 +36,43 @@ sub test_page : Test(1) {
     );
 }
 
+sub test_subrequest : Test(2) {
+    my $self = shift;
+    $self->add_comp(
+        path      => '/subreq/other.m',
+        component => '
+<% $m->page->comp_title %>
+<% $m->request_path %>
+<% join(", ", @{ $m->request_args }) %>
+',
+    );
+    $self->test_comp(
+        path      => '/subreq/go.m',
+        component => '
+This should not get printed.
+<%perl>$m->go("/subreq/other", foo => 5);</%perl>',
+        expect => '
+/subreq/other.m
+/subreq/other
+foo, 5
+',
+    );
+    $self->test_comp(
+        path      => '/subreq/visit.m',
+        component => '
+begin
+<%perl>$m->visit("/subreq/other", foo => 5);</%perl>
+end
+',
+        expect => '
+begin
+/subreq/other.m
+/subreq/other
+foo, 5
+end
+',
+    );
+
+}
+
 1;

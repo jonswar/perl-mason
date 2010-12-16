@@ -24,7 +24,8 @@ sub test_resolve : Tests(19) {
                 "path: $resolve_path; path_info: $path_info", $desc );
         }
         else {
-            throws_ok { $self->{interp}->srun($run_path) } qr/could not find component/, $desc;
+            throws_ok { $self->{interp}->srun($run_path) } qr/could not find top-level component/,
+              $desc;
         }
     };
 
@@ -49,9 +50,56 @@ sub test_resolve : Tests(19) {
     $try->( $run_path, ['/foo/blarg.m'],                  undef );
     $try->( $run_path, ['/foo/blarg/dhandler.m'],         undef );
 
-    # Can't access autobase or dhandler directly
+    # Can't access autobase or dhandler directly. Not sure about index?
     $try->( '/foo/Base', ['/foo/Base.m'], undef );
     $try->( '/foo/dhandler', ['/foo/dhandler.m'], '/foo/dhandler.m', 'dhandler' );
+}
+
+sub test_decline : Tests(7) {
+    my $self = shift;
+
+    my @existing_paths =
+      qw(/foo/bar.m /foo/bar/dhandler.m /foo/bar/index.m /foo.m /foo/dhandler.m /dhandler.m);
+    my @paths_to_decline = ();
+    my $run_path         = '/foo/bar';
+
+    my $try = sub {
+        my ( $resolve_path, $path_info ) = @_;
+        my %paths_to_decline_hash = map { ( $_, 1 ) } @paths_to_decline;
+
+        $self->setup_dirs;
+        foreach my $existing_path (@existing_paths) {
+            my $component =
+              $paths_to_decline_hash{$existing_path}
+              ? '<%perl>$m->decline();</%perl>'
+              : 'path: <% $self->comp_path %>; path_info: <% $m->path_info %>';
+            $self->add_comp(
+                path      => $existing_path,
+                component => $component,
+            );
+        }
+        my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) );
+        if ( defined($resolve_path) ) {
+            is( $self->{interp}->srun($run_path),
+                "path: $resolve_path; path_info: $path_info", $desc );
+        }
+        else {
+            throws_ok { $self->{interp}->srun($run_path) } qr/could not find top-level component/,
+              $desc;
+        }
+        push( @paths_to_decline, $resolve_path );
+    };
+
+    # Repeatedly try /foo/bar, test the expected page component, then add
+    # that component to the decline list and try again.
+    #
+    $try->( '/foo/bar.m',          '' );
+    $try->( '/foo/bar/index.m',    '' );
+    $try->( '/foo/bar/dhandler.m', '' );
+    $try->( '/foo.m',              'bar' );
+    $try->( '/foo/dhandler.m',     'bar' );
+    $try->( '/dhandler.m',         'foo/bar' );
+    $try->(undef);
 }
 
 1;

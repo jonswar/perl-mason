@@ -585,11 +585,14 @@ same name.
 Given an I<absolute> component path, this method returns a boolean value
 indicating whether or not a component exists for that path.
 
-=item run (path, args...)
+=item run ([request params], path, args...)
 
 Creates a new Mason::Request object for the given I<path> and I<args>, and
 executes it. Request output is sent to the default L<Request/out_method>. The
 return value is the return value of the request's top level component, if any.
+
+The first argument may optionally be a hashref of request parameters, which are
+passed to the Mason::Request constructor.
 
 =item srun (path, args...)
 
