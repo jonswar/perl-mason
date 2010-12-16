@@ -22,7 +22,7 @@ my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
-has 'autobase_names'           => ( isa => 'ArrayRef[Str]', default => sub { ['Base.pm', 'Base.m'] } );
+has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( lazy_build => 1 );
 has 'compiler_class'           => ( lazy_build => 1 );
@@ -32,6 +32,7 @@ has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( );
 has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'index_names'              => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
@@ -83,6 +84,10 @@ method _build_autobase_or_dhandler_regex () {
     return qr/$regex/;
 }
 
+method _build_autobase_names () {
+    return [ map { "Base" . $_ } @{ $self->top_level_extensions } ];
+}
+
 method _build_autobase_regex () {
     my $regex = '(' . join( "|", @{ $self->autobase_names } ) . ')$';
     return qr/$regex/;
@@ -113,6 +118,10 @@ method _build_component_class_prefix () {
 
 method _build_dhandler_names () {
     return [ map { "dhandler" . $_ } @{ $self->top_level_extensions } ];
+}
+
+method _build_index_names () {
+    return [ map { "index" . $_ } @{ $self->top_level_extensions } ];
 }
 
 method _build_request_class () {
@@ -493,7 +502,14 @@ Mason will create the directory on startup if necessary.
 =item dhandler_names
 
 Array reference of dhandler file names to check in order when resolving a
-top-level path. Default is C<< ["dhandler.pm", "dhandler.m"] >>.
+top-level path. Default is C<< ["dhandler.pm", "dhandler.m"] >>. See
+L<Mason::Manual/Determining the page component>.
+
+=item index_names
+
+Array reference of index file names to check in order when resolving a
+top-level path (only in the bottom-most directory). Default is C<< ["index.pm",
+"index.m"] >>. See L<Mason::Manual/Determining the page component>.
 
 =item object_file_extension
 

@@ -379,13 +379,29 @@ determined by the first argument to C<run>:
 In a web environment, the page component will be determined by the URL and
 perhaps controller logic in your web framework.
 
-In either case, Mason searches under the component root for the provided path
-with either a ".pm" or a ".m" attached, and then for a component called
-"dhandler.pm" or "dhandler.m" ("directory handler").
+In either case, Mason takes the provided path and uses it to generate a number
+of candidate component paths, searching in order until one is found:
+
+=over
+
+=item *
+
+The requested path itself, suffixed with ".pm" or ".m"
+
+=item *
+
+"index.pm" or "index.m" under the requested path
+
+=item *
+
+"dhandler.pm" or "dhandler.m" under the requested path
+
+=back
 
 If it cannot find any of these, then Mason scans backwards through the path,
-checking each directory upwards for the same set of files. In this case it sets
-$m->path_info to the unmatched latter part of the path.
+checking each directory upwards for the same set of files B<except> for
+"index.*". In this case it sets $m->path_info to the unmatched latter part of
+the path.
 
 For example, given the path
 
@@ -394,16 +410,12 @@ For example, given the path
 Mason searches for the following components in order, setting $m->path_info as
 noted.
 
-    /news/sports.pm
-    /news/sports.m
-    /news/sports/dhandler.pm
-    /news/sports/dhandler.m
-    /news.pm                  # $m->path_info = sports
-    /news.m                   # $m->path_info = sports
-    /news/dhandler.pm         # $m->path_info = sports
-    /news/dhandler.m          # $m->path_info = sports
-    /dhandler.pm              # $m->path_info = news/sports
-    /dhandler.m               # $m->path_info = news/sports
+    /news/sports.{pm,m}
+    /news/sports/index.{pm,m}
+    /news/sports/dhandler.{pm,m}
+    /news.{pm,m}                  # $m->path_info = sports
+    /news/dhandler.{pm,m}         # $m->path_info = sports
+    /dhandler.{pm,m}              # $m->path_info = news/sports
 
 A component or dhandler that does not want to handle a particular request may
 defer control to the next dhandler by calling C<< $m->decline >>.

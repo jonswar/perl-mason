@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use base qw(Mason::Test::Class);
 
-sub test_resolve : Tests(15) {
+sub test_resolve : Tests(19) {
     my $self = shift;
 
     my $try = sub {
@@ -31,6 +31,7 @@ sub test_resolve : Tests(15) {
     my $run_path = '/foo/bar/baz';
     $try->( $run_path, ['/foo/bar/baz.m'],          '/foo/bar/baz.m',          '' );
     $try->( $run_path, ['/foo/bar/baz/dhandler.m'], '/foo/bar/baz/dhandler.m', '' );
+    $try->( $run_path, ['/foo/bar/baz/index.m'],    '/foo/bar/baz/index.m',    '' );
     $try->( $run_path, ['/foo/bar.m'],              '/foo/bar.m',              'baz' );
     $try->( $run_path, ['/foo/bar/dhandler.m'],     '/foo/bar/dhandler.m',     'baz' );
     $try->( $run_path, ['/foo.m'],                  '/foo.m',                  'bar/baz' );
@@ -42,6 +43,9 @@ sub test_resolve : Tests(15) {
     # Not found
     $try->( $run_path, ['/foo/bar/baz/blarg.m'],          undef );
     $try->( $run_path, ['/foo/bar/baz/blarg/dhandler.m'], undef );
+    $try->( $run_path, ['/foo/bar/baz'],                  undef );
+    $try->( $run_path, ['/foo/dhandler'],                 undef );
+    $try->( $run_path, ['/foo/bar/index.m'],              undef );
     $try->( $run_path, ['/foo/blarg.m'],                  undef );
     $try->( $run_path, ['/foo/blarg/dhandler.m'],         undef );
 

@@ -96,23 +96,26 @@ method run () {
 }
 
 # Given /foo/bar, look for (by default):
-#   /foo/bar.pm,  /foo/bar.m, /foo/bar/dhandler.pm, /foo/bar/dhandler.m
-#   /foo.pm,      /foo.m,     /foo/dhandler.pm,     /foo/dhandler.m,
-#   /dhandler.pm, /dhandler.m
+#   /foo/bar.{pm,m},
+#   /foo/bar/index.{pm,m},
+#   /foo/bar/dhandler.{pm,m},
+#   /foo.{pm,m}
+#   /dhandler.{pm,m}
 #
 method top_level_path_to_component ($path) {
     my $interp               = $self->interp;
     my @dhandler_subpaths    = map { "/$_" } @{ $interp->dhandler_names };
+    my @index_subpaths       = map { "/$_" } @{ $interp->index_names };
     my @top_level_extensions = @{ $interp->top_level_extensions };
     my $autobase_or_dhandler = $interp->autobase_or_dhandler_regex;
     my $path_info            = '';
     while (1) {
         my @candidates =
-          ( $path eq '/' )
-          ? @dhandler_subpaths
+            ( $path eq '/' )
+          ? ( @index_subpaths, @dhandler_subpaths )
           : (
             ( grep { !/$autobase_or_dhandler/ } map { $path . $_ } @top_level_extensions ),
-            ( map { $path . $_ } @dhandler_subpaths )
+            ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
           );
         foreach my $candidate (@candidates) {
             my $compc = $interp->load($candidate);
@@ -124,6 +127,7 @@ method top_level_path_to_component ($path) {
         my $name = basename($path);
         $path_info = length($path_info) ? "$name/$path_info" : $name;
         $path = dirname($path);
+        @index_subpaths = ();    # only match in same directory
     }
 }
 
