@@ -242,12 +242,21 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     $self->add_default_render_method( $compc, $flags );
 }
 
+# Default render method for any component that doesn't define one.
+# Call inner() until we're back down at the page component ($self),
+# then call main().
+#
 method add_default_render_method ($compc, $flags) {
     unless ( $compc->meta->has_method('render') ) {
+        my $path = $compc->comp_path;
         my $code = sub {
             my $self = shift;
-            if   ( ref($self) ne $compc ) { $compc->comp_inner() }
-            else                          { $self->main(@_) }
+            if ( $self->comp_path eq $path ) {
+                $self->main(@_);
+            }
+            else {
+                $compc->comp_inner();
+            }
         };
         my $meta = $compc->meta;
         if ( $flags->{ignore_wrap} ) {
