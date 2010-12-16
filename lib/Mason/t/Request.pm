@@ -9,6 +9,28 @@ sub _get_current_comp_class {
     return $m->current_comp_class;
 }
 
+sub test_comp_exists : Test(1) {
+    my $self = shift;
+
+    $self->add_comp( path => '/comp_exists/one.m', component => 'hi' );
+    $self->test_comp(
+        path      => '/comp_exists/two.m',
+        component => '
+% foreach my $path (qw(/comp_exists/one.m /comp_exists/two.m /comp_exists/three.m one.m two.m three.m)) {
+<% $path %>: <% $m->comp_exists($path) ? "yes" : "no" %>
+% }
+',
+        expect => '
+/comp_exists/one.m: yes
+/comp_exists/two.m: yes
+/comp_exists/three.m: no
+one.m: yes
+two.m: yes
+three.m: no
+',
+    );
+}
+
 sub test_current_comp_class : Test(1) {
     shift->test_comp(
         path      => '/current_comp_class.m',

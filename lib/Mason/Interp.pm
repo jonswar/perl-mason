@@ -155,6 +155,10 @@ method flush_load_cache () {
     Memoize::flush_cache('load');
 }
 
+method comp_exists ($path) {
+    return $self->source_file_for_path( Mason::Util::mason_canon_path($path) );
+}
+
 # Loads the component in $path; returns a component class, or undef if not
 # found. Memoize the results - this helps both with components used multiple
 # times in a request, and with determining default parent components.
@@ -333,6 +337,7 @@ method default_parent_compc ($path) {
 }
 
 method source_file_for_path ($path) {
+    die "'$path' is not an absolute path" unless substr( $path, 0, 1 ) eq '/';
     foreach my $root_path ( @{ $self->comp_root } ) {
         my $source_file = $root_path . $path;
         return $source_file if -f $source_file;

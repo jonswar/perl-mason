@@ -198,7 +198,7 @@ method cache () {
 }
 
 method comp_exists ($path) {
-    return $self->load($path) ? 1 : 0;
+    return $self->fetch_compc($path) ? 1 : 0;
 }
 
 method fetch_compc ($path) {

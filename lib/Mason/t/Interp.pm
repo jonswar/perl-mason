@@ -35,4 +35,14 @@ sub test_bad_param : Test(1) {
     throws_ok { $self->create_interp( foo => 5 ) } qr/Found unknown attribute/;
 }
 
+sub test_comp_exists : Test(3) {
+    my $self = shift;
+
+    $self->add_comp( path => '/comp_exists/one.m', component => 'hi' );
+    my $interp = $self->{interp};
+    ok( $interp->comp_exists('/comp_exists/one.m') );
+    ok( !$interp->comp_exists('/comp_exists/two.m') );
+    throws_ok { $interp->comp_exists('one.m') } qr/not an absolute/;
+}
+
 1;
