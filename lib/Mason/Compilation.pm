@@ -411,7 +411,7 @@ method _handle_attributes_list ($contents, $attr_type) {
 method _attribute_declaration ($name, $params, $line_number) {
     return $self->process_perl_code(
         sprintf(
-            "%s\nhas '%s' => %s",
+            "%shas '%s' => %s",
             $self->_output_line_number_comment($line_number),
             $name, $params
         )

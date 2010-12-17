@@ -10,14 +10,15 @@ around 'write_object_file' => sub {
     my ( $orig, $self, $object_file, $object_contents ) = @_;
 
     my $argv = $self->tidy_options || '';
-    my $source = $object_contents;
+    my $tidied_object_contents;
     Perl::Tidy::perltidy(
         'perltidyrc' => '/dev/null',
-        source       => \$source,
-        destination  => \$object_contents,
+        source       => \$object_contents,
+        destination  => \$tidied_object_contents,
         argv         => $argv
     );
-    $self->$orig( $object_file, $object_contents );
+    $tidied_object_contents =~ s/^\s*(\#line .*)/$1/mg;
+    $self->$orig( $object_file, $tidied_object_contents );
 };
 
 1;
