@@ -6,7 +6,7 @@ use base qw(Mason::Test::Class);
 
 sub _get_current_comp_class {
     my $m = shift;
-    return $m->current_comp_class;
+    return $m->_current_comp_class;
 }
 
 sub test_comp_exists : Test(1) {

@@ -33,18 +33,6 @@ modules, declare attributes, and do other things on a class level.
 
 Each instance of this block creates a new method with the specified name.
 
-=head2 <%filter>
-
-Filters the entire output of the current component. Upon entry to this code,
-C<$_> contains the component output, and you are expected to modify it in
-place. On return, the contents of $_ are output.
-
-This simple filter converts the component output to UPPERCASE:
-
-    <%filter>
-    tr/a-z/A-Z/
-    </%filter>
-
 =head2 <% # comment... %>
 
 A C<< <% %> >> tag is considered a comment if all of its lines are either

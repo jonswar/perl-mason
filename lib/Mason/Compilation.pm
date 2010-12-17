@@ -308,10 +308,6 @@ method _output_method ($method) {
     my $name     = $method->{name};
     my $modifier = $method->{modifier};
     my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
-    my $filter_sub;
-    if ( $method->{filter} ) {
-        $filter_sub = join( "\n", 'sub { local $_ = $_[0];', $method->{filter}, 'return $_ }' );
-    }
 
     my $start = $modifier ? "$modifier '$name' => sub {" : "sub $name {";
     my $end = $modifier ? "};" : "}";
@@ -322,16 +318,12 @@ method _output_method ($method) {
         "my \$self = shift;",
         "my \$m = \$self->m;",
 
-        $filter_sub ? "\$m->apply_immediate_filter($filter_sub, sub {" : "",
-
-        "my \$_buffer = \$m->current_buffer;",
+        "my \$_buffer = \$m->_current_buffer;",
 
         # do not add a block around this, it introduces
         # a separate scope and might break cleanup
         # blocks (or all sort of other things!)
         $contents,
-
-        $filter_sub ? "});" : "",
 
         # don't return values explicitly. semi before return will help catch
         # syntax errors in component body.

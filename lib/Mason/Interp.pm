@@ -22,6 +22,7 @@ my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
 
 # Passed attributes
+#
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( lazy_build => 1 );
@@ -42,6 +43,7 @@ has 'static_source_touch_file' => ( );
 has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
+#
 has 'autobase_regex'                => ( lazy_build => 1, init_arg => undef );
 has 'autobase_or_dhandler_regex'    => ( lazy_build => 1, init_arg => undef );
 has 'code_cache'                    => ( init_arg => undef );
@@ -49,6 +51,10 @@ has 'compiler_params'               => ( init_arg => undef );
 has 'request_params'                => ( init_arg => undef );
 has 'id'                            => ( init_arg => undef );
 has 'request_count'                 => ( init_arg => undef, default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
+
+#
+# BUILD
+#
 
 method BUILD ($params) {
     $self->{code_cache} = {};
@@ -128,9 +134,9 @@ method _build_request_class () {
     return $self->find_subclass('Request');
 }
 
-method find_subclass ($name) {
-    return $self->mason_root_class->find_subclass( $name, $self->plugins );
-}
+#
+# PUBLIC METHODS
+#
 
 method run () {
     my %request_params;
@@ -147,24 +153,10 @@ method srun () {
     return $output;
 }
 
-method build_request () {
-    return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
-}
-
-method flush_load_cache () {
-    Memoize::flush_cache('load');
-}
-
 method comp_exists ($path) {
     return $self->source_file_for_path( Mason::Util::mason_canon_path($path) );
 }
 
-# Loads the component in $path; returns a component class, or undef if not
-# found. Memoize the results - this helps both with components used multiple
-# times in a request, and with determining default parent components.
-# The memoize cache is cleared at the beginning of each request, or in
-# static_source_mode, when the purge file is touched.
-#
 method load ($path) {
 
     # Canonicalize path
@@ -229,28 +221,27 @@ method load ($path) {
     return $compc;
 }
 
+# Memoize the results - this helps both with components used multiple
+# times in a request, and with determining default parent components.
+# The memoize cache is cleared at the beginning of each request, or in
+# static_source_mode, when the purge file is touched.
+#
 memoize('load');
 
-method load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
-    my $flags = $self->extract_flags_from_object_file($object_file);
-    my $parent_compc = $self->determine_parent_compc( $path, $flags )
-      || $default_parent_compc;
-    eval(
-        sprintf(
-            'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
-            $compc, $parent_compc, $object_file
-        )
-    );
-    die $@ if $@;
-
-    $self->add_default_render_method( $compc, $flags );
+method object_dir () {
+    return catdir( $self->data_dir, 'obj' );
 }
 
-# Default render method for any component that doesn't define one.
-# Call inner() until we're back down at the page component ($self),
-# then call main().
 #
+# PRIVATE METHODS
+#
+
 method add_default_render_method ($compc, $flags) {
+
+    # Default render method for any component that doesn't define one.
+    # Call inner() until we're back down at the page component ($self),
+    # then call main().
+    #
     unless ( $compc->meta->has_method('render') ) {
         my $path = $compc->comp_path;
         my $code = sub {
@@ -272,39 +263,60 @@ method add_default_render_method ($compc, $flags) {
     }
 }
 
-method determine_parent_compc ($path, $flags) {
-    my $parent_compc;
-    if ( exists( $flags->{extends} ) ) {
-        my $extends = $flags->{extends};
-        if ( defined($extends) ) {
-            $extends = mason_canon_path( join( "/", dirname($path), $extends ) )
-              if substr( $extends, 0, 1 ) ne '/';
-            $parent_compc = $self->load($extends)
-              or die "could not load '$extends' for extends flag";
-        }
-        else {
-            $parent_compc = $self->component_base_class;
-        }
-    }
-    return $parent_compc;
+method build_request () {
+    return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
 }
 
-method extract_flags_from_object_file ($object_file) {
-    my $flags = {};
-    open( my $fh, "<", $object_file );
-    my $line = <$fh>;
-    if ( my ($flags_str) = ( $line =~ /\# FLAGS: (.*)/ ) ) {
-        $flags = JSON->new->decode($flags_str);
+method check_static_source_touch_file () {
+
+    # Check the static_source_touch_file, if one exists, to see if it has
+    # changed since we last checked. If it has, clear the code cache and
+    # object files if appropriate.
+    #
+    if ( my $touch_file = $self->static_source_touch_file ) {
+        return unless -f $touch_file;
+        my $touch_file_lastmod = ( stat($touch_file) )[9];
+        if ( $touch_file_lastmod > $self->{static_source_touch_file_lastmod} ) {
+
+            # File has been touched since we last checked.  First,
+            # clear the object file directory if the last mod of
+            # its ._object_create_marker is earlier than the touch file,
+            # or if the marker doesn't exist.
+            #
+            if ( $self->use_object_files ) {
+                my $object_create_marker_file = $self->object_create_marker_file;
+                if ( !-e $object_create_marker_file
+                    || ( stat($object_create_marker_file) )[9] < $touch_file_lastmod )
+                {
+                    $self->remove_object_files;
+                }
+            }
+
+            # Next, clear the in-memory component cache.
+            #
+            $self->flush_code_cache;
+
+            # Reset lastmod value.
+            #
+            $self->{static_source_touch_file_lastmod} = $touch_file_lastmod;
+        }
     }
-    return $flags;
 }
 
-# Given /foo/bar.m, look for (by default):
-#   /foo/Base.pm, /foo/Base.m,
-#   /Base.pm, /Base.m
-#
+method comp_class_for_path ($path) {
+    my $classname = substr( $path, 1 );
+    $classname =~ s/[^\w]/_/g;
+    $classname =~ s/\//::/g;
+    $classname = join( "::", $self->component_class_prefix, $classname );
+    return $classname;
+}
+
 method default_parent_compc ($path) {
 
+    # Given /foo/bar.m, look for (by default):
+    #   /foo/Base.pm, /foo/Base.m,
+    #   /Base.pm, /Base.m
+    #
     # Split path into dir_path and base_name - validate that it has a
     # starting slash and ends with at least one non-slash character
     #
@@ -336,13 +348,58 @@ method default_parent_compc ($path) {
     }
 }
 
-method source_file_for_path ($path) {
-    die "'$path' is not an absolute path" unless substr( $path, 0, 1 ) eq '/';
-    foreach my $root_path ( @{ $self->comp_root } ) {
-        my $source_file = $root_path . $path;
-        return $source_file if -f $source_file;
+method determine_parent_compc ($path, $flags) {
+    my $parent_compc;
+    if ( exists( $flags->{extends} ) ) {
+        my $extends = $flags->{extends};
+        if ( defined($extends) ) {
+            $extends = mason_canon_path( join( "/", dirname($path), $extends ) )
+              if substr( $extends, 0, 1 ) ne '/';
+            $parent_compc = $self->load($extends)
+              or die "could not load '$extends' for extends flag";
+        }
+        else {
+            $parent_compc = $self->component_base_class;
+        }
     }
-    return undef;
+    return $parent_compc;
+}
+
+method extract_flags_from_object_file ($object_file) {
+    my $flags = {};
+    open( my $fh, "<", $object_file );
+    my $line = <$fh>;
+    if ( my ($flags_str) = ( $line =~ /\# FLAGS: (.*)/ ) ) {
+        $flags = JSON->new->decode($flags_str);
+    }
+    return $flags;
+}
+
+method find_subclass ($name) {
+    return $self->mason_root_class->find_subclass( $name, $self->plugins );
+}
+
+method flush_load_cache () {
+    Memoize::flush_cache('load');
+}
+
+method load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
+    my $flags = $self->extract_flags_from_object_file($object_file);
+    my $parent_compc = $self->determine_parent_compc( $path, $flags )
+      || $default_parent_compc;
+    eval(
+        sprintf(
+            'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
+            $compc, $parent_compc, $object_file
+        )
+    );
+    die $@ if $@;
+
+    $self->add_default_render_method( $compc, $flags );
+}
+
+method object_create_marker_file () {
+    return catfile( $self->object_dir, '.__obj_create_marker' );
 }
 
 method object_file_for_path ($path) {
@@ -350,65 +407,13 @@ method object_file_for_path ($path) {
       . $self->object_file_extension;
 }
 
-method comp_class_for_path ($path) {
-    my $classname = substr( $path, 1 );
-    $classname =~ s/[^\w]/_/g;
-    $classname =~ s/\//::/g;
-    $classname = join( "::", $self->component_class_prefix, $classname );
-    return $classname;
-}
-
-method object_create_marker_file () {
-    return catfile( $self->object_dir, '.__obj_create_marker' );
-}
-
-method object_dir () {
-    return catdir( $self->data_dir, 'obj' );
-}
-
-method _make_object_dir () {
-    my $object_dir = $self->object_dir;
-    if ( !-f $object_dir ) {
-        make_path($object_dir);
-        my $object_create_marker_file = $self->object_create_marker_file;
-        write_file( $object_create_marker_file, "" )
-          unless -f $object_create_marker_file;
+method source_file_for_path ($path) {
+    die "'$path' is not an absolute path" unless substr( $path, 0, 1 ) eq '/';
+    foreach my $root_path ( @{ $self->comp_root } ) {
+        my $source_file = $root_path . $path;
+        return $source_file if -f $source_file;
     }
-}
-
-# Check the static_source_touch_file, if one exists, to see if it has
-# changed since we last checked. If it has, clear the code cache and
-# object files if appropriate.
-#
-method check_static_source_touch_file () {
-    if ( my $touch_file = $self->static_source_touch_file ) {
-        return unless -f $touch_file;
-        my $touch_file_lastmod = ( stat($touch_file) )[9];
-        if ( $touch_file_lastmod > $self->{static_source_touch_file_lastmod} ) {
-
-            # File has been touched since we last checked.  First,
-            # clear the object file directory if the last mod of
-            # its ._object_create_marker is earlier than the touch file,
-            # or if the marker doesn't exist.
-            #
-            if ( $self->use_object_files ) {
-                my $object_create_marker_file = $self->object_create_marker_file;
-                if ( !-e $object_create_marker_file
-                    || ( stat($object_create_marker_file) )[9] < $touch_file_lastmod )
-                {
-                    $self->remove_object_files;
-                }
-            }
-
-            # Next, clear the in-memory component cache.
-            #
-            $self->flush_code_cache;
-
-            # Reset lastmod value.
-            #
-            $self->{static_source_touch_file_lastmod} = $touch_file_lastmod;
-        }
-    }
+    return undef;
 }
 
 __PACKAGE__->meta->make_immutable();

@@ -18,11 +18,13 @@ use warnings;
 my $default_out = sub { print $_[0] };
 
 # Passed attributes
+#
 has 'interp' => ( required => 1, weak_ref => 1 );
 has 'out_method' => ( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 has 'declined_paths' => ( default => sub { {} } );
 
 # Derived attributes
+#
 has 'buffer_stack'       => ( init_arg => undef );
 has 'count'              => ( init_arg => undef );
 has 'path_info'          => ( init_arg => undef, default => '' );
@@ -32,13 +34,142 @@ has 'request_code_cache' => ( init_arg => undef );
 has 'request_path'       => ( init_arg => undef );
 
 # Class attributes
+#
 our $current_request;
 method current_request () { $current_request }
 
+#
+# BUILD
+#
+
 method BUILD ($params) {
-    $self->push_buffer();
+    $self->_push_buffer();
     $self->{request_code_cache} = {};
     $self->{count}              = $self->{interp}->request_count;
+}
+
+#
+# PUBLIC METHODS
+#
+
+method abort ($aborted_value) {
+    Mason::Exception::Abort->throw(
+        error         => 'Request->abort was called',
+        aborted_value => $aborted_value
+    );
+}
+
+method aborted ($err) {
+    return blessed($err) && $err->isa('Mason::Exception::Abort');
+}
+
+method cache () {
+    my $chi_root_class = $self->interp->chi_root_class;
+    load_class($chi_root_class);
+    my %options = ( %{ $self->interp->chi_default_params }, @_ );
+    if ( !exists( $options{namespace} ) ) {
+        $options{namespace} = $self->_current_comp_class->comp_id;
+    }
+    return $chi_root_class->new(%options);
+}
+
+method call_next () {
+    return $self->_current_comp_class->comp_inner();
+}
+
+method capture ( $output_ref, $code ) {
+    $self->_push_buffer;
+    scope_guard { $$output_ref = ${ $self->_current_buffer }; $self->_pop_buffer };
+    $code->();
+}
+
+method clear_and_abort () {
+    $self->clear_buffer;
+    $self->abort(@_);
+}
+
+method clear_buffer () {
+    foreach my $buffer ( @{ $self->buffer_stack } ) {
+        $$buffer = '';
+    }
+}
+
+method comp () {
+    $self->_fetch_comp_or_die(@_)->main();
+}
+
+method comp_exists ($path) {
+    return $self->fetch_compc($path) ? 1 : 0;
+}
+
+method decline () {
+    $self->go( { declined_paths => { %{ $self->declined_paths }, $self->page->comp_path => 1 } },
+        $self->request_path, @{ $self->request_args } );
+}
+
+method fetch_comp () {
+    my $path  = shift;
+    my $compc = $self->fetch_compc($path);
+    return undef unless defined($compc);
+
+    # Create and return a component instance
+    #
+    my $comp = $compc->new( @_, 'm' => $self );
+
+    return $comp;
+}
+
+method fetch_compc ($path) {
+    return undef unless defined($path);
+
+    # Make absolute based on current component path
+    #
+    $path = join( "/", $self->_current_comp_class->comp_dir_path, $path )
+      unless substr( $path, 0, 1 ) eq '/';
+
+    # Load the component class
+    #
+    my $compc = $self->interp->load($path)
+      or return undef;
+
+    return $compc;
+}
+
+method flush_buffer () {
+    my $request_buffer = $self->_request_buffer;
+    $self->out_method->($$request_buffer)
+      if length $$request_buffer;
+    $$request_buffer = '';
+}
+
+method go () {
+    $self->clear_buffer;
+    my $retval = $self->interp->run( { out_method => $self->out_method }, @_ );
+    $self->abort($retval);
+}
+
+method log () {
+    return $self->_current_comp_class->comp_logger();
+}
+
+method notes () {
+    return $self->{notes}
+      unless @_;
+    my $key = shift;
+    return $self->{notes}->{$key} unless @_;
+    return $self->{notes}->{$key} = shift;
+}
+
+method print () {
+    my $buffer = $self->_current_buffer;
+    for (@_) {
+        $$buffer .= $_ if defined;
+    }
+}
+
+method scomp () {
+    $self->capture( \my $buf, sub { $self->comp(@_) } );
+    return $buf;
 }
 
 method run () {
@@ -71,7 +202,7 @@ method run () {
             $path, join( ", ", @{ $self->interp->comp_root } ) );
     }
 
-    $self->comp_not_found($path) if !defined($compc);
+    $self->_comp_not_found($path) if !defined($compc);
     $self->{path_info} = $path_info;
 
     my $page = $compc->new( @_, 'm' => $self );
@@ -108,13 +239,6 @@ method run () {
     return $self->aborted($err) ? $err->aborted_value : $retval;
 }
 
-# Given /foo/bar, look for (by default):
-#   /foo/bar.{pm,m},
-#   /foo/bar/index.{pm,m},
-#   /foo/bar/dhandler.{pm,m},
-#   /foo.{pm,m}
-#   /dhandler.{pm,m}
-#
 method resolve_request_path_to_component ($request_path) {
     my $interp               = $self->interp;
     my @dhandler_subpaths    = map { "/$_" } @{ $interp->dhandler_names };
@@ -125,6 +249,13 @@ method resolve_request_path_to_component ($request_path) {
     my $path_info            = '';
     my $declined_paths       = $self->declined_paths;
 
+    # Given /foo/bar, look for (by default):
+    #   /foo/bar.{pm,m},
+    #   /foo/bar/index.{pm,m},
+    #   /foo/bar/dhandler.{pm,m},
+    #   /foo.{pm,m}
+    #   /dhandler.{pm,m}
+    #
     while (1) {
         my @candidate_paths =
             ( $path eq '/' )
@@ -148,31 +279,26 @@ method resolve_request_path_to_component ($request_path) {
     }
 }
 
-method clear_and_abort () {
-    $self->clear_buffer;
-    $self->abort(@_);
+method visit () {
+    my $retval = $self->interp->run( { out_method => \my $buf }, @_ );
+    $self->print($buf);
+    return $retval;
 }
 
-method abort ($aborted_value) {
-    Mason::Exception::Abort->throw(
-        error         => 'Request->abort was called',
-        aborted_value => $aborted_value
-    );
-}
-
-# Determine whether $err is an Abort exception.
 #
-method aborted ($err) {
-    return blessed($err) && $err->isa('Mason::Exception::Abort');
-}
-
-method call_next () {
-    return $self->current_comp_class->comp_inner();
-}
-
-# Determine current comp class based on caller() stack.
+# PRIVATE METHODS
 #
-method current_comp_class () {
+
+method _comp_not_found ($path) {
+    croak sprintf( "could not find component for path '%s' - component root is [%s]",
+        $path, join( ", ", @{ $self->interp->comp_root } ) );
+}
+
+method _current_buffer () {
+    $self->{buffer_stack}->[-1];
+}
+
+method _current_comp_class () {
     my $cnt = 1;
     while (1) {
         if ( my $pkg = ( caller($cnt) )[0] ) {
@@ -185,140 +311,23 @@ method current_comp_class () {
     }
 }
 
-# Return a CHI cache object specific to this component.
-#
-method cache () {
-    my $chi_root_class = $self->interp->chi_root_class;
-    load_class($chi_root_class);
-    my %options = ( %{ $self->interp->chi_default_params }, @_ );
-    if ( !exists( $options{namespace} ) ) {
-        $options{namespace} = $self->current_comp_class->comp_id;
-    }
-    return $chi_root_class->new(%options);
-}
-
-method comp_exists ($path) {
-    return $self->fetch_compc($path) ? 1 : 0;
-}
-
-method fetch_compc ($path) {
-    return undef unless defined($path);
-
-    # Make absolute based on current component path
-    #
-    $path = join( "/", $self->current_comp_class->comp_dir_path, $path )
-      unless substr( $path, 0, 1 ) eq '/';
-
-    # Load the component class
-    #
-    my $compc = $self->interp->load($path)
-      or return undef;
-
-    return $compc;
-}
-
-method fetch_comp () {
-    my $path  = shift;
-    my $compc = $self->fetch_compc($path);
-    return undef unless defined($compc);
-
-    # Create and return a component instance
-    #
-    my $comp = $compc->new( @_, 'm' => $self );
-
-    return $comp;
-}
-
-method fetch_comp_or_die () {
+method _fetch_comp_or_die () {
     my $comp = $self->fetch_comp(@_)
-      or $self->comp_not_found( $_[0] );
+      or $self->_comp_not_found( $_[0] );
     return $comp;
 }
 
-method comp_not_found ($path) {
-    croak sprintf( "could not find component for path '%s' - component root is [%s]",
-        $path, join( ", ", @{ $self->interp->comp_root } ) );
+method _pop_buffer () {
+    pop( @{ $self->{buffer_stack} } );
 }
 
-method print () {
-    my $buffer = $self->current_buffer;
-    for (@_) {
-        $$buffer .= $_ if defined;
-    }
+method _push_buffer () {
+    my $s = '';
+    push( @{ $self->{buffer_stack} }, \$s );
 }
 
-method comp () {
-    $self->fetch_comp_or_die(@_)->main();
-}
-
-method scomp () {
-    $self->capture( \my $buf, sub { $self->comp(@_) } );
-    return $buf;
-}
-
-method notes () {
-    return $self->{notes}
-      unless @_;
-    my $key = shift;
-    return $self->{notes}->{$key} unless @_;
-    return $self->{notes}->{$key} = shift;
-}
-
-method visit () {
-    my $retval = $self->interp->run( { out_method => \my $buf }, @_ );
-    $self->print($buf);
-    return $retval;
-}
-
-method go () {
-    $self->clear_buffer;
-    my $retval = $self->interp->run( { out_method => $self->out_method }, @_ );
-    $self->abort($retval);
-}
-
-method decline () {
-    $self->go( { declined_paths => { %{ $self->declined_paths }, $self->page->comp_path => 1 } },
-        $self->request_path, @{ $self->request_args } );
-}
-
-method clear_buffer () {
-    foreach my $buffer ( @{ $self->buffer_stack } ) {
-        $$buffer = '';
-    }
-}
-
-method flush_buffer () {
-    my $request_buffer = $self->request_buffer;
-    $self->out_method->($$request_buffer)
-      if length $$request_buffer;
-    $$request_buffer = '';
-}
-
-method log () {
-    return $self->current_comp_class->comp_logger();
-}
-
-# Buffer stack
-#
-method push_buffer () { my $s = ''; push( @{ $self->{buffer_stack} }, \$s ); }
-method pop_buffer ()     { pop( @{ $self->{buffer_stack} } ) }
-method request_buffer () { $self->{buffer_stack}->[0]; }
-method current_buffer () { $self->{buffer_stack}->[-1] }
-
-method capture ( $output_ref, $code ) {
-    $self->push_buffer;
-    scope_guard { $$output_ref = ${ $self->current_buffer }; $self->pop_buffer };
-    $code->();
-}
-
-method apply_immediate_filter ( $filter_code, $code ) {
-    $self->push_buffer;
-    scope_guard {
-        my $output = $filter_code->( ${ $self->current_buffer } );
-        $self->pop_buffer;
-        $self->print($output);
-    };
-    $code->();
+method _request_buffer () {
+    $self->{buffer_stack}->[0];
 }
 
 1;
