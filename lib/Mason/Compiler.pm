@@ -61,7 +61,7 @@ method _build_unnamed_block_regex () {
 }
 
 method _build_unnamed_block_types () {
-    return [qw(class doc flags filter init perl text)];
+    return [qw(attr class doc flags filter init perl shared text)];
 }
 
 method _build_valid_flags () {

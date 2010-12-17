@@ -10,7 +10,7 @@ use Mason::Util qw(dump_one_line read_file unique_id);
 use Method::Signatures::Simple;
 use Moose;
 use Mason::Moose;
-use Text::Trim qw(trim);
+use Mason::Util qw(trim);
 use strict;
 use warnings;
 
@@ -73,6 +73,14 @@ method parse () {
 # <%perl>, <%class>, <%init>, <% %>, and %-lines
 #
 method process_perl_code ($code) {
+    $code = $self->dollar_dot_replacement($code);
+    return $code;
+}
+
+# Replace $.foo with $self->foo()
+#
+method dollar_dot_replacement ($code) {
+    $code =~ s/\$\.([^\W\d]\w*)/\$self->$1\(\)/g;
     return $code;
 }
 
@@ -258,9 +266,13 @@ method output_compiled_component () {
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
             $self->_output_flag_comment, $self->_output_class_header, $self->_output_comp_info,
-            $self->_output_class_block,  $self->_output_methods,
+            $self->_output_attributes,   $self->_output_class_block,  $self->_output_methods,
         )
     ) . "\n";
+}
+
+method _output_attributes () {
+    return $self->{blocks}->{attributes} || '';
 }
 
 method _output_flag_comment () {
@@ -275,8 +287,11 @@ method _output_flag_comment () {
 method _output_class_header () {
     return join(
         "\n",
-        "no warnings 'redefine';",
         "use Method::Signatures::Simple;",
+        "use MooseX::HasDefaults::RW;",
+        "use strict;",
+        "use warnings;",
+        "no warnings 'redefine';",
 
         # Must be defined here since inner relies on caller()
         "sub comp_inner { inner() }"
@@ -332,14 +347,75 @@ method _output_method ($method) {
     );
 }
 
-method _output_line_number_comment () {
+method _output_line_number_comment ($line_number) {
     if ( !$self->compiler->no_source_line_numbers ) {
-        if ( my $line = $self->{line_number} ) {
-            my $comment = sprintf( qq{ #line %s "%s"\n}, $line, $self->source_file );
+        $line_number ||= $self->{line_number};
+        if ($line_number) {
+            my $comment = sprintf( qq{#line %s "%s"\n}, $line_number, $self->source_file );
             return $comment;
         }
     }
     return "";
+}
+
+method _handle_attr_block ($contents) {
+    $self->_handle_attributes_list( $contents, 'attr' );
+}
+
+method _handle_shared_block ($contents) {
+    $self->_handle_attributes_list( $contents, 'shared' );
+}
+
+method _handle_attributes_list ($contents, $attr_type) {
+    my @lines = split( "\n", $contents );
+    my @attributes;
+    my $line_number = $self->{line_number} - 1;
+    foreach my $line (@lines) {
+        $line_number++;
+        trim($line);
+        next if $line =~ /^\#/ || $line !~ /\S/;
+        if (
+            my ( $name, $rest ) = (
+                $line =~ /
+                          (?: \$\.)?        # optional $. prefix
+                          ([^\W\d]\w*)      # valid Perl variable name
+                          (?:\s*=>\s*(.*))? # optional arrow then default or attribute params
+                         /x
+            )
+          )
+        {
+            my ($params);
+            if ( defined($rest) && length($rest) ) {
+                if ( $rest =~ /^\s*\(/ ) {
+                    $params = "$rest\n;";
+                }
+                else {
+                    $params = sprintf( "(default => %s\n);", $rest );
+                }
+            }
+            else {
+                $params = $attr_type eq 'attr' ? "(required => 1);" : "();";
+            }
+            if ( $attr_type eq 'shared' ) {
+                $params = '(' . 'init_arg => undef, ' . substr( $params, 1 );
+            }
+            push( @attributes, $self->_attribute_declaration( $name, $params, $line_number ) );
+        }
+        else {
+            $self->throw_syntax_error("Invalid attribute line '$line'");
+        }
+    }
+    $self->{blocks}->{attributes} .= join( "\n", @attributes ) . "\n";
+}
+
+method _attribute_declaration ($name, $params, $line_number) {
+    return $self->process_perl_code(
+        sprintf(
+            "%s\nhas '%s' => %s",
+            $self->_output_line_number_comment($line_number),
+            $name, $params
+        )
+    );
 }
 
 method _handle_class_block ($contents) {
