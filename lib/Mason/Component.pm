@@ -11,10 +11,21 @@ has 'm' => ( required => 1, weak_ref => 1 );
 
 # Derived attributes
 has 'comp_attr' => ( init_arg => undef );
+has 'comp_cache' => ( init_arg => undef, lazy_build => 1 );
 has 'comp_logger' => ( init_arg => undef, lazy_build => 1 );
 
 method BUILD ($params) {
     $self->{comp_attr} = { map { /^comp_|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
+}
+
+method _build_comp_cache () {
+    my $chi_root_class = $self->m->interp->chi_root_class;
+    load_class($chi_root_class);
+    my %options = ( %{ $self->m->interp->chi_default_params }, @_ );
+    if ( !exists( $options{namespace} ) ) {
+        $options{namespace} = $self->comp_path;
+    }
+    return $chi_root_class->new(%options);
 }
 
 method _build_comp_logger () {

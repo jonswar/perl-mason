@@ -64,13 +64,7 @@ method aborted ($err) {
 }
 
 method cache () {
-    my $chi_root_class = $self->interp->chi_root_class;
-    load_class($chi_root_class);
-    my %options = ( %{ $self->interp->chi_default_params }, @_ );
-    if ( !exists( $options{namespace} ) ) {
-        $options{namespace} = $self->_current_comp_class->comp_id;
-    }
-    return $chi_root_class->new(%options);
+    return $self->_current_comp_class->comp_cache();
 }
 
 method call_next () {
@@ -419,12 +413,12 @@ letting C<abort> exceptions pass through:
         # handle fatal errors...
     };
 
-=item cache ([params])
+=item cache ()
 
 C<$m-E<gt>cache> returns a new L<CHI object|CHI> with a namespace specific to
-this component. Any parameters are combined with
-L<Interp/chi_default_parameters> and passed along to the
-L<Interp/chi_root_class> constructor.
+this component. All other parameters are taken from
+<Interp/chi_default_parameters> and passed to the L<Interp/chi_root_class>
+constructor.
 
 =item capture (scalarref, code)
 
