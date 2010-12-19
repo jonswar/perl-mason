@@ -23,6 +23,7 @@ method init_message  () { "init message" }
 <BODY>
 <% $class_message %>
 % $self->method_call();
+<% $self->method_call_with_arglist(3, 4) %>
 <%perl>
 print "$init_message\n";
 </%perl>
@@ -43,6 +44,11 @@ after method call
 my $message = "method call";
 </%init>
 </%method>
+
+<%method method_call_with_arglist ($foo, $bar)>
+<% $foo %> - <% $bar %>
+</%method>
+
 EOF
         expect => <<'EOF',
 <BODY>
@@ -53,6 +59,8 @@ before method call
 method call
 
 after method call
+
+3 - 4
 init message
 </BODY>
 EOF

@@ -22,7 +22,7 @@ my $temp_dir_count = 0;
 
 sub _startup : Test(startup) {
     my $self = shift;
-    $self->{temp_root} = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => 1 );
+    $self->{temp_root} = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => 0 );
     $self->setup_dirs;
 }
 

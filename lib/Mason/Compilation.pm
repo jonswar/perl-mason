@@ -91,12 +91,19 @@ method _match_unnamed_block () {
 
 method _match_named_block () {
     my $named_block_regex = $self->compiler->named_block_regex;
-    $self->_match_block( qr/\G(\n?)<%($named_block_regex)(?:\s+([^\n^>]+))?>/, 1 );
+    $self->_match_block(
+        qr/
+               \G(\n?)
+               <% ($named_block_regex)
+               (?: \s+ ([^\s\(>]+) ([^>]*) )?
+               >
+    /x, 1
+    );
 }
 
 method _match_block ( $regex, $named ) {
     if ( $self->{source} =~ /$regex/gcs ) {
-        my ( $preceding_newline, $block_type, $name ) = ( $1, $2, $3 );
+        my ( $preceding_newline, $block_type, $name, $arglist ) = ( $1, $2, $3, $4 );
 
         $self->throw_syntax_error("$block_type block requires a name")
           if ( $named && !defined($name) );
@@ -113,7 +120,7 @@ method _match_block ( $regex, $named ) {
 
         my ( $block_contents, $nl ) = $self->_match_block_end($block_type);
 
-        $self->$block_method( $block_contents, $name );
+        $self->$block_method( $block_contents, $name, $arglist );
 
         $self->{line_number} += $block_contents =~ tr/\n//;
         $self->{line_number} += length($nl) if $nl;
@@ -322,15 +329,19 @@ method _output_method ($method) {
 
     my $name     = $method->{name};
     my $modifier = $method->{modifier};
+    my $arglist  = $method->{arglist} || '';
     my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
 
-    my $start = $modifier ? "$modifier '$name' => sub {" : "sub $name {";
+    my $start =
+        $modifier ? "$modifier '$name' => sub {"
+      : $arglist  ? "method $name $arglist {"
+      :             "sub $name {";
     my $end = $modifier ? "};" : "}";
 
     return join(
         "\n",
         $start,
-        "my \$self = shift;",
+        $arglist ? "" : "my \$self = shift;",
         "my \$m = \$self->m;",
 
         "my \$_buffer = \$m->_current_buffer;",
@@ -444,7 +455,7 @@ method _recursive_parse ($contents, $method_key) {
     }
 }
 
-method _handle_method_block ( $contents, $name ) {
+method _handle_method_block ( $contents, $name, $arglist ) {
     $self->_assert_not_in_method("<%method>");
 
     $self->throw_syntax_error("Invalid method name '$name'")
@@ -453,7 +464,7 @@ method _handle_method_block ( $contents, $name ) {
     $self->throw_syntax_error("Duplicate definition of method '$name'")
       if exists $self->{methods}->{$name};
 
-    $self->{methods}->{$name} = $self->_new_method_hash( name => $name );
+    $self->{methods}->{$name} = $self->_new_method_hash( name => $name, arglist => $arglist );
 
     $self->_recursive_parse( $contents, $name );
 }

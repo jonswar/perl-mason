@@ -609,6 +609,16 @@ automatically have access to C<$self> and C<$m>.
     <% # call leftcol method and insert HTML here %>
     <% $self->leftcol %>
 
+Methods can also take argument lists:
+
+    <%method list ($style, $items)>
+    <ul style="<% $style %>">
+    % foreach my $item (@$items) {
+    ...
+    % }
+    </ul>
+    </%method>
+
 Pure-Perl methods that return a value can be added within the << <%class> >>
 section. These methods automatically have access to C<$self>, but must call
 C<$self->m> to get the request object.
