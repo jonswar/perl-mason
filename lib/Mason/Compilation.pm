@@ -57,14 +57,15 @@ method parse () {
     }
 
     while (1) {
-        $self->_match_end            && last;
-        $self->_match_unnamed_block  && next;
-        $self->_match_named_block    && next;
-        $self->_match_apply_filter   && next;
-        $self->_match_substitution   && next;
-        $self->_match_component_call && next;
-        $self->_match_perl_line      && next;
-        $self->_match_plain_text     && next;
+        $self->_match_end              && last;
+        $self->_match_apply_filter_end && last;
+        $self->_match_unnamed_block    && next;
+        $self->_match_named_block      && next;
+        $self->_match_apply_filter     && next;
+        $self->_match_substitution     && next;
+        $self->_match_component_call   && next;
+        $self->_match_perl_line        && next;
+        $self->_match_plain_text       && next;
 
         $self->throw_syntax_error(
             "could not parse next element at position " . pos( $self->{source} ) );
@@ -146,20 +147,11 @@ method _match_apply_filter () {
     if ( $self->{source} =~ /\G(\n)? <% (.+?) (\s*\{\s*) %>(\n)?/xcgs ) {
         my ( $preceding_newline, $filter_expr, $closing_brace, $following_newline ) =
           ( $1, $2, $3, $4 );
-        if ( $self->{source} =~ /\G (.*?) <% [ \t]* \} [ \t]* %>\s*(\n?\n?)/xcgs ) {
-            my ( $contents, $following_newlines ) = ( $1, $2 );
-            for ( $preceding_newline, $filter_expr, $following_newline ) {
-                $self->{line_number} += tr/\n// if defined($_);
-            }
-            $self->_handle_apply_filter( $filter_expr, $contents );
-            for ( $closing_brace, $contents, $following_newlines ) {
-                $self->{line_number} += tr/\n//;
-            }
-            return 1;
+        for ( $preceding_newline, $filter_expr, $following_newline ) {
+            $self->{line_number} += tr/\n// if defined($_);
         }
-        else {
-            $self->throw_syntax_error("<% { %> without matching <% } %>");
-        }
+        $self->_handle_apply_filter($filter_expr);
+        return 1;
     }
     else {
         return 0;
@@ -286,6 +278,16 @@ method _match_end () {
     return 0;
 }
 
+method _match_apply_filter_end () {
+    if (   $self->{current_method}->{type} eq 'apply_filter'
+        && $self->{source} =~ /\G<% [ \t]* \} [ \t]* %>[ \t]*(\n?\n?)/gcx )
+    {
+        $self->{apply_filter_end_pos} = pos( $self->{source} );
+        return 1;
+    }
+    return 0;
+}
+
 method compile () {
     $self->parse();
     return $self->output_compiled_component();
@@ -342,29 +344,33 @@ method _output_class_block () {
 }
 
 method _output_methods () {
-    return join( "\n",
-        map { $self->_output_method( $self->{methods}->{$_} ) }
-        sort( keys( %{ $self->{methods} } ) ) );
+
+    # Sort methods so that modifiers come after
+    #
+    my @sorted_methods_keys = sort { ( index( $a, ' ' ) <=> index( $b, ' ' ) ) || $a cmp $b }
+      keys( %{ $self->{methods} } );
+    return
+      join( "\n", map { $self->_output_method( $self->{methods}->{$_} ) } @sorted_methods_keys );
 }
 
 method _output_method ($method) {
     my $path = $self->path;
 
     my $name     = $method->{name};
+    my $type     = $method->{type};
     my $modifier = $method->{modifier};
     my $arglist  = $method->{arglist} || '';
     my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
 
     my $start =
-        $modifier ? "$modifier '$name' => sub {"
-      : $arglist  ? "method $name $arglist {"
-      :             "sub $name {";
+      $type eq 'modifier'
+      ? "$modifier '$name' => sub {\nmy \$self = shift;"
+      : "method $name $arglist {";
     my $end = $modifier ? "};" : "}";
 
     return join(
         "\n",
         $start,
-        $arglist ? "" : "my \$self = shift;",
         "my \$m = \$self->m;",
 
         "my \$_buffer = \$m->_current_buffer;",
@@ -478,10 +484,18 @@ method _recursive_parse ($contents, $method_key) {
     }
 }
 
-method _handle_apply_filter ($filter_expr, $contents) {
+method _handle_apply_filter ($filter_expr) {
     my $anon_name = "_filtered_" . $self->{filtered_method_count}++;
-    $self->{methods}->{$anon_name} = $self->_new_method_hash( name => $anon_name );
-    $self->_recursive_parse( $contents, $anon_name );
+    $self->{methods}->{$anon_name} =
+      $self->_new_method_hash( type => 'apply_filter', name => $anon_name );
+    my $rest = substr( $self->{source}, pos( $self->{source} ) );
+    $self->_recursive_parse( $rest, $anon_name );
+    if ( my $incr = delete( $self->{apply_filter_end_pos} ) ) {
+        pos( $self->{source} ) += $incr;
+    }
+    else {
+        $self->throw_syntax_error("<% { %> without matching <% } %>");
+    }
     my $code = sprintf(
         "\$self->m->_apply_filter(\$self, %s, sub {\nmy \$_buffer = \$m->_current_buffer;\n%s \n});\n",
         $self->process_perl_code($filter_expr),
@@ -524,7 +538,7 @@ method _handle_method_modifier_block ( $block_type, $contents, $name ) {
       if exists $self->{method}->{"$method_key"};
 
     $self->{methods}->{"$method_key"} =
-      $self->_new_method_hash( name => $name, modifier => $modifier );
+      $self->_new_method_hash( name => $name, type => 'modifier', modifier => $modifier );
 
     $self->_recursive_parse( $contents, $method_key );
 }
@@ -657,7 +671,7 @@ method _assert_not_in_method ($entity) {
 }
 
 method _new_method_hash () {
-    return { body => '', init => '', @_ };
+    return { body => '', init => '', type => 'method', @_ };
 }
 
 method _add_to_current_method ($text) {

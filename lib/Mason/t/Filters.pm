@@ -40,16 +40,11 @@ EOF
     );
 }
 
-sub test_advanced_filters : Test(1) {
+sub test_advanced : Test(1) {
     my $self = shift;
     $self->test_comp(
         component => <<'EOF',
 <%class>
-method Cache ($key, $set_options) {
-    Mason::AdvancedFilter->new(filter => sub {
-        $self->comp_cache->compute($key, $_[0], $set_options);
-    });
-}
 method Repeat ($times) {
     Mason::AdvancedFilter->new(filter => sub {
         my $content = '';
@@ -70,6 +65,25 @@ EOF
 i = 1
 i = 2
 i = 3
+EOF
+    );
+}
+
+sub test_nested : Test(1) {
+    my $self = shift;
+    $self->test_comp(
+        component => <<'EOF',
+<% sub { ucfirst(shift) } { %>
+<% sub { lc(shift) } { %>
+<% sub { Mason::Util::trim(shift) } { %>
+   HELLO
+<% } %>
+<% } %>
+<% } %>
+goodbye
+EOF
+        expect => <<'EOF',
+Hellogoodbye
 EOF
     );
 }

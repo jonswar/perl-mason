@@ -29,14 +29,6 @@ print "$init_message\n";
 </%perl>
 </BODY>
 
-<%before method_call>
-before method call
-</%before>
-
-<%after method_call>
-after method call
-</%after>
-
 <%method method_call>
 <% $message %>
 
@@ -44,6 +36,14 @@ after method call
 my $message = "method call";
 </%init>
 </%method>
+
+<%before method_call>
+before method call
+</%before>
+
+<%after method_call>
+after method call
+</%after>
 
 <%method method_call_with_arglist ($foo, $bar)>
 <% $foo %> - <% $bar %>
