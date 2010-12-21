@@ -71,10 +71,14 @@ method call_next () {
     return $self->_current_comp_class->comp_inner();
 }
 
-method capture ( $output_ref, $code ) {
-    $self->_push_buffer;
-    scope_guard { $$output_ref = ${ $self->_current_buffer }; $self->_pop_buffer };
-    $code->();
+method capture ($code) {
+    my $output;
+    {
+        $self->_push_buffer;
+        scope_guard { $output = ${ $self->_current_buffer }; $self->_pop_buffer };
+        $code->();
+    }
+    return $output;
 }
 
 method clear_and_abort () {
@@ -162,7 +166,7 @@ method print () {
 }
 
 method scomp () {
-    $self->capture( \my $buf, sub { $self->comp(@_) } );
+    my $buf = $self->capture( sub { $self->comp(@_) } );
     return $buf;
 }
 
@@ -282,6 +286,23 @@ method visit () {
 #
 # PRIVATE METHODS
 #
+
+method _apply_filter ($comp, $filter, $content_method_name) {
+    my $content_generator = sub {
+        $self->capture( sub { $comp->$content_method_name } );
+    };
+    my $filtered_output;
+    if ( ref($filter) eq 'CODE' ) {
+        $filtered_output = $filter->( $content_generator->() );
+    }
+    elsif ( blessed($filter) && $filter->can('apply_filter') ) {
+        $filtered_output = $filter->apply_filter($content_generator);
+    }
+    else {
+        die "'$filter' is neither a code ref nor a filter object";
+    }
+    $self->print($filtered_output);
+}
 
 method _comp_not_found ($path) {
     croak sprintf( "could not find component for path '%s' - component root is [%s]",
@@ -420,12 +441,16 @@ this component. All other parameters are taken from
 <Interp/chi_default_parameters> and passed to the L<Interp/chi_root_class>
 constructor.
 
-=item capture (scalarref, code)
+=item capture (code)
 
-Execute the I<code>, capturing any Mason output into the I<scalarref>. e.g.
+Execute the I<code>, capturing and returning any Mason output instead of
+outputting it. e.g. the following
 
-    $m->capture(\my $buf, sub { $m->comp(...) });
-    # $buf contains the output of the $m->comp call
+    my $buf = $m->capture(sub { $m->comp('/foo') });
+
+is equivalent to
+
+    my $buf = $m->scomp('/foo');
 
 =item clear_buffer
 

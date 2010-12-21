@@ -780,6 +780,31 @@ which prints
 
     foobarbaz
 
+=head1 FILTERS
+
+Syntax of the form
+
+    <% filter { %>
+    ...
+    <% } %>
+
+applies a I<filter> to the content between the tags. For example:
+
+    <% sub { uc(shift) } { %>
+    hello world
+    <% } %>
+
+outputs 'HELLO WORLD', and
+
+    <% $.Cache('5 min') { %>
+    # ... some computed output ...
+    <% } %>
+
+caches the computed output for 5 minutes via << %m->cache >>.
+
+See L<Mason::Filters|Mason::Filters> for the set of built-in filters and
+instructions on creating your own filters.
+
 =head1 CACHING
 
 Mason provides a convenient way to do per-component caching of data or HTML.
@@ -797,20 +822,16 @@ value is available it is placed in C<$result>. If the value is not available,
 C<$result> is computed and stored in the cache by C<< $m->cache->set >> for 5
 minutes.
 
-Any parameters to C<< $m->cache >> are passed to the CHI constructor:
-
-    my $cache = $m->cache(driver=>'Memcached', ...);
-
-You can also specify default parameters with
-L<Mason::Params/data_cache_defaults>.
+You can specify the root CHI class with L<Mason::Interp/chi_root_class> and
+default CHI parameters with L<Mason::Interp/chi_default_params>.
 
 See L<CHI|CHI> for many more details and features.
 
 =head1 LOGGING
 
-Mason uses C<Log::Any> to log various events, such as the start and end of each
-request and each component call. You can also log to C<Log::Any> from a
-component with the C<$m-E<gt>log> method. e.g.
+Mason uses L<Log::Any|Log::Any> to log various events, such as the start and
+end of each request and each component call. You can also log to C<Log::Any>
+from a component with the C<$m-E<gt>log> method. e.g.
 
     $m->log->error("Something bad happened!");
     $m->log->debugf("Arguments for '%s' were '%s'", $func, \%args)

@@ -28,12 +28,13 @@ method BUILD () {
     $self->{blocks} = {};
     $self->{source} = read_file( $self->source_file );
     $self->{source} =~ s/\r\n?/\n/g;
-    $self->{ending}          = qr/\G\z/;
-    $self->{in_method_block} = undef;
-    $self->{line_number}     = 1;
-    $self->{methods}         = { main => $self->_new_method_hash( name => 'main' ) };
-    $self->{current_method}  = $self->{methods}->{main};
-    $self->{is_pure_perl}    = $self->compiler->is_pure_perl_comp_path( $self->path );
+    $self->{ending}                = qr/\G\z/;
+    $self->{in_method_block}       = undef;
+    $self->{line_number}           = 1;
+    $self->{methods}               = { main => $self->_new_method_hash( name => 'main' ) };
+    $self->{current_method}        = $self->{methods}->{main};
+    $self->{is_pure_perl}          = $self->compiler->is_pure_perl_comp_path( $self->path );
+    $self->{filtered_method_count} = 0;
 }
 
 method _build_compilation_class () {
@@ -59,6 +60,7 @@ method parse () {
         $self->_match_end            && last;
         $self->_match_unnamed_block  && next;
         $self->_match_named_block    && next;
+        $self->_match_apply_filter   && next;
         $self->_match_substitution   && next;
         $self->_match_component_call && next;
         $self->_match_perl_line      && next;
@@ -80,7 +82,7 @@ method process_perl_code ($code) {
 # Replace $.foo with $self->foo()
 #
 method dollar_dot_replacement ($code) {
-    $code =~ s/\$\.([^\W\d]\w*)/\$self->$1\(\)/g;
+    $code =~ s/\$\.([^\W\d]\w*)/\$self->$1/g;
     return $code;
 }
 
@@ -140,10 +142,31 @@ method _match_block_end ($block_type) {
     }
 }
 
-method _match_substitution () {
+method _match_apply_filter () {
+    if ( $self->{source} =~ /\G(\n)? <% (.+?) (\s*\{\s*) %>(\n)?/xcgs ) {
+        my ( $preceding_newline, $filter_expr, $closing_brace, $following_newline ) =
+          ( $1, $2, $3, $4 );
+        if ( $self->{source} =~ /\G (.*?) <% [ \t]* \} [ \t]* %>\s*(\n?\n?)/xcgs ) {
+            my ( $contents, $following_newlines ) = ( $1, $2 );
+            for ( $preceding_newline, $filter_expr, $following_newline ) {
+                $self->{line_number} += tr/\n// if defined($_);
+            }
+            $self->_handle_apply_filter( $filter_expr, $contents );
+            for ( $closing_brace, $contents, $following_newlines ) {
+                $self->{line_number} += tr/\n//;
+            }
+            return 1;
+        }
+        else {
+            $self->throw_syntax_error("<% { %> without matching <% } %>");
+        }
+    }
+    else {
+        return 0;
+    }
+}
 
-    # This routine relies on there *not* to be an opening <%foo> tag
-    # present, so _match_block() must happen first.
+method _match_substitution () {
 
     return 0 unless $self->{source} =~ /\G<%/gcs;
 
@@ -455,6 +478,19 @@ method _recursive_parse ($contents, $method_key) {
     }
 }
 
+method _handle_apply_filter ($filter_expr, $contents) {
+    my $anon_name = "_filtered_" . $self->{filtered_method_count}++;
+    $self->{methods}->{$anon_name} = $self->_new_method_hash( name => $anon_name );
+    $self->_recursive_parse( $contents, $anon_name );
+    my $code = sprintf(
+        "\$self->m->_apply_filter(\$self, %s, sub {\nmy \$_buffer = \$m->_current_buffer;\n%s \n});\n",
+        $self->process_perl_code($filter_expr),
+        $self->{methods}->{$anon_name}->{body}
+    );
+    delete( $self->{methods}->{$anon_name} );
+    $self->_add_to_current_method($code);
+}
+
 method _handle_method_block ( $contents, $name, $arglist ) {
     $self->_assert_not_in_method("<%method>");
 
@@ -574,7 +610,7 @@ method _handle_substitution ( $text, $escape ) {
 
     $text = $self->process_perl_code($text);
 
-    my $code = "{ \$\$_buffer .= $text if defined($text) }\n";
+    my $code = "{ no warnings 'uninitialized'; \$\$_buffer .= $text }\n";
 
     $self->_add_to_current_method($code);
 
