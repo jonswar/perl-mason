@@ -363,9 +363,9 @@ method _output_method ($method) {
     my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
 
     my $start =
-      $type eq 'modifier'
-      ? "$modifier '$name' => sub {\nmy \$self = shift;"
-      : "method $name $arglist {";
+        $type eq 'apply_filter' ? "sub {"
+      : $type eq 'modifier'     ? "$modifier '$name' => sub {\nmy \$self = shift;"
+      :                           "method $name $arglist {";
     my $end = $modifier ? "};" : "}";
 
     return join(
@@ -472,24 +472,22 @@ method _handle_init_block ($contents) {
 # Save current regex position, then locally set source to the contents and
 # recursively parse.
 #
-method _recursive_parse ($contents, $method_key) {
+method _recursive_parse ($contents, $method) {
     my $save_pos = pos( $self->{source} );
     scope_guard { pos( $self->{source} ) = $save_pos };
     {
         local $self->{source}          = $contents;
-        local $self->{current_method}  = $self->{methods}->{$method_key};
-        local $self->{in_method_block} = $method_key;
+        local $self->{current_method}  = $method;
+        local $self->{in_method_block} = 1;
 
         $self->parse();
     }
 }
 
 method _handle_apply_filter ($filter_expr) {
-    my $anon_name = "_filtered_" . $self->{filtered_method_count}++;
-    $self->{methods}->{$anon_name} =
-      $self->_new_method_hash( type => 'apply_filter', name => $anon_name );
     my $rest = substr( $self->{source}, pos( $self->{source} ) );
-    $self->_recursive_parse( $rest, $anon_name );
+    my $method = $self->_new_method_hash( type => 'apply_filter' );
+    $self->_recursive_parse( $rest, $method );
     if ( my $incr = delete( $self->{apply_filter_end_pos} ) ) {
         pos( $self->{source} ) += $incr;
     }
@@ -497,11 +495,10 @@ method _handle_apply_filter ($filter_expr) {
         $self->throw_syntax_error("<% { %> without matching <% } %>");
     }
     my $code = sprintf(
-        "\$self->m->_apply_filter(\$self, %s, sub {\nmy \$_buffer = \$m->_current_buffer;\n%s \n});\n",
+        "\$self->m->_apply_filter(\$self, %s, %s);\n",
         $self->process_perl_code($filter_expr),
-        $self->{methods}->{$anon_name}->{body}
+        $self->_output_method($method)
     );
-    delete( $self->{methods}->{$anon_name} );
     $self->_add_to_current_method($code);
 }
 
@@ -514,9 +511,10 @@ method _handle_method_block ( $contents, $name, $arglist ) {
     $self->throw_syntax_error("Duplicate definition of method '$name'")
       if exists $self->{methods}->{$name};
 
-    $self->{methods}->{$name} = $self->_new_method_hash( name => $name, arglist => $arglist );
+    my $method = $self->_new_method_hash( name => $name, arglist => $arglist );
+    $self->{methods}->{$name} = $method;
 
-    $self->_recursive_parse( $contents, $name );
+    $self->_recursive_parse( $contents, $method );
 }
 
 method _handle_after_block ()  { $self->_handle_method_modifier_block( 'after',  @_ ) }
@@ -537,10 +535,11 @@ method _handle_method_modifier_block ( $block_type, $contents, $name ) {
     $self->throw_syntax_error("Duplicate definition of method modifier '$method_key'")
       if exists $self->{method}->{"$method_key"};
 
-    $self->{methods}->{"$method_key"} =
+    my $method =
       $self->_new_method_hash( name => $name, type => 'modifier', modifier => $modifier );
+    $self->{methods}->{"$method_key"} = $method;
 
-    $self->_recursive_parse( $contents, $method_key );
+    $self->_recursive_parse( $contents, $method );
 }
 
 method _handle_doc_block () {
