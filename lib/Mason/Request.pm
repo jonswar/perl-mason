@@ -68,7 +68,7 @@ method cache () {
 }
 
 method call_next () {
-    return $self->_current_comp_class->comp_inner();
+    return $self->_current_comp_class->_cmeta_inner();
 }
 
 method capture ($code) {
@@ -101,7 +101,7 @@ method comp_exists ($path) {
 }
 
 method decline () {
-    $self->go( { declined_paths => { %{ $self->declined_paths }, $self->page->comp_path => 1 } },
+    $self->go( { declined_paths => { %{ $self->declined_paths }, $self->page->cmeta->path => 1 } },
         $self->request_path, @{ $self->request_args } );
 }
 
@@ -122,7 +122,7 @@ method fetch_compc ($path) {
 
     # Make absolute based on current component path
     #
-    $path = join( "/", $self->_current_comp_class->comp_dir_path, $path )
+    $path = join( "/", $self->_current_comp_class->cmeta->dir_path, $path )
       unless substr( $path, 0, 1 ) eq '/';
 
     # Load the component class
@@ -205,7 +205,7 @@ method run () {
 
     my $page = $compc->new( @_, 'm' => $self );
     $self->{page} = $page;
-    $log->debugf( "starting request for '%s'", $page->title )
+    $log->debugf( "starting request with component '%s'", $page->cmeta->path )
       if $log->is_debug;
 
     # Flush interp load cache after request
@@ -265,7 +265,7 @@ method resolve_request_path_to_component ($request_path) {
         foreach my $candidate_path (@candidate_paths) {
             next if $declined_paths->{$candidate_path};
             my $compc = $interp->load($candidate_path);
-            if ( defined($compc) && $compc->comp_is_external ) {
+            if ( defined($compc) && $compc->cmeta->is_external ) {
                 return ( $compc, $path_info );
             }
         }

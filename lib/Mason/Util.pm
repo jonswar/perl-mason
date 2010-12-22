@@ -1,6 +1,7 @@
 package Mason::Util;
 use Carp;
 use Class::MOP;
+use Class::Unload;
 use Data::UUID;
 use Fcntl qw( :DEFAULT );
 use Try::Tiny;
@@ -140,21 +141,9 @@ sub mason_canon_path {
 }
 
 # Adapted from Symbol.pm
-sub delete_package ($) {
+sub delete_package {
     my $pkg = shift;
-    no strict 'refs';
-
-    # Unfortunately this messes up Moose in a variety ways - warnings about meta method
-    # and @ISA. For now, don't do anything. TODO.
-    return;
-
-    $pkg .= '::';
-    my ( $stem, $leaf ) = $pkg =~ m/(.*::)(\w+::)$/;
-    my $stem_symtab = *{$stem}{HASH};
-    return unless defined $stem_symtab and exists $stem_symtab->{$leaf};
-    my $leaf_symtab = *{ $stem_symtab->{$leaf} }{HASH};
-    %$leaf_symtab = ();
-    delete $stem_symtab->{$leaf};
+    Class::Unload->unload($pkg);
 }
 
 sub trim {

@@ -29,6 +29,8 @@ has 'compiler'                 => ( lazy_build => 1 );
 has 'compiler_class'           => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'component_base_class'     => ( lazy_build => 1 );
+has 'component_class_meta_class'     => ( lazy_build => 1 );
+has 'component_instance_meta_class'     => ( lazy_build => 1 );
 has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( );
@@ -132,6 +134,14 @@ method _build_index_names () {
 
 method _build_request_class () {
     return $self->find_subclass('Request');
+}
+
+method _build_component_class_meta_class () {
+    return $self->find_subclass('Component::ClassMeta');
+}
+
+method _build_component_instance_meta_class () {
+    return $self->find_subclass('Component::InstanceMeta');
 }
 
 #
@@ -243,14 +253,14 @@ method add_default_render_method ($compc, $flags) {
     # then call main().
     #
     unless ( $compc->meta->has_method('render') ) {
-        my $path = $compc->comp_path;
+        my $path = $compc->cmeta->path;
         my $code = sub {
             my $self = shift;
-            if ( $self->comp_path eq $path ) {
+            if ( $self->cmeta->path eq $path ) {
                 $self->main(@_);
             }
             else {
-                $compc->comp_inner();
+                $compc->_cmeta_inner();
             }
         };
         my $meta = $compc->meta;

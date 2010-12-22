@@ -6,6 +6,7 @@ package Mason::Compilation;
 use File::Basename qw(dirname);
 use Guard;
 use JSON;
+use Mason::Component::ClassMeta;
 use Mason::Util qw(dump_one_line read_file unique_id);
 use Method::Signatures::Simple;
 use Moose;
@@ -297,7 +298,7 @@ method output_compiled_component () {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_flag_comment, $self->_output_class_header, $self->_output_comp_info,
+            $self->_output_flag_comment, $self->_output_class_header, $self->_output_cmeta,
             $self->_output_attributes,   $self->_output_class_block,  $self->_output_methods,
         )
     ) . "\n";
@@ -323,20 +324,27 @@ method _output_class_header () {
         "use MooseX::HasDefaults::RW;",
         "use strict;",
         "use warnings;",
-        "no warnings 'redefine';",
 
         # Must be defined here since inner relies on caller()
-        "sub comp_inner { inner() }"
+        "sub _cmeta_inner { inner() }"
     );
 }
 
-method _output_comp_info () {
-    my %comp_info = (
-        comp_dir_path    => $self->dir_path,
-        comp_path        => $self->path,
-        comp_is_external => $self->compiler->is_external_comp_path( $self->path ),
+method _output_cmeta () {
+    my %cmeta_info = (
+        dir_path    => $self->dir_path,
+        is_external => $self->compiler->is_external_comp_path( $self->path ),
+        path        => $self->path,
+        source_file => $self->source_file,
     );
-    return sprintf( 'sub _comp_info { return %s }', dump_one_line( \%comp_info ) );
+    my $component_class_meta_class = $self->compiler->interp->component_class_meta_class;
+    return join( "\n",
+        "my \$_class_cmeta = $component_class_meta_class->new(",
+        ( map { sprintf( "'%s' => '%s',", $_, $cmeta_info{$_} ) } sort( keys(%cmeta_info) ) ),
+        "'object_file' => __FILE__,",
+        "'class' => __PACKAGE__",
+        ');',
+        'sub _class_cmeta { $_class_cmeta }' );
 }
 
 method _output_class_block () {

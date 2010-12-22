@@ -15,7 +15,7 @@ sub test_resolve : Tests(19) {
         foreach my $existing_path (@$existing_paths) {
             $self->add_comp(
                 path      => $existing_path,
-                component => 'path: <% $self->comp_path %>; path_info: <% $m->path_info %>'
+                component => 'path: <% $self->cmeta->path %>; path_info: <% $m->path_info %>'
             );
         }
         my $desc = sprintf( "run %s against %s", $run_path, join( ",", @$existing_paths ) );
@@ -72,7 +72,7 @@ sub test_decline : Tests(7) {
             my $component =
               $paths_to_decline_hash{$existing_path}
               ? '<%perl>$m->decline();</%perl>'
-              : 'path: <% $self->comp_path %>; path_info: <% $m->path_info %>';
+              : 'path: <% $self->cmeta->path %>; path_info: <% $m->path_info %>';
             $self->add_comp(
                 path      => $existing_path,
                 component => $component,

@@ -1,4 +1,5 @@
 package Mason::t::Skel;
+use Test::More;
 use strict;
 use warnings;
 use base qw(Mason::Test::Class);
@@ -11,3 +12,5 @@ EOF
 EOF
     );
 }
+
+1;

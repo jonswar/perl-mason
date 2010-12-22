@@ -10,10 +10,10 @@ sub test_ampersand : Test(2) {
         path      => '/support/amper_test.mi',
         component => <<'EOF',
 amper_test.<p>
-% if (%{$self->comp_attr}) {
+% if (%{$self->cmeta->args}) {
 Arguments:<p>
-%   foreach my $key (sort keys %{$self->comp_attr}) {
-<b><% $key %></b>: <% $self->comp_attr->{$key} %><br>
+%   foreach my $key (sort keys %{$self->cmeta->args}) {
+<b><% $key %></b>: <% $self->cmeta->args->{$key} %><br>
 %   }
 % }
 EOF

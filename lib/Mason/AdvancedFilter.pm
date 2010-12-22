@@ -7,7 +7,7 @@ use warnings;
 
 has 'filter' => (isa => 'CodeRef');
 
-method apply_filter  () {
+method apply_filter () {
     my ($yield) = @_;
     return $self->filter->($yield);
 }

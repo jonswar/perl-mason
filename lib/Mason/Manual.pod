@@ -356,8 +356,8 @@ are ignored.
 
 =head2 Accessing all attributes
 
-C<< $self->comp_attr >> will return a hashref of all of the attributes passed
-to the component when it was created.
+C<< $self->args >> will return a hashref of all of the attributes passed to the
+component when it was created.
 
 =head1 INHERITANCE
 

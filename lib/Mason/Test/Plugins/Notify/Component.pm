@@ -7,7 +7,7 @@ use warnings;
 #
 #  before 'render' => sub {
 #      my ($self) = @_;
-#      print STDERR "starting component render - " . $self->comp_path . "\n";
+#      print STDERR "starting component render - " . $self->cmeta->path . "\n";
 #  };
 
 1;

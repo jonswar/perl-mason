@@ -1,4 +1,5 @@
 package Mason::Component;
+use Mason::Component::InstanceMeta;
 use Method::Signatures::Simple;
 use Moose;    # Not Mason::Moose - we don't want strict constructor
 use MooseX::HasDefaults::RO;
@@ -9,37 +10,24 @@ use warnings;
 # Passed attributes
 has 'm' => ( required => 1, weak_ref => 1 );
 
-# Derived attributes
-has 'comp_attr' => ( init_arg => undef );
-has 'comp_cache' => ( init_arg => undef, lazy_build => 1 );
-has 'comp_logger' => ( init_arg => undef, lazy_build => 1 );
-
 method BUILD ($params) {
-    $self->{comp_attr} = { map { /^comp_|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
+    $self->{cmeta_args} = { map { /^cmeta|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
 }
 
-method _build_comp_cache () {
-    my $chi_root_class = $self->m->interp->chi_root_class;
-    load_class($chi_root_class);
-    my %options = ( %{ $self->m->interp->chi_default_params }, @_ );
-    if ( !exists( $options{namespace} ) ) {
-        $options{namespace} = $self->comp_path;
+method cmeta () {
+    if ( ref($self) ) {
+        if ( !$self->{cmeta} ) {
+            my $component_instance_meta_class = $self->m->interp->component_instance_meta_class;
+            $self->{cmeta} = $component_instance_meta_class->new(
+                class_cmeta => $self->_class_cmeta,
+                args        => $self->{cmeta_args}
+            );
+        }
+        return $self->{cmeta};
     }
-    return $chi_root_class->new(%options);
-}
-
-method _build_comp_logger () {
-    my $log_category = "Mason::Component" . $self->comp_path();
-    $log_category =~ s/\//::/g;
-    return Log::Any->get_logger( category => $log_category );
-}
-
-foreach my $method qw(comp_path comp_dir_path comp_is_external) {
-    __PACKAGE__->meta->add_method( $method => sub { return $_[0]->_comp_info->{$method} } );
-}
-
-method comp_title () {
-    return $self->comp_path;
+    else {
+        return $self->_class_cmeta;
+    }
 }
 
 # Top render
@@ -60,6 +48,10 @@ method dispatch () {
 
 __PACKAGE__->meta->make_immutable();
 
+1;
+
+__END__
+
 =head1 NAME
 
 Mason::Component - Mason Component base class
@@ -69,10 +61,12 @@ Mason::Component - Mason Component base class
 Every Mason component corresponds to a unique class that inherits, directly or
 indirectly, from this base class.
 
-Whenever a component is called - whether via a top level request, C<< <& &> >>
-tags, or an << $mm->comp >> call - a new instance of the component class is
-created and a method is called on it (C<dispatch> at the top level, C<main>
-otherwise).
+A new instance of the component class is created whenever a component is called
+- whether via a top level request, C<< <& &> >> tags, or an << $m->comp >>
+call.
+
+We leave this class as devoid of built-in methods as possible, alllowing you to
+create methods in your own components without worrying about name clashes.
 
 =head1 STRUCTURAL METHODS
 
@@ -106,22 +100,20 @@ tag.
 
 =head1 OTHER METHODS
 
-To avoid name clashes with developers' own component methods, whenever
-feasible, future built-in methods will be prefixed with "comp_".
-
 =over
 
 =item m
 
-Returns the current request.
+Returns the current request. This is also available via C<< $m >> inside Mason
+components.
 
-=item comp_attr
+=item cmeta
 
-Returns the full hashref of attributes that the component was called with.
+Returns the L<Mason::Component::Meta|Mason::Component::Meta> object associated
+with this component, containing information such as the component's path and
+source file.
 
-=item comp_path
-
-Returns the component path, relative to the component root - e.g. '/foo/bar'.
+    my $path = $self->cmeta->path;
 
 =back
 
@@ -130,5 +122,3 @@ Returns the component path, relative to the component root - e.g. '/foo/bar'.
 L<Mason|Mason>
 
 =cut
-
-1;

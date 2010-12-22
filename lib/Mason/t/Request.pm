@@ -34,7 +34,7 @@ three.m: no
 sub test_current_comp_class : Test(1) {
     shift->test_comp(
         path      => '/current_comp_class.m',
-        component => '<% ' . __PACKAGE__ . '::_get_current_comp_class($m)->comp_path %>',
+        component => '<% ' . __PACKAGE__ . '::_get_current_comp_class($m)->cmeta->path %>',
         expect    => '/current_comp_class.m'
     );
 }
@@ -50,10 +50,10 @@ sub test_count : Test(3) {
 
 sub test_page : Test(1) {
     my $self = shift;
-    $self->add_comp( path => '/page/other.mi', component => '<% $m->page->comp_title %>' );
+    $self->add_comp( path => '/page/other.mi', component => '<% $m->page->cmeta->path %>' );
     $self->test_comp(
         path      => '/page/first.m',
-        component => '<% $m->page->comp_title %>; <& other.mi &>',
+        component => '<% $m->page->cmeta->path %>; <& other.mi &>',
         expect    => '/page/first.m; /page/first.m'
     );
 }
@@ -63,7 +63,7 @@ sub test_subrequest : Test(2) {
     $self->add_comp(
         path      => '/subreq/other.m',
         component => '
-<% $m->page->comp_title %>
+<% $m->page->cmeta->path %>
 <% $m->request_path %>
 <% join(", ", @{ $m->request_args }) %>
 ',
