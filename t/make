@@ -1,0 +1,16 @@
+#!/usr/bin/perl
+use Cwd qw(realpath);
+use File::Basename;
+use File::Slurp;
+use IPC::System::Simple qw(run);
+use warnings;
+use strict;
+
+my $cwd = dirname( realpath($0) );
+
+my $class    = shift(@ARGV) or die "usage: $0 MyClass";
+my $filename = "$cwd/$class.t";
+my $source   = sprintf( "#!perl -w\nuse Mason::t::%s;\nMason::t::%s->runtests;\n", $class, $class );
+write_file( $filename, $source );
+run("git add $filename");
+print "$filename:\n$source\n";
