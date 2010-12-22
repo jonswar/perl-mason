@@ -26,7 +26,7 @@ method Defer () {
     );
 }
 
-method RemoveBlankLines () {
+method NoBlankLines () {
     sub {
         my $text = shift;
         $text =~ s/^\n$//mg;
@@ -38,7 +38,7 @@ method Repeat ($times) {
     Mason::AdvancedFilter->new(
         filter => sub {
             my $content = '';
-            foreach my $i ( 1 .. $times ) {
+            for ( my $i = 0 ; $i < $times ; $i++ ) {
                 $content .= $_[0]->();
             }
             return $content;
