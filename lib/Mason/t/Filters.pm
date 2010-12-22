@@ -2,6 +2,8 @@ package Mason::t::Filters;
 use strict;
 use warnings;
 use base qw(Mason::Test::Class);
+use Test::More;
+use Method::Signatures::Simple;
 use Mason::AdvancedFilter;
 
 sub test_filters : Test(1) {
@@ -40,22 +42,10 @@ EOF
     );
 }
 
-sub test_advanced : Test(1) {
+sub test_repeat : Test(1) {
     my $self = shift;
     $self->test_comp(
         component => <<'EOF',
-<%class>
-method Repeat ($times) {
-    Mason::AdvancedFilter->new(filter => sub {
-        my $content = '';
-        foreach my $i (1..$times) {
-            $content .= $_[0]->();
-        }
-        return $content;
-    });
-}
-</%class>
-
 % my $i = 1;
 <% $.Repeat(3) { %>
 i = <% $i++ %>
@@ -81,9 +71,58 @@ sub test_nested : Test(1) {
 <% } %>
 <% } %>
 goodbye
+
+<% sub { ucfirst(shift) }, sub { lc(shift) }, sub { Mason::Util::trim(shift) } { %>
+   HELLO
+<% } %>
+goodbye
 EOF
         expect => <<'EOF',
 Hellogoodbye
+
+Hellogoodbye
+EOF
+    );
+}
+
+sub test_cache : Test(2) {
+    my $self = shift;
+
+    $self->test_comp(
+        component => <<'EOF',
+% my $i = 1;
+% foreach my $key (qw(foo bar)) {
+<% $.Repeat(3), $.Cache($key) { %>
+i = <% $i++ %>
+<% } %>
+% }
+EOF
+        expect => <<'EOF',
+i = 1
+i = 1
+i = 1
+i = 2
+i = 2
+i = 2
+EOF
+    );
+
+    $self->test_comp(
+        component => <<'EOF',
+% my $i = 1;
+% foreach my $key (qw(foo foo)) {
+<% $.Cache($key), $.Repeat(3) { %>
+i = <% $i++ %>
+<% } %>
+% }
+EOF
+        expect => <<'EOF',
+i = 1
+i = 2
+i = 3
+i = 1
+i = 2
+i = 3
 EOF
     );
 }

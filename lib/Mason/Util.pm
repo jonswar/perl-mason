@@ -111,10 +111,10 @@ sub write_file {
     }
 }
 
-# Adler32 algorithm
 sub checksum {
     my ($str) = @_;
 
+    # Adler32 algorithm
     my $s1 = 1;
     my $s2 = 1;
     for my $c ( unpack( "C*", $str ) ) {
@@ -124,9 +124,10 @@ sub checksum {
     return ( $s2 << 16 ) + $s1;
 }
 
-# Like File::Spec::canonpath but with a few fixes.
-#
 sub mason_canon_path {
+
+    # Like File::Spec::canonpath but with a few fixes.
+    #
     my $path = shift;
     $path =~ s|/+|/|g;           # xx////yy  -> xx/yy
     $path =~ s|(?:/\.)+/|/|g;    # xx/././yy -> xx/yy
@@ -140,7 +141,6 @@ sub mason_canon_path {
     return $path;
 }
 
-# Adapted from Symbol.pm
 sub delete_package {
     my $pkg = shift;
     Class::Unload->unload($pkg);

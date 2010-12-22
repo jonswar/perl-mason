@@ -7,6 +7,9 @@ use Log::Any;
 use strict;
 use warnings;
 
+# Bring in standard filters
+with 'Mason::Filters::Standard';
+
 # Passed attributes
 has 'm' => ( required => 1, weak_ref => 1 );
 
@@ -19,8 +22,9 @@ method cmeta () {
         if ( !$self->{cmeta} ) {
             my $component_instance_meta_class = $self->m->interp->component_instance_meta_class;
             $self->{cmeta} = $component_instance_meta_class->new(
+                args        => $self->{cmeta_args},
                 class_cmeta => $self->_class_cmeta,
-                args        => $self->{cmeta_args}
+                instance    => $self,
             );
         }
         return $self->{cmeta};

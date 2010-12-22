@@ -1,11 +1,35 @@
 package Mason::Component::InstanceMeta;
+use Method::Signatures::Simple;
 use Moose;
 use Mason::Moose;
 use strict;
 use warnings;
 
+# Passed attributes
 has 'args'        => ( required => 1 );
 has 'class_cmeta' => ( handles => [qw(dir_path is_external object_file path source_file)] );
+has 'instance'    => ( required => 1, weak_ref => 1 );
+
+# Derived attributes
+has 'cache' => ( init_arg => undef, lazy_build => 1 );
+has 'log' => ( init_arg => undef, lazy_build => 1 );
+
+method _build_cache () {
+    my $interp         = $self->instance->m->interp;
+    my $chi_root_class = $interp->chi_root_class;
+    Class::MOP::load_class($chi_root_class);
+    my %options = ( %{ $interp->chi_default_params }, @_ );
+    if ( !exists( $options{namespace} ) ) {
+        $options{namespace} = $self->path;
+    }
+    return $chi_root_class->new(%options);
+}
+
+method _build_log () {
+    my $log_category = "Mason::Component" . $self->path;
+    $log_category =~ s/\//::/g;
+    return Log::Any->get_logger( category => $log_category );
+}
 
 1;
 

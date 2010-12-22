@@ -287,20 +287,37 @@ method visit () {
 # PRIVATE METHODS
 #
 
-method _apply_filter ($comp, $filter, $content_method_name) {
-    my $content_generator = sub {
-        $self->capture( sub { $comp->$content_method_name } );
-    };
+method _apply_filter ($filter, $content_method) {
     my $filtered_output;
     if ( ref($filter) eq 'CODE' ) {
-        $filtered_output = $filter->( $content_generator->() );
+        $filtered_output = $filter->( $content_method->() );
     }
     elsif ( blessed($filter) && $filter->can('apply_filter') ) {
-        $filtered_output = $filter->apply_filter($content_generator);
+        $filtered_output = $filter->apply_filter($content_method);
     }
     else {
         die "'$filter' is neither a code ref nor a filter object";
     }
+    return $filtered_output;
+}
+
+method _apply_filters ($filters, $content_method) {
+    if ( !@$filters ) {
+        return $content_method->();
+    }
+    else {
+        my @filters = @$filters;
+        my $filter  = pop(@filters);
+        return $self->_apply_filters( \@filters,
+            sub { $self->_apply_filter( $filter, $content_method ) } );
+    }
+}
+
+method _apply_filters_to_output ($filters, $output_method) {
+    my $content_method = sub {
+        $self->capture( sub { $output_method->() } );
+    };
+    my $filtered_output = $self->_apply_filters( $filters, $content_method );
     $self->print($filtered_output);
 }
 

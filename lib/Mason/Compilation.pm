@@ -503,7 +503,7 @@ method _handle_apply_filter ($filter_expr) {
         $self->throw_syntax_error("<% { %> without matching <% } %>");
     }
     my $code = sprintf(
-        "\$self->m->_apply_filter(\$self, %s, %s);\n",
+        "\$self->m->_apply_filters_to_output([%s], %s);\n",
         $self->process_perl_code($filter_expr),
         $self->_output_method($method)
     );
