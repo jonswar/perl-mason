@@ -145,18 +145,27 @@ method _match_block_end ($block_type) {
 }
 
 method _match_apply_filter () {
+    my $pos = pos( $self->{source} );
+
+    # Match <% ... { %>
     if ( $self->{source} =~ /\G(\n)? <% (.+?) (\s*\{\s*) %>(\n)?/xcgs ) {
-        my ( $preceding_newline, $filter_expr, $closing_brace, $following_newline ) =
+        my ( $preceding_newline, $filter_expr, $opening_brace, $following_newline ) =
           ( $1, $2, $3, $4 );
-        for ( $preceding_newline, $filter_expr, $following_newline ) {
-            $self->{line_number} += tr/\n// if defined($_);
+
+        # and make sure we didn't go through a %>
+        if ( $filter_expr !~ /%>/ ) {
+            for ( $preceding_newline, $filter_expr, $following_newline ) {
+                $self->{line_number} += tr/\n// if defined($_);
+            }
+            $self->_handle_apply_filter($filter_expr);
+
+            return 1;
         }
-        $self->_handle_apply_filter($filter_expr);
-        return 1;
+        else {
+            pos( $self->{source} ) = $pos;
+        }
     }
-    else {
-        return 0;
-    }
+    return 0;
 }
 
 method _match_substitution () {
@@ -281,9 +290,9 @@ method _match_end () {
 
 method _match_apply_filter_end () {
     if (   $self->{current_method}->{type} eq 'apply_filter'
-        && $self->{source} =~ /\G<% [ \t]* \} [ \t]* %>[ \t]*(\n?\n?)/gcx )
+        && $self->{source} =~ /\G<% [ \t]* \} [ \t]* %>(\n?\n?)/gcx )
     {
-        $self->{apply_filter_end_pos} = pos( $self->{source} );
+        $self->{end_parse} = pos( $self->{source} );
         return 1;
     }
     return 0;
@@ -495,8 +504,9 @@ method _recursive_parse ($contents, $method) {
 method _handle_apply_filter ($filter_expr) {
     my $rest = substr( $self->{source}, pos( $self->{source} ) );
     my $method = $self->_new_method_hash( type => 'apply_filter' );
+    local $self->{end_parse} = undef;
     $self->_recursive_parse( $rest, $method );
-    if ( my $incr = delete( $self->{apply_filter_end_pos} ) ) {
+    if ( my $incr = $self->{end_parse} ) {
         pos( $self->{source} ) += $incr;
     }
     else {

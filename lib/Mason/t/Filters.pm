@@ -11,20 +11,25 @@ sub test_filters : Test(1) {
     $self->test_comp(
         component => '
 <%class>
-method Upper  () { sub { uc(shift) } }
+method Upper () { sub { uc(shift) } }
 </%class>
 
 <% $.Upper { %>
-Hello World
+Hello World.
+<% } %>
+
+<% sub { ucfirst(shift) } { %>
+<% "hello world?" %>
 <% } %>
 
 <% sub { lc(shift) } { %>
-Hello World
+Hello World!
 <% } %>
 ',
         expect => '
-HELLO WORLD
-hello world
+HELLO WORLD.
+Hello world?
+hello world!
 ',
     );
 }
@@ -123,6 +128,45 @@ i = 3
 i = 1
 i = 2
 i = 3
+EOF
+    );
+}
+
+sub test_misc_standard_filters : Test(2) {
+    my $self = shift;
+
+    $self->test_comp(
+        component => 'the <% $.Trim { %>    quick brown     <% } %> fox',
+        expect    => 'the quick brown fox'
+    );
+    $self->test_comp(
+        component => <<'EOF',
+<% $.Capture(\my $buf) { %>
+2 + 2 = <% 2+2 %>
+<% } %>
+<% reverse($buf) %>
+
+---
+<% $.NoBlankLines { %>
+
+one
+
+
+
+
+two
+
+<% } %>
+---
+EOF
+        expect => <<'EOF',
+4 = 2 + 2
+
+---
+one
+two
+---
+
 EOF
     );
 }

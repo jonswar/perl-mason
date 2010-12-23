@@ -73,7 +73,6 @@ method test_comp (%params) {
     my $expect = trim( $params{expect} );
     my $expect_error = $params{expect_error};
     my $verbose = $params{v} || $params{verbose};
-    croak "must pass either expect or expect_error" unless $expect || $expect_error;
 
     ( my $run_path = $path ) =~ s/\.(?:m|pm)$//;
 

@@ -29,7 +29,8 @@ method Defer () {
 method NoBlankLines () {
     sub {
         my $text = shift;
-        $text =~ s/^\n$//mg;
+        $DB::single = 1;
+        $text =~ s/^\s*\n//mg;
         return $text;
     };
 }
