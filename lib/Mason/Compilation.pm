@@ -290,7 +290,7 @@ method _match_end () {
 
 method _match_apply_filter_end () {
     if (   $self->{current_method}->{type} eq 'apply_filter'
-        && $self->{source} =~ /\G<% [ \t]* \} [ \t]* %>(\n?\n?)/gcx )
+        && $self->{source} =~ /\G (?: (?: <% [ \t]* \} [ \t]* %> ) | (?: <\/%> ) ) (\n?\n?)/gcx )
     {
         $self->{end_parse} = pos( $self->{source} );
         return 1;
@@ -510,7 +510,7 @@ method _handle_apply_filter ($filter_expr) {
         pos( $self->{source} ) += $incr;
     }
     else {
-        $self->throw_syntax_error("<% { %> without matching <% } %>");
+        $self->throw_syntax_error("<% { %> without matching </%>");
     }
     my $code = sprintf(
         "\$self->m->_apply_filters_to_output([%s], %s);\n",

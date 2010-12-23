@@ -1,0 +1,209 @@
+
+=head1 NAME
+
+Mason::Manual::Filters
+
+=head1 DESCRIPTION
+
+Filters can be used to process the output of a block in a component.
+
+A set of filters comes built-in with Mason - see
+L<Mason::Filters::Standard|Mason::Filters::Standard>. Others will be available
+on CPAN, and it is easy to create your own.
+
+=head1 INVOKING
+
+=head2 Block invocation
+
+Here's the standard way of invoking a filter:
+
+   <% $.Trim { %>
+   This string will be trimmed
+   </%>
+
+An open brace at the end of a C<< <% %> >> tag denotes a filter call. The
+filtered content begins just afterwards and ends at the C<< </%> >> tag.
+
+The expression C<< $.Trim >>, aka C<< $self->Trim >>, is a method call on the
+component object which returns a filter.
+
+By convention, and to avoid name clashes with other component methods, filters
+use CamelCase rather than traditional underscore names.
+
+Some filters take arguments:
+
+   <% $.Repeat(3) { %>
+     There's no place like home.
+   </%>
+
+     ==>  There's no place like home.
+          There's no place like home.
+          There's no place like home.
+
+Again, the expression C<< $.Repeat(3) >> returns a filter, meaning that it can
+be curried:
+
+   % my $repeat_three = $.Repeat(3);
+   <% $repeat_three { %>
+     There's no place like home.
+   </%>
+
+A simple filter is just a subroutine that takes text as input and return the
+new text. Thus you can create one-off filters with anonymous subroutines:
+
+   <% sub { reverse($_[0]) } %>Hello</%>
+
+     ==> olleH
+
+Filters can be nested, with separate tags:
+
+   <% $.Trim { %>
+     <% sub { uc($_[0]) } { %>
+       This string will be trimmed and uppercased
+     </%>
+   </%>
+
+or within a single tag:
+
+   <% $.Trim, sub { uc($_[0]) } { %>
+     This will be trimmed and uppercased
+   </%>
+
+Multiple filters within the same tag are applied, intuitively, in reverse order
+with the last one being innermost. e.g. in this block
+
+   % my $i = 1;
+   <% $.Repeat(3), $.Cache($key, '1 hour') { %> <% $i++ %> </%>
+
+      => 1 1 1
+
+the output of C<< <% $i++ %> >> is cached, and then repeated three times,
+whereas in this block
+
+   % my $i = 1;
+   <% $.Cache($key, '1 hour'), $.Repeat(3) { %> <% $i++ %> </%>
+
+      => 1 2 3
+
+C<< <% $i++ %> >> is executed and output three times, and then the whole thing
+cached.
+
+=head2 Pipe invocation
+
+Filters can also appear in a limited way inside a regular C<< <% %> >> tag:
+
+    <% $message_body | NoBlankLines,Trim %>
+
+The filter list appears after a << | >> character and must be one or more
+names, separated by comma. The names are treated as methods on the current
+component class. With this syntax you cannot use anonymous subroutines or
+variables as filters, or pass arguments to filters.
+
+=head2 Manual invocation
+
+L<Mason::Request/apply_filter> can be used to manually apply a filter to a
+string. It returns the filtered output.
+
+=head1 CREATING A FILTER
+
+=head2 Package and naming
+
+By convention, filters are placed in roles so that they can be composed into
+L<Mason::Component|Mason::Component> or a subclass thereof. Take a look at
+L<Mason::Filters::Standard|Mason::Filters::Standard> for an example.
+
+Also by convention, filters use CamelCase rather than traditional
+underscore_separated naming.  Filter methods have to coexist with other methods
+in the Mason::Component namespace, so have to be distinguishable somehow, and
+we thought this was preferable to a "filter_" prefix or suffix. Of course, you
+are free to choose your own convention, but you should expect this naming in
+the standard filters at least.
+
+Here's a filter package that implements two filters, C<Upper> and C<Lower>:
+
+    package MyApp::Filters;
+    use Moose::Role;
+    
+    method Upper () {
+        return sub { uc($_[0]) }
+    }
+    
+    method Lower () {
+        return sub { lc($_[0]) }
+    }
+    
+    1;
+
+To use these in a component:
+
+    <%class>
+    with 'MyApp::Filters';
+    </%class> 
+
+    <% $.Upper { %>
+    ...
+    </%>
+
+Or if you want them available to all components, put them in C<< Base.pm >> at
+the top of your component hierarchy, or in your application's Mason::Component
+subclass.
+
+=head2 Simple vs. dynamic filters
+
+A I<simple filter> is a code ref which takes a string and returns the output.
+Your filter method should return this code ref. e.g.
+
+    method Rot13 () {
+        return sub {
+            my $text = shift;
+            $text =~ tr/a-zA-Z/n-za-mN-ZA-M/;
+            return $text;
+        }
+    }
+
+A I<dynamic filter> is an object of class
+L<Mason::DynamicFilter|Mason::DynamicFilter>. It contains a code ref which
+takes a I<yield block> and returns the output. A yield block is a zero-argument
+code ref that returns a content string. e.g.  this is functionally identical to
+the above:
+
+    method Rot13 () {
+        return Mason::DynamicFilter->new(
+            filter => sub {
+                my $yield = shift;
+                my $text = $yield->();
+                $text =~ tr/a-zA-Z/n-za-mN-ZA-M/;
+                return $text;
+            }
+        );
+    }
+    
+The dynamic filter obviously doesn't buy you anything in this case, and for the
+majority of filters they are unneeded.  The real power of dynamic filters is
+that they can choose if and when to execute the yield block. For example, here
+is an implementation (slightly expanded for explanatory purposes) of the
+standard C<< Cache >> filter:
+
+    method Cache ( $key, $set_options ) {
+        return Mason::DynamicFilter->new(
+            filter => sub {
+                my $yield = shift;
+                my $cache = $self->cmeta->cache;
+                my $output = $cache->get( $key );
+                if (!$output) {
+                    $output = $yield->();
+                    $cache->set( $key, $output, $set_options );
+                }
+                return $output;
+            }
+        );
+    }
+
+Notice that we call C<< $cache->get >> first, and return the output immediately
+if it is in the cache. Only on a cache miss do we actually execute the
+(presumably expensive) yield block.
+
+C<< Defer >> and C<< Repeat >> are two other examples of dynamic filters. See
+L<Mason::Filters::Standard|Mason::Filters::Standard> for their implementations.
+
+=cut

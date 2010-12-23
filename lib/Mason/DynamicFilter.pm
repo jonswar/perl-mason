@@ -1,4 +1,4 @@
-package Mason::AdvancedFilter;
+package Mason::DynamicFilter;
 use Moose;
 use Mason::Moose;
 use Method::Signatures::Simple;

@@ -786,19 +786,19 @@ Syntax of the form
 
     <% filter { %>
     ...
-    <% } %>
+    </%>
 
 applies a I<filter> to the content between the tags. For example:
 
     <% sub { uc(shift) } { %>
     hello world
-    <% } %>
+    </%>
 
 outputs 'HELLO WORLD', and
 
     <% $.Cache('5 min') { %>
     # ... some computed output ...
-    <% } %>
+    </%>
 
 caches the computed output for 5 minutes via << %m->cache >>.
 

@@ -287,13 +287,15 @@ method visit () {
 # PRIVATE METHODS
 #
 
-method _apply_filter ($filter, $content_method) {
+method apply_filter ($filter, $yield) {
     my $filtered_output;
+    $yield = sub { $yield }
+      if !ref($yield);
     if ( ref($filter) eq 'CODE' ) {
-        $filtered_output = $filter->( $content_method->() );
+        $filtered_output = $filter->( $yield->() );
     }
     elsif ( blessed($filter) && $filter->can('apply_filter') ) {
-        $filtered_output = $filter->apply_filter($content_method);
+        $filtered_output = $filter->apply_filter($yield);
     }
     else {
         die "'$filter' is neither a code ref nor a filter object";
@@ -301,23 +303,23 @@ method _apply_filter ($filter, $content_method) {
     return $filtered_output;
 }
 
-method _apply_filters ($filters, $content_method) {
+method _apply_filters ($filters, $yield) {
     if ( !@$filters ) {
-        return $content_method->();
+        return $yield->();
     }
     else {
         my @filters = @$filters;
         my $filter  = pop(@filters);
         return $self->_apply_filters( \@filters,
-            sub { $self->_apply_filter( $filter, $content_method ) } );
+            sub { $self->apply_filter_to_yield( $filter, $yield ) } );
     }
 }
 
 method _apply_filters_to_output ($filters, $output_method) {
-    my $content_method = sub {
+    my $yield = sub {
         $self->capture( sub { $output_method->() } );
     };
-    my $filtered_output = $self->_apply_filters( $filters, $content_method );
+    my $filtered_output = $self->_apply_filters( $filters, $yield );
     $self->print($filtered_output);
 }
 
