@@ -93,12 +93,22 @@ cached.
 
 Filters can also appear in a limited way inside a regular C<< <% %> >> tag:
 
-    <% $message_body | NoBlankLines,Trim %>
+    <% $content | NoBlankLines,Trim %>
 
-The filter list appears after a << | >> character and must be one or more
-names, separated by comma. The names are treated as methods on the current
+The filter list appears after a << | >> character and must contain one or more
+comma-separated names. The names are treated as methods on the current
 component class. With this syntax you cannot use anonymous subroutines or
-variables as filters, or pass arguments to filters.
+variables as filters, or pass arguments to filters. However in a pinch you can
+define local filter methods to get around this, e.g.
+
+    %% method Repeat3 { $.Repeat(3); }
+    ...
+    <% $message_body | Repeat3 %>
+
+One common use of this form is to escape HTML strings in web content, using the
+C<HTML> filter in L<Mason::Plugin::HTMLFilters|Mason::Plugin::HTMLFilters>:
+
+    <% $message_body | HTML %>
 
 =head2 Manual invocation
 
@@ -123,6 +133,7 @@ the standard filters at least.
 Here's a filter package that implements two filters, C<Upper> and C<Lower>:
 
     package MyApp::Filters;
+    use Method::Signatures::Simple;
     use Moose::Role;
     
     method Upper () {
@@ -156,7 +167,7 @@ Your filter method should return this code ref. e.g.
 
     method Rot13 () {
         return sub {
-            my $text = shift;
+            my $text = $_[0];
             $text =~ tr/a-zA-Z/n-za-mN-ZA-M/;
             return $text;
         }
@@ -171,7 +182,7 @@ the above:
     method Rot13 () {
         return Mason::DynamicFilter->new(
             filter => sub {
-                my $yield = shift;
+                my $yield = $_[0];
                 my $text = $yield->();
                 $text =~ tr/a-zA-Z/n-za-mN-ZA-M/;
                 return $text;
@@ -188,7 +199,7 @@ standard C<< Cache >> filter:
     method Cache ( $key, $set_options ) {
         return Mason::DynamicFilter->new(
             filter => sub {
-                my $yield = shift;
+                my $yield = $_[0];
                 my $cache = $self->cmeta->cache;
                 my $output = $cache->get( $key );
                 if (!$output) {
