@@ -1,7 +1,7 @@
 
 =head1 NAME
 
-Mason::Manual - Mason Developer's Manual
+Mason::Manual::Tutorial - Mason tutorial
 
 =head1 DESCRIPTION
 

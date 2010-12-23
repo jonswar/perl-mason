@@ -1,7 +1,7 @@
 
 =head1 NAME
 
-Mason::Devel - Mason Developer's Manual
+Mason::Manual::Syntax - Mason syntax reference
 
 =head1 DESCRIPTION
 
