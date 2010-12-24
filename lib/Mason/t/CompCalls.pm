@@ -7,8 +7,8 @@ sub test_ampersand : Test(2) {
     my $self = shift;
 
     $self->add_comp(
-        path      => '/support/amper_test.mi',
-        component => <<'EOF',
+        path => '/support/amper_test.mi',
+        src  => <<'EOF',
 amper_test.<p>
 % if (%{$self->cmeta->args}) {
 Arguments:<p>
@@ -20,8 +20,8 @@ EOF
     );
 
     $self->test_comp(
-        path      => '/support/amper_call.m',
-        component => <<'EOF',
+        path => '/support/amper_call.m',
+        src  => <<'EOF',
 <&/support/amper_test.mi&>
 <& amper_test.mi &>
 <&  amper_test.mi, &>
@@ -49,7 +49,7 @@ amper_test.<p>
 EOF
     );
     $self->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 <& /support/amper_test.mi, message=>'Hello World!'  &>
 <& support/amper_test.mi, message=>'Hello World!',
    to=>'Joe' &>

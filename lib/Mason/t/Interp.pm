@@ -14,7 +14,7 @@ sub test_component_class_prefix : Test(6) {
         like( $interp->load('/foo.m'), qr/$regex/, "prefix at beginning of path" );
     };
 
-    $self->add_comp( path => '/foo.m', component => 'foo' );
+    $self->add_comp( path => '/foo.m', src => 'foo' );
 
     my @interp =
       map { $self->create_interp() } ( 0 .. 1 );
@@ -38,7 +38,7 @@ sub test_bad_param : Test(1) {
 sub test_comp_exists : Test(3) {
     my $self = shift;
 
-    $self->add_comp( path => '/comp_exists/one.m', component => 'hi' );
+    $self->add_comp( path => '/comp_exists/one.m', src => 'hi' );
     my $interp = $self->{interp};
     ok( $interp->comp_exists('/comp_exists/one.m') );
     ok( !$interp->comp_exists('/comp_exists/two.m') );

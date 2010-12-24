@@ -6,7 +6,7 @@ use base qw(Mason::Test::Class);
 sub test_sections : Test(1) {
     my $self = shift;
     $self->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 <%doc>
 This should not get printed.
 </%doc>
@@ -70,7 +70,7 @@ EOF
 sub test_perl_section_newlines : Test(1) {
     my $self = shift;
     $self->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 1<%perl>print "2\n";</%perl>
 <%perl>
 print "3\n";
@@ -106,7 +106,7 @@ EOF
 sub test_text_section : Test(1) {
     my $self = shift;
     $self->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 <%text>
 %
 <%init>

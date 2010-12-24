@@ -6,7 +6,7 @@ use base qw(Mason::Test::Class);
 
 sub test_ : Test(1) {
     shift->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 EOF
         expect => <<'EOF',
 EOF

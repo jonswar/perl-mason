@@ -5,7 +5,7 @@ use base qw(Mason::Test::Class);
 
 sub test_replace : Test(1) {
     shift->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 <BODY>
 <% "Hello World!" %>
 </BODY>
@@ -20,7 +20,7 @@ EOF
 
 sub test_percent : Test(1) {
     shift->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 <BODY>
 % my $message = "Hello World!";
 <% $message %>
@@ -36,7 +36,7 @@ EOF
 
 sub test_fake_percent : Test(1) {
     shift->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 some text, a %, and some text
 EOF
         expect => <<'EOF',
@@ -47,7 +47,7 @@ EOF
 
 sub test_empty_percents : Test(1) {
     shift->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 some text,
 % 
 and some more
@@ -61,7 +61,7 @@ EOF
 
 sub test_empty_percents2 : Test(1) {
     shift->test_comp(
-        component => <<'EOF',
+        src => <<'EOF',
 some text,
 % 
 % $m->print('foo, ');
@@ -74,19 +74,40 @@ EOF
     );
 }
 
+sub test_double_percent : Test(1) {
+    shift->test_comp(
+        src => <<'EOF',
+<%class>
+my $i = 5;
+</%class>
+
+%% my $j = $i+1;
+<% $.bar %>
+
+<%method bar>
+j = <% $j %>
+</%method>
+
+EOF
+        expect => <<'EOF',
+j = 6
+EOF
+    );
+}
+
 sub test_pure_perl : Test(1) {
     shift->test_comp(
-        path      => '/pureperl.pm',
-        component => 'sub main { print "hello from main" }',
-        expect    => 'hello from main',
+        path   => '/pureperl.pm',
+        src    => 'sub main { print "hello from main" }',
+        expect => 'hello from main',
     );
 }
 
 sub test_attr : Test(1) {
     my $self = shift;
     $self->add_comp(
-        path      => '/attr.m',
-        component => '
+        path => '/attr.m',
+        src  => '
 <%attr>
 a
 b # comment
@@ -110,8 +131,8 @@ g = <% $.g %>
 ',
     );
     $self->test_comp(
-        component => '<& /attr.m, a => 3, b => 4 &>',
-        expect    => '
+        src    => '<& /attr.m, a => 3, b => 4 &>',
+        expect => '
 a = 3
 b = 4
 c = 5
@@ -125,7 +146,7 @@ g = 8
 
 sub test_shared : Test(3) {
     shift->test_parse(
-        component => '
+        src => '
 <%shared>
 $.foo
 $.bar => "something"
@@ -142,7 +163,7 @@ $.baz => ( isa => "Num", default => 5 )
 
 sub test_dollar_dot : Test(1) {
     shift->test_comp(
-        component => '
+        src => '
 <%attr>
 foo => 3
 </%attr>

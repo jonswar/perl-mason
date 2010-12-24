@@ -14,8 +14,8 @@ sub test_resolve : Tests(19) {
         $self->setup_dirs;
         foreach my $existing_path (@$existing_paths) {
             $self->add_comp(
-                path      => $existing_path,
-                component => 'path: <% $self->cmeta->path %>; path_info: <% $m->path_info %>'
+                path => $existing_path,
+                src  => 'path: <% $self->cmeta->path %>; path_info: <% $m->path_info %>'
             );
         }
         my $desc = sprintf( "run %s against %s", $run_path, join( ",", @$existing_paths ) );
@@ -74,8 +74,8 @@ sub test_decline : Tests(7) {
               ? '<%perl>$m->decline();</%perl>'
               : 'path: <% $self->cmeta->path %>; path_info: <% $m->path_info %>';
             $self->add_comp(
-                path      => $existing_path,
-                component => $component,
+                path => $existing_path,
+                src  => $component,
             );
         }
         my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) );

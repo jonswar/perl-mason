@@ -9,12 +9,12 @@ sub test_plugins : Test(6) {
     my $self = shift;
 
     $self->{interp} = $self->create_interp( plugins => ['+Mason::Test::Plugins::Notify'] );
-    $self->add_comp( path => '/test_plugin_support.mi', component => 'hi' );
+    $self->add_comp( path => '/test_plugin_support.mi', src => 'hi' );
     my $output = capture_merged {
         $self->test_comp(
-            path      => '/test_plugin.m',
-            component => '<& test_plugin_support.mi &>',
-            expect    => 'hi'
+            path   => '/test_plugin.m',
+            src    => '<& test_plugin_support.mi &>',
+            expect => 'hi'
         );
     };
 

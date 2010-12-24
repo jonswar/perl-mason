@@ -22,8 +22,8 @@ sub test_autobase : Test(19) {
         my ( $path, $extends ) = @_;
 
         $self->add_comp(
-            path      => $path,
-            component => ( $extends ? "<%flags>\nextends => $extends\n</%flags>" : " " )
+            path => $path,
+            src  => ( $extends ? "<%flags>\nextends => $extends\n</%flags>" : " " )
         );
     };
 
@@ -81,8 +81,8 @@ sub test_autobase : Test(19) {
 sub test_wrapping : Tests(2) {
     my $self = shift;
     $self->add_comp(
-        path      => '/wrap/Base.m',
-        component => '
+        path => '/wrap/Base.m',
+        src  => '
 <%wrap render>
 <html>
 % $m->call_next;
@@ -91,8 +91,8 @@ sub test_wrapping : Tests(2) {
 '
     );
     $self->add_comp(
-        path      => '/wrap/subdir/Base.m',
-        component => '
+        path => '/wrap/subdir/Base.m',
+        src  => '
 
 <%method hello>
 Hello world
@@ -101,8 +101,8 @@ Hello world
 '
     );
     $self->add_comp(
-        path      => '/wrap/subdir/subdir2/Base.m',
-        component => '
+        path => '/wrap/subdir/subdir2/Base.m',
+        src  => '
 <%wrap render>
 <body>
 % $m->call_next;
@@ -111,9 +111,9 @@ Hello world
 '
     );
     $self->test_comp(
-        path      => '/wrap/subdir/subdir2/wrap_me.m',
-        component => '<% $self->hello %>',
-        expect    => '
+        path   => '/wrap/subdir/subdir2/wrap_me.m',
+        src    => '<% $self->hello %>',
+        expect => '
 <html>
 
 <body>
@@ -124,8 +124,8 @@ Hello world
 '
     );
     $self->test_comp(
-        path      => '/wrap/subdir/subdir2/dont_wrap_me.m',
-        component => '
+        path => '/wrap/subdir/subdir2/dont_wrap_me.m',
+        src  => '
 <%flags>
 ignore_wrap=>1
 </%flags>
@@ -140,8 +140,8 @@ sub _test_no_main_in_autobase {
     my $self = shift;
 
     $self->test_comp(
-        path      => '/wrap/Base.m',
-        component => '
+        path => '/wrap/Base.m',
+        src  => '
 <body>
 % inner();
 </body>

@@ -12,10 +12,10 @@ sub _get_current_comp_class {
 sub test_comp_exists : Test(1) {
     my $self = shift;
 
-    $self->add_comp( path => '/comp_exists/one.m', component => 'hi' );
+    $self->add_comp( path => '/comp_exists/one.m', src => 'hi' );
     $self->test_comp(
-        path      => '/comp_exists/two.m',
-        component => '
+        path => '/comp_exists/two.m',
+        src  => '
 % foreach my $path (qw(/comp_exists/one.m /comp_exists/two.m /comp_exists/three.m one.m two.m three.m)) {
 <% $path %>: <% $m->comp_exists($path) ? "yes" : "no" %>
 % }
@@ -33,16 +33,16 @@ three.m: no
 
 sub test_current_comp_class : Test(1) {
     shift->test_comp(
-        path      => '/current_comp_class.m',
-        component => '<% ' . __PACKAGE__ . '::_get_current_comp_class($m)->cmeta->path %>',
-        expect    => '/current_comp_class.m'
+        path   => '/current_comp_class.m',
+        src    => '<% ' . __PACKAGE__ . '::_get_current_comp_class($m)->cmeta->path %>',
+        expect => '/current_comp_class.m'
     );
 }
 
 sub test_count : Test(3) {
     my $self = shift;
     $self->setup_dirs;
-    $self->add_comp( path => '/count.m', component => 'count=<% $m->count %>' );
+    $self->add_comp( path => '/count.m', src => 'count=<% $m->count %>' );
     is( $self->{interp}->srun('/count'), "count=0" );
     is( $self->{interp}->srun('/count'), "count=1" );
     is( $self->{interp}->srun('/count'), "count=2" );
@@ -50,27 +50,27 @@ sub test_count : Test(3) {
 
 sub test_page : Test(1) {
     my $self = shift;
-    $self->add_comp( path => '/page/other.mi', component => '<% $m->page->cmeta->path %>' );
+    $self->add_comp( path => '/page/other.mi', src => '<% $m->page->cmeta->path %>' );
     $self->test_comp(
-        path      => '/page/first.m',
-        component => '<% $m->page->cmeta->path %>; <& other.mi &>',
-        expect    => '/page/first.m; /page/first.m'
+        path   => '/page/first.m',
+        src    => '<% $m->page->cmeta->path %>; <& other.mi &>',
+        expect => '/page/first.m; /page/first.m'
     );
 }
 
 sub test_subrequest : Test(2) {
     my $self = shift;
     $self->add_comp(
-        path      => '/subreq/other.m',
-        component => '
+        path => '/subreq/other.m',
+        src  => '
 <% $m->page->cmeta->path %>
 <% $m->request_path %>
 <% join(", ", @{ $m->request_args }) %>
 ',
     );
     $self->test_comp(
-        path      => '/subreq/go.m',
-        component => '
+        path => '/subreq/go.m',
+        src  => '
 This should not get printed.
 <%perl>$m->go("/subreq/other", foo => 5);</%perl>',
         expect => '
@@ -80,8 +80,8 @@ foo, 5
 ',
     );
     $self->test_comp(
-        path      => '/subreq/visit.m',
-        component => '
+        path => '/subreq/visit.m',
+        src  => '
 begin
 <%perl>$m->visit("/subreq/other", foo => 5);</%perl>
 end

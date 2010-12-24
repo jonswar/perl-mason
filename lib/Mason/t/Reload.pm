@@ -9,8 +9,8 @@ sub test_reload : Test(11) {
     my $class;
 
     $self->add_comp(
-        path      => "/reload.m",
-        component => <<'EOF',
+        path => "/reload.m",
+        src  => <<'EOF',
 <%class>
 sub foo { 'foo' }
 sub baz { 'baz1' }
@@ -29,8 +29,8 @@ EOF
     sleep(1);    # so timestamp will be different
 
     $self->add_comp(
-        path      => "/reload.m",
-        component => <<'EOF',
+        path => "/reload.m",
+        src  => <<'EOF',
 <%class>
 sub bar { 'bar' }
 sub baz { 'baz2' }
