@@ -72,11 +72,6 @@ method _build_valid_flags_hash () {
     return { map { ( $_, 1 ) } @{ $self->valid_flags } };
 }
 
-# Like [a-zA-Z_] but respects locales
-method escape_flag_regex () {
-    return qr/[[:alpha:]_]\w*/;
-}
-
 method compile ( $source_file, $path ) {
     my $compilation = $self->compilation_class->new(
         source_file => $source_file,

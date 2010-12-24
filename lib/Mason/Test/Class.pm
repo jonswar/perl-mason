@@ -44,9 +44,9 @@ method create_interp () {
 }
 
 method add_comp (%params) {
-    my $path    = $params{path}      || die "must pass path";
-    my $source  = $params{component} || die "must pass component";
-    my $verbose = $params{v}         || $params{verbose};
+    my $path    = $params{path} || die "must pass path";
+    my $source  = $params{src}  || die "must pass src";
+    my $verbose = $params{v}    || $params{verbose};
     die "'$path' is not absolute" unless substr( $path, 0, 1 ) eq '/';
     my $source_file = $self->{comp_root} . $path;
     $self->mkpath_and_write_file( $source_file, $source );
@@ -66,24 +66,24 @@ method remove_comp (%params) {
 method test_comp (%params) {
     my $caller = ( caller(1) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
-    my $path   = $params{path}      || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
-    my $args   = $params{args}      || {};
+    my $path   = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
+    my $args   = $params{args} || {};
     my $desc   = $params{desc};
-    my $source = $params{component} || croak "must pass component";
+    my $source = $params{src}  || croak "must pass src";
     my $expect = trim( $params{expect} );
     my $expect_error = $params{expect_error};
     my $verbose = $params{v} || $params{verbose};
 
     ( my $run_path = $path ) =~ s/\.(?:m|pm)$//;
 
-    $self->add_comp( path => $path, component => $source, verbose => $verbose );
+    $self->add_comp( path => $path, src => $source, verbose => $verbose );
 
     my @run_params = ( $run_path, %$args );
-    if ($expect_error) {
+    if ( defined($expect_error) ) {
         $desc ||= $expect_error;
         throws_ok( sub { $self->{interp}->srun(@run_params) }, $expect_error, $desc );
     }
-    elsif ($expect) {
+    elsif ( defined($expect) ) {
         $desc ||= $caller;
         my $output = trim( $self->{interp}->srun(@run_params) );
         is( $output, $expect, $desc );
@@ -93,7 +93,7 @@ method test_comp (%params) {
 method run_test_in_comp (%params) {
     my $test = delete( $params{test} ) || die "must pass test";
     my $args = delete( $params{args} ) || {};
-    $self->add_comp( %params, component => '% $.cmeta->args->{_test}->($self);' );
+    $self->add_comp( %params, src => '% $.cmeta->args->{_test}->($self);' );
     ( my $run_path = $params{path} ) =~ s/\.m$//g;
     my @run_params = ( $run_path, %$args );
     $self->{interp}->run( @run_params, _test => $test );
@@ -103,7 +103,7 @@ method test_parse (%params) {
     my $caller = ( caller(1) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
     my $desc = $params{desc};
-    my $source       = $params{component} || croak "must pass component";
+    my $source       = $params{src} || croak "must pass src";
     my $expect_list  = $params{expect};
     my $expect_error = $params{expect_error};
     croak "must pass either expect or expect_error" unless $expect_list || $expect_error;

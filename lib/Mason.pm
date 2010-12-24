@@ -6,17 +6,21 @@ use Mason::Interp;
 use Mason::Plugin;
 use Mason::Util qw(can_load);
 use Memoize;
+use Moose;
 use Moose::Meta::Class;
+use MooseX::ClassAttribute;
 use strict;
 use warnings;
 
 $Mason::VERSION = '0.01';
 
+class_has 'default_plugins' => ( is => 'rw', isa => 'ArrayRef', default => sub { [] } );
+
 sub new {
     my ( $class, %params ) = @_;
     my $plugins = delete( $params{plugins} ) || [];
     croak 'plugins must be an array reference' unless ref($plugins) eq 'ARRAY';
-    $plugins = $class->process_plugins($plugins);
+    $plugins = $class->process_plugins( [ @$plugins, @{ $class->default_plugins } ] );
     my $interp_class = $class->find_subclass( 'Interp', $plugins );
     return $interp_class->new( mason_root_class => $class, plugins => $plugins, %params );
 }
@@ -63,6 +67,9 @@ sub find_subclass {
     #
     my $final_subclass;
     my @roles = grep { can_load($_) } map { join( "::", $_, $name ) } @$plugins;
+    if ( $name eq 'Component' ) {
+        push( @roles, grep { can_load($_) } map { join( "::", $_, 'Filters' ) } @$plugins );
+    }
     if (@roles) {
         my $meta = Moose::Meta::Class->create_anon_class(
             superclasses => [$subclass],

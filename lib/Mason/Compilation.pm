@@ -26,8 +26,9 @@ has 'dir_path' => ( lazy_build => 1, init_arg => undef );
 method BUILD () {
 
     # Initialize state
-    $self->{blocks} = {};
-    $self->{source} = read_file( $self->source_file );
+    $self->{blocks}          = {};
+    $self->{blocks}->{class} = '';
+    $self->{source}          = read_file( $self->source_file );
     $self->{source} =~ s/\r\n?/\n/g;
     $self->{ending}                = qr/\G\z/;
     $self->{in_method_block}       = undef;
@@ -172,7 +173,7 @@ method _match_substitution () {
 
     return 0 unless $self->{source} =~ /\G<%/gcs;
 
-    my $flag = $self->compiler->escape_flag_regex();
+    my $filter_name = qr/[[:alpha:]_]\w*/;
     if (
         $self->{source} =~ m{
            \G
@@ -183,8 +184,8 @@ method _match_substitution () {
             \|                  # A '|'
             \s*
             (                   # (Start $3)
-             $flag              # A flag
-             (?:\s*,\s*$flag)*  # More flags, with comma separators
+             $filter_name            # A filter name
+             (?:\s*,\s*$filter_name)*  # More filter names, with comma separators
             )
             \s*
            )?
@@ -219,12 +220,12 @@ method _match_component_call () {
 }
 
 method _match_perl_line () {
-    if ( $self->{source} =~ /\G(?<=^)%([^\n]*)(?:\n|\z)/gcm ) {
-        my $line = $1;
+    if ( $self->{source} =~ /\G(?<=^)(%%?)([^\n]*)(?:\n|\z)/gcm ) {
+        my ( $percents, $line ) = ( $1, $2 );
         if ( $line !~ /^\s/ ) {
-            $self->throw_syntax_error("% must be followed by whitespace");
+            $self->throw_syntax_error("$percents must be followed by whitespace");
         }
-        $self->_handle_perl_line($line);
+        $self->_handle_perl_line( ( $percents eq '%' ? 'perl' : 'class' ), $line );
         $self->{line_number}++;
 
         return 1;
@@ -357,7 +358,7 @@ method _output_cmeta () {
 }
 
 method _output_class_block () {
-    return $self->{blocks}->{'class'} || '';
+    return $self->{blocks}->{class} || '';
 }
 
 method _output_methods () {
@@ -477,7 +478,7 @@ method _attribute_declaration ($name, $params, $line_number) {
 
 method _handle_class_block ($contents) {
     $self->_assert_not_in_method('<%class>');
-    $self->{blocks}->{class} =
+    $self->{blocks}->{class} .=
       $self->_output_line_number_comment . $self->process_perl_code($contents);
 }
 
@@ -623,7 +624,7 @@ method _handle_text_block ($contents) {
     $self->{last_code_type} = 'text';
 }
 
-method _handle_substitution ( $text, $escape ) {
+method _handle_substitution ( $text, $filter_list ) {
 
     # This is a comment tag if all lines of text contain only whitespace
     # or start with whitespace and a comment marker, e.g.
@@ -641,7 +642,15 @@ method _handle_substitution ( $text, $escape ) {
 
     $text = $self->process_perl_code($text);
 
-    my $code = "{ no warnings 'uninitialized'; \$\$_buffer .= $text }\n";
+    if ($filter_list) {
+        if ( my @filters = grep { /\S/ } split( /\s*,\s*/, $filter_list ) ) {
+            my $filter_call_list = join( ", ", map { "\$self->$_()" } @filters );
+            $text =
+              sprintf( '$self->m->_apply_filters([%s], sub { %s })', $filter_call_list, $text );
+        }
+    }
+
+    my $code = "for (scalar($text)) { \$\$_buffer .= \$_ if defined }\n";
 
     $self->_add_to_current_method($code);
 
@@ -663,10 +672,15 @@ method _handle_component_call ($contents) {
     $self->{last_code_type} = 'component_call';
 }
 
-method _handle_perl_line ($contents) {
+method _handle_perl_line ($type, $contents) {
     my $code = $self->process_perl_code( $contents . "\n" );
 
-    $self->_add_to_current_method($code);
+    if ( $type eq 'perl' ) {
+        $self->_add_to_current_method($code);
+    }
+    else {
+        $self->_add_to_class_block($code);
+    }
 
     $self->{last_code_type} = 'perl_line';
 }
@@ -691,14 +705,20 @@ method _new_method_hash () {
     return { body => '', init => '', type => 'method', @_ };
 }
 
-method _add_to_current_method ($text) {
+# Don't add a line number comment when following a perl-line.
+# We know a perl-line is always _one_ line, so we know that the
+# line numbers are going to match up as long as the first line in
+# a series has a line number comment before it.  Adding a comment
+# can break certain constructs like qw() list that spans multiple
+# perl-lines.
+method _add_to_class_block ($text) {
+    if ( $self->{last_code_type} ne 'perl_line' ) {
+        $text = $self->_output_line_number_comment . $text;
+    }
+    $self->{blocks}->{class} .= $text;
+}
 
-    # Don't add a line number comment when following a perl-line.
-    # We know a perl-line is always _one_ line, so we know that the
-    # line numbers are going to match up as long as the first line in
-    # a series has a line number comment before it.  Adding a comment
-    # can break certain constructs like qw() list that spans multiple
-    # perl-lines.
+method _add_to_current_method ($text) {
     if ( $self->{last_code_type} ne 'perl_line' ) {
         $text = $self->_output_line_number_comment . $text;
     }

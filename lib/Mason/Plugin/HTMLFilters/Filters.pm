@@ -1,5 +1,6 @@
 package Mason::Plugin::HTMLFilters::Filters;
-use use Moose::Role;
+use Method::Signatures::Simple;
+use Moose::Role;
 use strict;
 use warnings;
 

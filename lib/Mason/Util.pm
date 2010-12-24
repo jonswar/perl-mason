@@ -27,7 +27,7 @@ sub can_load {
         $result = 1;
     }
     catch {
-        if (/Can\'t locate .* in \@INC/) {
+        if ( /Can\'t locate .* in \@INC/ && !/Compilation failed/ ) {
             $result = 0;
         }
         else {

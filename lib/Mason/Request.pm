@@ -310,8 +310,7 @@ method _apply_filters ($filters, $yield) {
     else {
         my @filters = @$filters;
         my $filter  = pop(@filters);
-        return $self->_apply_filters( \@filters,
-            sub { $self->apply_filter_to_yield( $filter, $yield ) } );
+        return $self->_apply_filters( \@filters, sub { $self->apply_filter( $filter, $yield ) } );
     }
 }
 
