@@ -66,10 +66,11 @@ sub find_subclass {
     # Apply roles from plugins - adapted from MooseX::Traits
     #
     my $final_subclass;
-    my @roles = grep { can_load($_) } map { join( "::", $_, $name ) } @$plugins;
+    my @roles_to_try = map { join( "::", $_, $name ) } @$plugins;
     if ( $name eq 'Component' ) {
-        push( @roles, grep { can_load($_) } map { join( "::", $_, 'Filters' ) } @$plugins );
+        push( @roles_to_try, map { join( "::", $_, 'Filters' ) } @$plugins );
     }
+    my @roles = grep { Class::MOP::is_class_loaded($_) || can_load($_) } @roles_to_try;
     if (@roles) {
         my $meta = Moose::Meta::Class->create_anon_class(
             superclasses => [$subclass],
