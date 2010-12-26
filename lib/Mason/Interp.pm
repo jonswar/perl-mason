@@ -35,6 +35,7 @@ has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( );
 has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'distinct_string_count'    => ( default => 0 );
 has 'index_names'              => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
@@ -424,6 +425,17 @@ method source_file_for_path ($path) {
         return $source_file if -f $source_file;
     }
     return undef;
+}
+
+method construct_distinct_string () {
+    my $number = ++$self->{distinct_string_count};
+    my $str    = $self->construct_distinct_string_for_number($number);
+    return $str;
+}
+
+method construct_distinct_string_for_number ($number) {
+    my $distinct_delimeter = "__MASON__";
+    return sprintf( "%s%d%s", $distinct_delimeter, $number, $distinct_delimeter );
 }
 
 __PACKAGE__->meta->make_immutable();
