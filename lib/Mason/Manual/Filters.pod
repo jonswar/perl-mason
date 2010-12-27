@@ -31,7 +31,7 @@ is evaluated and is expected to return a filter or list of filters.
 By convention, and to avoid name clashes with other component methods, filters
 use CamelCase rather than traditional underscore names.
 
-Some filters take arguments:
+Filters can take arguments:
 
    <% $.Repeat(3) { %>
      There's no place like home.
@@ -156,8 +156,8 @@ To use these in a component:
     ...
     </%>
 
-Or if you want them available to all components, put them in C<< Base.pm >> at
-the top of your component hierarchy, or in your application's Mason::Component
+Or if you want them available to all components, put them in C<Base.pm> at the
+top of your component hierarchy, or in your application's C<Mason::Component>
 subclass.
 
 =head2 Simple vs. dynamic filters
@@ -189,7 +189,7 @@ the above:
             }
         );
     }
-    
+
 The dynamic filter obviously doesn't buy you anything in this case, and for the
 majority of filters they are unneeded.  The real power of dynamic filters is
 that they can choose if and when to execute the yield block. For example, here

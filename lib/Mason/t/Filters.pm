@@ -169,6 +169,25 @@ EOF
     );
 }
 
+sub test_around : Test(1) {
+    my $self = shift;
+    $self->test_comp(
+        src => <<'EOF',
+hello
+
+<%around main>
+<% sub { uc($_[0]) } { %>
+% $self->$orig();
+</%>
+</%around>        
+
+EOF
+        expect => <<'EOF',
+HELLO
+EOF
+    );
+}
+
 sub test_missing_close_brace : Test(1) {
     my $self = shift;
     $self->test_comp(

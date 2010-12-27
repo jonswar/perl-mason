@@ -18,6 +18,7 @@ method HTML () {
         return $text;
     };
 }
+*H = *HTML;
 
 method HTMLEntities (@args) {
     require HTML::Entities;
@@ -66,7 +67,7 @@ Filters related to HTML generation.
 
 =over
 
-=item HTML
+=item HTML or H
 
 Do a basic HTML escape on the content - just the characters '&', '>', '<', and
 '"'.

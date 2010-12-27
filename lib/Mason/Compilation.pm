@@ -376,13 +376,14 @@ method _output_method ($method) {
 
     my $name     = $method->{name};
     my $type     = $method->{type};
-    my $modifier = $method->{modifier};
+    my $modifier = $method->{modifier} || '';
     my $arglist  = $method->{arglist} || '';
     my $contents = join( "\n", grep { /\S/ } ( $method->{init}, $method->{body} ) );
 
     my $start =
         $type eq 'apply_filter' ? "sub {"
-      : $type eq 'modifier'     ? "$modifier '$name' => sub {\nmy \$self = shift;"
+      : $modifier eq 'around'   ? "around '$name' => sub {\nmy \$orig = shift; my \$self = shift;"
+      : $type     eq 'modifier' ? "$modifier '$name' => sub {\nmy \$self = shift;"
       :                           "method $name $arglist {";
     my $end = $modifier ? "};" : "}";
 
