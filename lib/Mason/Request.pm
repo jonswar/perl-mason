@@ -46,7 +46,6 @@ method BUILD ($params) {
     $self->_push_buffer();
     $self->{request_code_cache} = {};
     $self->{count}              = $self->{interp}->request_count;
-    $self->{defers}             = [];
 }
 
 #
@@ -122,12 +121,6 @@ method decline () {
         $self->request_path, @{ $self->request_args } );
 }
 
-method defer ($code) {
-    my $marker = $self->interp->construct_distinct_string();
-    push( @{ $self->{defers} }, { marker => $marker, code => $code } );
-    return $marker;
-}
-
 method fetch_comp () {
     my $path  = shift;
     my $compc = $self->fetch_compc($path);
@@ -157,7 +150,6 @@ method fetch_compc ($path) {
 }
 
 method flush_buffer () {
-    $self->_apply_defers();
     my $request_buffer = $self->_request_buffer;
     $self->out_method->($$request_buffer)
       if length $$request_buffer;
@@ -310,19 +302,6 @@ method visit () {
 #
 # PRIVATE METHODS
 #
-
-method _apply_defers () {
-    if ( my @defers = @{ $self->{defers} } ) {
-        my $request_buffer = ${ $self->_request_buffer };
-        $DB::single = 1;
-        foreach my $defer (@defers) {
-            my $subst = $defer->{marker};
-            my $repl  = $defer->{code}->();
-            $request_buffer =~ s/\Q$subst\E/$repl/;
-        }
-        ${ $self->_request_buffer } = $request_buffer;
-    }
-}
 
 method _apply_filters ($filters, $yield) {
     if ( !@$filters ) {
@@ -547,22 +526,6 @@ then a request for path C</news/sports> will initially resolve to
 C</news/sports.m>.  A call to C<< $m->decline >> would restart the request and
 resolve to C</news/dhandler.m>, a second C<< $m->decline >> would resolve to
 C</dhandler.m>, and a third would throw a "not found" error.
-
-=item defer (code)
-
-Allows sections of output to be deferred til the end of the request. For
-example, the following outputs 'My Title':
-
-    % my $title;
-    <% m->defer(sub { $title }) %>
-
-    ...
-    %# $title isn't set til here
-    % $title = 'My Title';
-
-C<< $m->defer >> returns a marker string that is unique and will not appear in
-normal output. At the end of the request, each marker string is replaced with
-the output of its associated code.
 
 =item fetch_comp (path)
 

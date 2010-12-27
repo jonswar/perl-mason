@@ -18,14 +18,6 @@ method Capture ($outref) {
     sub { $$outref = $_[0]; return '' }
 }
 
-method Defer () {
-    Mason::DynamicFilter->new(
-        filter => sub {
-            $self->m->defer( $_[0] );
-        }
-    );
-}
-
 method NoBlankLines () {
     sub {
         my $text = $_[0];
@@ -87,19 +79,6 @@ Uses C<< $m->capture >> to capture the content in I<$ref>.
     </%>
 
     ... do something with $content
-
-=item Defer
-
-Uses C<< $m->defer >> to defer computing this content until the end of the
-request.
-
-    <!-- Components can set $m->page->title and $m->page->description
-         any time up til the end of the request -->
-    <head>
-    <% $.Defer { %>
-      <title><% $m->page->title></title>
-    </%>
-    </head>
 
 =item NoBlankLines
 
