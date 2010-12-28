@@ -188,27 +188,4 @@ EOF
     );
 }
 
-sub test_missing_close_brace : Test(1) {
-    my $self = shift;
-    $self->test_comp(
-        src => <<'EOF',
-<% $.Upper { %>
-Hello world
-EOF
-        expect_error => qr/<% { %> without matching <\/%>/
-    );
-}
-
-sub test_bad_filter_expression : Test(1) {
-    my $self = shift;
-    $self->test_comp(
-        src => <<'EOF',
-<% 'foobar' { %>
-Hello world
-</%>
-EOF
-        expect_error => qr/'foobar' is neither a code ref/
-    );
-}
-
 1;

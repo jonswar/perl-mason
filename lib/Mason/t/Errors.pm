@@ -3,30 +3,41 @@ use strict;
 use warnings;
 use base qw(Mason::Test::Class);
 
-sub test_errors : Test(5) {
+sub test_errors : Test(18) {
     my $self = shift;
-    $self->test_comp(
-        src          => '%my $i = 1;',
-        expect_error => qr/% must be followed by whitespace at .* line 1/,
-    );
+    my $try  = sub {
+        my ( $src, $expect_error ) = @_;
+        $self->test_comp( src => $src, expect_error => $expect_error );
+    };
     my $root = $self->{interp}->comp_root->[0];
-    $self->test_comp(
-        src => '<& /does/not/exist &>',
-        expect_error =>
-          qr/could not find component for path '\/does\/not\/exist' - component root is \Q[$root]\E/,
+
+    $try->(
+        '<& /does/not/exist &>',
+        qr/could not find component for path '\/does\/not\/exist' - component root is \Q[$root]\E/,
     );
-    $self->test_comp(
-        src          => '<%',
-        expect_error => qr/'<%' without matching '%>'/,
+    $try->( '<%method>',                  qr/method block requires a name/ );
+    $try->( '<%before>',                  qr/before block requires a name/ );
+    $try->( '<%init>',                    qr/<%init> without matching <\/%init>/ );
+    $try->( '<%',                         qr/'<%' without matching '%>'/ );
+    $try->( '<& foo',                     qr/'<&' without matching '&>'/ );
+    $try->( '%my $i = 1;',                qr/% must be followed by whitespace/ );
+    $try->( '%%my $i = 1;',               qr/%% must be followed by whitespace/ );
+    $try->( "<%attr>\n123\n</%attr>",     qr/Invalid attribute line '123'/ );
+    $try->( "<%attr>\n\$\$abc\n</%attr>", qr/Invalid attribute line '\$\$abc'/ );
+    $try->( '<% $.Upper { %>Hi',          qr/<% { %> without matching <\/%>/ );
+    $try->( '<%method 1a>Hi</%method>',   qr/Invalid method name '1a'/ );
+    $try->(
+        "<%method a>Hi</%method>\n<%method a>Bye</%method>",
+        qr/Duplicate definition of method 'a'/
     );
-    $self->test_comp(
-        src          => '<%init>',
-        expect_error => qr/<%init> without matching <\/%init>/,
+    $try->( "<%before 1a>Hi</%before>", qr/Invalid method modifier name '1a'/ );
+    $try->(
+        "<%before a>Hi</%before>\n<%before a>Bye</%before>",
+        qr/Duplicate definition of method modifier 'before a'/
     );
-    $self->test_comp(
-        src          => '<%method>',
-        expect_error => qr/method block requires a name/,
-    );
+    $try->( '<% "foobar" { %>Hi</%>',        qr/'foobar' is neither a code ref/ );
+    $try->( "<%flags>\nfoo => 1\n</%flags>", qr/Invalid flag 'foo'/ );
+    $try->( '<% $foo %>', qr/Global symbol "\$foo" requires explicit package name/ );
 }
 
 1;

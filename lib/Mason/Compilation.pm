@@ -23,6 +23,9 @@ has 'source_file' => ( required => 1 );
 # Derived attributes
 has 'dir_path' => ( lazy_build => 1, init_arg => undef );
 
+# Valid Perl identifier
+my $identifier = qr/[[:alpha:]_]\w*/;
+
 method BUILD () {
 
     # Initialize state
@@ -173,7 +176,6 @@ method _match_substitution () {
 
     return 0 unless $self->{source} =~ /\G<%/gcs;
 
-    my $filter_name = qr/[[:alpha:]_]\w*/;
     if (
         $self->{source} =~ m{
            \G
@@ -184,8 +186,8 @@ method _match_substitution () {
             \|                  # A '|'
             \s*
             (                   # (Start $3)
-             $filter_name            # A filter name
-             (?:\s*,\s*$filter_name)*  # More filter names, with comma separators
+             $identifier            # A filter name
+             (?:\s*,\s*$identifier)*  # More filter names, with comma separators
             )
             \s*
            )?
@@ -436,6 +438,7 @@ method _handle_attributes_list ($contents, $attr_type) {
         if (
             my ( $name, $rest ) = (
                 $line =~ /
+                          ^
                           (?: \$\.)?        # optional $. prefix
                           ([^\W\d]\w*)      # valid Perl variable name
                           (?:\s*=>\s*(.*))? # optional arrow then default or attribute params
@@ -478,7 +481,6 @@ method _attribute_declaration ($name, $params, $line_number) {
 }
 
 method _handle_class_block ($contents) {
-    $self->_assert_not_in_method('<%class>');
     $self->{blocks}->{class} .=
       $self->_output_line_number_comment . $self->process_perl_code($contents);
 }
@@ -523,10 +525,8 @@ method _handle_apply_filter ($filter_expr) {
 }
 
 method _handle_method_block ( $contents, $name, $arglist ) {
-    $self->_assert_not_in_method("<%method>");
-
     $self->throw_syntax_error("Invalid method name '$name'")
-      if $name =~ /[^\w]/;
+      if $name !~ /^$identifier$/;
 
     $self->throw_syntax_error("Duplicate definition of method '$name'")
       if exists $self->{methods}->{$name};
@@ -545,15 +545,13 @@ method _handle_before_block () { $self->_handle_method_modifier_block( 'before',
 method _handle_method_modifier_block ( $block_type, $contents, $name ) {
     my $modifier = ( $block_type eq 'wrap' ? 'augment' : $block_type );
 
-    $self->_assert_not_in_method("<%$block_type>");
-
     $self->throw_syntax_error("Invalid method modifier name '$name'")
-      if $name =~ /[^\w]/;
+      if $name !~ /^$identifier$/;
 
     my $method_key = "$block_type $name";
 
     $self->throw_syntax_error("Duplicate definition of method modifier '$method_key'")
-      if exists $self->{method}->{"$method_key"};
+      if exists $self->{methods}->{"$method_key"};
 
     my $method =
       $self->_new_method_hash( name => $name, type => 'modifier', modifier => $modifier );
@@ -694,12 +692,6 @@ method _handle_plain_text ($text) {
 
     my $code = "\$\$_buffer .= '$text';\n";
     $self->_add_to_current_method($code);
-}
-
-method _assert_not_in_method ($entity) {
-    if ( $self->{in_method_block} ) {
-        $self->throw_syntax_error("$entity not permitted inside <%method> block");
-    }
 }
 
 method _new_method_hash () {
