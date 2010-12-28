@@ -18,6 +18,15 @@ method Capture ($outref) {
     sub { $$outref = $_[0]; return '' }
 }
 
+method CompCall ($path, @params) {
+    Mason::DynamicFilter->new(
+        filter => sub {
+            my $m = $self->m;
+            return $m->scomp( $path, @params, yield => $_[0] );
+        }
+    );
+}
+
 method NoBlankLines () {
     sub {
         my $text = $_[0];
@@ -79,6 +88,12 @@ Uses C<< $m->capture >> to capture the content in I<$ref>.
     </%>
 
     ... do something with $content
+
+=item CompCall ($path, @args...)
+
+Calls the component with I<path> and I<@args>, just as with C<< $m->scomp >>,
+with an additional coderef argument C<yield> that can be invoked to generate
+the content.
 
 =item NoBlankLines
 
