@@ -68,7 +68,7 @@ method test_comp (%params) {
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
     my $path   = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
     my $args   = $params{args} || {};
-    my $desc   = $params{desc};
+    my $desc   = $params{desc} || $path;
     my $source = $params{src}  || croak "must pass src";
     my $expect = trim( $params{expect} );
     my $expect_error = $params{expect_error};
@@ -81,11 +81,11 @@ method test_comp (%params) {
     my @run_params = ( $run_path, %$args );
     if ( defined($expect_error) ) {
         $desc ||= $expect_error;
-        throws_ok( sub { $self->{interp}->srun(@run_params) }, $expect_error, $desc );
+        throws_ok( sub { $self->{interp}->run(@run_params) }, $expect_error, $desc );
     }
     elsif ( defined($expect) ) {
         $desc ||= $caller;
-        my $output = trim( $self->{interp}->srun(@run_params) );
+        my $output = trim( $self->{interp}->run(@run_params)->output );
         is( $output, $expect, $desc );
     }
 }

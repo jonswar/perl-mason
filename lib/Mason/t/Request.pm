@@ -43,9 +43,9 @@ sub test_count : Test(3) {
     my $self = shift;
     $self->setup_dirs;
     $self->add_comp( path => '/count.m', src => 'count=<% $m->count %>' );
-    is( $self->{interp}->srun('/count'), "count=0" );
-    is( $self->{interp}->srun('/count'), "count=1" );
-    is( $self->{interp}->srun('/count'), "count=2" );
+    is( $self->{interp}->run('/count')->output, "count=0" );
+    is( $self->{interp}->run('/count')->output, "count=1" );
+    is( $self->{interp}->run('/count')->output, "count=2" );
 }
 
 sub test_page : Test(1) {

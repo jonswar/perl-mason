@@ -15,23 +15,27 @@ use Try::Tiny;
 use strict;
 use warnings;
 
-my $default_out = sub { print $_[0] };
+my $default_out = sub { my ( $text, $self ) = @_; $self->{output} .= $text };
 
 # Passed attributes
 #
-has 'interp' => ( required => 1, weak_ref => 1 );
-has 'out_method' => ( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 has 'declined_paths' => ( default => sub { {} } );
+has 'interp'         => ( required => 1, weak_ref => 1 );
+has 'out_method'     => ( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
+has 'request_params'     => ( required => 1 );
 
 # Derived attributes
 #
 has 'buffer_stack'       => ( init_arg => undef );
 has 'count'              => ( init_arg => undef );
+has 'go_result'          => ( init_arg => undef );
 has 'path_info'          => ( init_arg => undef, default => '' );
+has 'output'             => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
 has 'request_args'       => ( init_arg => undef );
 has 'request_code_cache' => ( init_arg => undef );
 has 'request_path'       => ( init_arg => undef );
+has 'run_params'         => ( init_arg => undef );
 
 # Class attributes
 #
@@ -151,15 +155,16 @@ method fetch_compc ($path) {
 
 method flush_buffer () {
     my $request_buffer = $self->_request_buffer;
-    $self->out_method->($$request_buffer)
+    $self->out_method->( $$request_buffer, $self )
       if length $$request_buffer;
     $$request_buffer = '';
 }
 
 method go () {
     $self->clear_buffer;
-    my $retval = $self->interp->run( { out_method => $self->out_method }, @_ );
-    $self->abort($retval);
+    my $result = $self->interp->run( $self->request_params, @_ );
+    $self->{go_result} = $result;
+    $self->abort();
 }
 
 method log () {
@@ -187,6 +192,7 @@ method scomp () {
 }
 
 method run () {
+
     my $path      = shift;
     my $wantarray = wantarray();
 
@@ -244,13 +250,22 @@ method run () {
         };
     }
 
+    # If go() was called in this request, return the result of the subrequest
+    #
+    return $self->{go_result} if defined( $self->{go_result} );
+
     # Send output to its final destination
     #
     $self->flush_buffer;
 
-    # Return aborted value or result.
+    # Create and return result object
     #
-    return $self->aborted($err) ? $err->aborted_value : $retval;
+    $retval = $self->aborted($err) ? $err->aborted_value : $retval;
+    return $self->create_result_object( output => $self->output, retval => $retval );
+}
+
+method create_result_object () {
+    return $self->interp->result_class->new(@_);
 }
 
 method resolve_request_path_to_component ($request_path) {
@@ -402,16 +417,17 @@ the component is found relative to the current component's directory.
 
 =item out_method
 
-Indicates where to send the final page output. If out_method is a scalar
-reference, output is appended to the scalar.  If out_method is a code
-reference, the code is called with the output string. For example, to send
-output to a file called "mason.out":
+Indicates where to send the page output. If out_method is a scalar reference,
+output is appended to the scalar.  If out_method is a code reference, the code
+is called with the output string. For example, to send output to a file called
+"mason.out":
 
     open(my $fh, ">", "mason.out);
     ...
     out_method => sub { $fh->print($_[0]) }
 
-By default, out_method prints to standard output.
+When C<out_method> is unspecified, the output can be obtained from the
+L<Mason::Result|Mason::Result> object returned from C<< $interp->run >>.
 
 =back
 

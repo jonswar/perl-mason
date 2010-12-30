@@ -5,6 +5,7 @@ use Guard;
 use List::Util qw(first);
 use Mason::Compiler;
 use Mason::Request;
+use Mason::Result;
 use Mason::Types;
 use Mason::Util qw(mason_canon_path);
 use Memoize;
@@ -41,6 +42,7 @@ has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
 has 'request_class'            => ( lazy_build => 1 );
+has 'result_class'             => ( lazy_build => 1 );
 has 'static_source'            => ( );
 has 'static_source_touch_file' => ( );
 has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
@@ -137,6 +139,10 @@ method _build_request_class () {
     return $self->find_subclass('Request');
 }
 
+method _build_result_class () {
+    return $self->find_subclass('Result');
+}
+
 method _build_component_class_meta_class () {
     return $self->find_subclass('Component::ClassMeta');
 }
@@ -148,21 +154,6 @@ method _build_component_instance_meta_class () {
 #
 # PUBLIC METHODS
 #
-
-method run () {
-    my %request_params;
-    while ( ref( $_[0] ) eq 'HASH' ) {
-        %request_params = ( %request_params, %{ shift(@_) } );
-    }
-    my $path    = shift;
-    my $request = $self->build_request(%request_params);
-    $request->run( $path, @_ );
-}
-
-method srun () {
-    $self->run( { out_method => \my $output }, @_ );
-    return $output;
-}
 
 method comp_exists ($path) {
     return $self->source_file_for_path( Mason::Util::mason_canon_path($path) );
@@ -232,15 +223,25 @@ method load ($path) {
     return $compc;
 }
 
-# Memoize the results - this helps both with components used multiple
-# times in a request, and with determining default parent components.
-# The memoize cache is cleared at the beginning of each request, or in
+# Memoize load() - this helps both with components used multiple times in a
+# request, and with determining default parent components.  The memoize
+# cache is cleared at the beginning of each request, or in
 # static_source_mode, when the purge file is touched.
 #
 memoize('load');
 
 method object_dir () {
     return catdir( $self->data_dir, 'obj' );
+}
+
+method run () {
+    my %request_params;
+    while ( ref( $_[0] ) eq 'HASH' ) {
+        %request_params = ( %request_params, %{ shift(@_) } );
+    }
+    my $path = shift;
+    my $request = $self->make_request( %request_params, request_params => \%request_params );
+    $request->run( $path, @_ );
 }
 
 #
@@ -274,7 +275,7 @@ method add_default_render_method ($compc, $flags) {
     }
 }
 
-method build_request () {
+method make_request () {
     return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
 }
 
@@ -619,17 +620,17 @@ indicating whether or not a component exists for that path.
 
 =item run ([request params], path, args...)
 
-Creates a new Mason::Request object for the given I<path> and I<args>, and
-executes it. Request output is sent to the default L<Request/out_method>. The
-return value is the return value of the request's top level component, if any.
+Creates a new L<Mason::Request|Mason::Request> object for the given I<path> and
+I<args>, and executes it. Returns a L<Mason::Result|Mason::Result> object,
+which is generally accessed to get the output. e.g.
+
+    my $output = $interp->run('/foo/bar', baz => 5)->output;
 
 The first argument may optionally be a hashref of request parameters, which are
-passed to the Mason::Request constructor.
+passed to the Mason::Request constructor. e.g. this tells the request to output
+to standard output:
 
-=item srun (path, args...)
-
-Same as L</run>, but returns request output as a string (think sprintf versus
-printf).
+    $interp->run({out_method => sub { print $_[0] }}, '/foo/bar', baz => 5);
 
 =item flush_code_cache
 
