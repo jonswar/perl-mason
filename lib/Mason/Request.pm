@@ -84,7 +84,7 @@ method apply_filter ($filter, $yield) {
 }
 
 method cache () {
-    return $self->_current_comp_class->comp_cache();
+    return $self->_current_comp_class->cmeta->cache();
 }
 
 method call_next () {
@@ -472,8 +472,9 @@ point is not sent to the client.
 
 C<$m-E<gt>cache> returns a new L<CHI object|CHI> with a namespace specific to
 this component. All other parameters are taken from
-<Interp/chi_default_parameters> and passed to the L<Interp/chi_root_class>
-constructor.
+L<Interp/chi_default_parameters> and passed to the L<Interp/chi_root_class>
+constructor. Unless overriden, L<Interp/chi_default_parameters> will use a
+L<File|CHI::Driver::File> cache in your data directory.
 
 =item capture (code)
 
