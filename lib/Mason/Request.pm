@@ -88,7 +88,7 @@ method cache () {
 }
 
 method call_next () {
-    return $self->_current_comp_class->_cmeta_inner();
+    return $self->_current_comp_class->_inner();
 }
 
 method capture ($code) {
@@ -168,7 +168,7 @@ method go () {
 }
 
 method log () {
-    return $self->_current_comp_class->comp_logger();
+    return $self->_current_comp_class->cmeta->logger();
 }
 
 method notes () {

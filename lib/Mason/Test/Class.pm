@@ -21,8 +21,10 @@ my $parse_count    = 0;
 my $temp_dir_count = 0;
 
 sub _startup : Test(startup) {
-    my $self = shift;
-    $self->{temp_root} = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => 1 );
+    my $self    = shift;
+    my $verbose = $ENV{TEST_VERBOSE};
+    $self->{temp_root} = tempdir( 'mason-test-XXXX', TMPDIR => 1, CLEANUP => $verbose ? 0 : 1 );
+    printf STDERR ( "\n*** temp_root = %s, no cleanup\n", $self->{temp_root} ) if $verbose;
     $self->setup_dirs;
 }
 
@@ -37,8 +39,9 @@ method setup_dirs () {
 
 method create_interp () {
     return Mason->new(
-        comp_root => $self->{comp_root},
-        data_dir  => $self->{data_dir},
+        comp_root              => $self->{comp_root},
+        data_dir               => $self->{data_dir},
+        no_source_line_numbers => 1,
         @_
     );
 }

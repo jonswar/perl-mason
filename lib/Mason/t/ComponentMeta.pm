@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use base qw(Mason::Test::Class);
 
-sub test_cmeta : Test(12) {
+sub test_cmeta : Test(16) {
     my $self = shift;
     $self->run_test_in_comp(
         path => '/component/meta.m',
@@ -13,10 +13,12 @@ sub test_cmeta : Test(12) {
             my $comp        = shift;
             my $source_file = $self->{comp_root} . '/component/meta.m';
             foreach my $cmeta ( $comp->cmeta, ref($comp)->cmeta ) {
-                is( $cmeta->path,        '/component/meta.m', 'path' );
-                is( $cmeta->dir_path,    '/component',        'dir_path' );
-                is( $cmeta->is_external, 1,                   'is_external' );
-                is( $cmeta->source_file, $source_file,        'source_file' );
+                is( $cmeta->path,             '/component/meta.m', 'path' );
+                is( $cmeta->dir_path,         '/component',        'dir_path' );
+                is( $cmeta->is_external,      1,                   'is_external' );
+                is( $cmeta->source_file,      $source_file,        'source_file' );
+                is( $cmeta->cache->label,     'File',              'cache->label' );
+                is( $cmeta->cache->namespace, $cmeta->path,        'cache->namespace' );
                 like( $cmeta->object_file, qr|/component/meta.m.mobj|, 'object_file' );
             }
             my $args = $comp->cmeta->args;

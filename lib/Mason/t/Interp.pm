@@ -6,6 +6,14 @@ use strict;
 use warnings;
 use base qw(Mason::Test::Class);
 
+{ package MyInterp; use Moose; extends 'Mason::Interp' }
+
+sub test_interp_class : Test(1) {
+    my $self = shift;
+    my $interp = $self->create_interp( interp_class => 'MyInterp' );
+    is( ref($interp), 'MyInterp' );
+}
+
 sub test_component_class_prefix : Test(6) {
     my $self = shift;
 
@@ -46,7 +54,7 @@ sub test_comp_exists : Test(3) {
     throws_ok { $interp->comp_exists('one.m') } qr/not an absolute/;
 }
 
-sub test_out_method : Test(12) {
+sub test_out_method : Test(15) {
     my $self = shift;
 
     $self->add_comp( path => '/out_method/hi.m', src => 'hi' );
@@ -68,6 +76,11 @@ sub test_out_method : Test(12) {
     $try->( sub { print $_[0] }, '', '', 'hi', 'sub print' );
     $try->( sub { $buffer .= uc( $_[0] ) }, '', 'HI', '', 'sub buffer .=' );
     $try->( \$buffer, '', 'HIhi', '', '\$buffer' );
+
+    $buffer = '';
+    $self->{interp} =
+      $self->create_interp( out_method => sub { print scalar( reverse( $_[0] ) ) } );
+    $try->( undef, '', '', 'ih', 'print reverse' );
 }
 
 1;

@@ -338,7 +338,7 @@ method _output_class_header () {
         "use warnings;",
 
         # Must be defined here since inner relies on caller()
-        "sub _cmeta_inner { inner() }"
+        "sub _inner { inner() }"
     );
 }
 
@@ -349,13 +349,16 @@ method _output_cmeta () {
         path        => $self->path,
         source_file => $self->source_file,
     );
-    my $component_class_meta_class = $self->compiler->interp->component_class_meta_class;
     return join( "\n",
-        "my \$_class_cmeta = $component_class_meta_class->new(",
+        "my \$_class_cmeta;",
+        "method _set_class_cmeta (\$interp) {",
+        "\$_class_cmeta = \$interp->component_class_meta_class->new(",
         ( map { sprintf( "'%s' => '%s',", $_, $cmeta_info{$_} ) } sort( keys(%cmeta_info) ) ),
         "'object_file' => __FILE__,",
-        "'class' => __PACKAGE__",
+        "'class' => __PACKAGE__,",
+        "'interp' => \$interp",
         ');',
+        '}',
         'sub _class_cmeta { $_class_cmeta }' );
 }
 

@@ -74,7 +74,7 @@ method BUILD ($params) {
     #
     $self->{compiler_params} = {};
     my %is_compiler_attribute =
-      map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
+      map { ( $_->init_arg || $_->name, 1 ) } $self->compiler_class->meta->get_all_attributes();
     foreach my $key ( keys(%$params) ) {
         if ( $is_compiler_attribute{$key} ) {
             $self->{compiler_params}->{$key} = delete( $params->{$key} );
@@ -82,7 +82,7 @@ method BUILD ($params) {
     }
     $self->{request_params} = {};
     my %is_request_attribute =
-      map { ( $_, 1 ) } $self->compiler_class->meta->get_attribute_list();
+      map { ( $_->init_arg || $_->name, 1 ) } $self->request_class->meta->get_all_attributes();
     foreach my $key ( keys(%$params) ) {
         if ( $is_request_attribute{$key} ) {
             $self->{request_params}->{$key} = delete( $params->{$key} );
@@ -262,7 +262,7 @@ method add_default_render_method ($compc, $flags) {
                 $self->main(@_);
             }
             else {
-                $compc->_cmeta_inner();
+                $compc->_inner();
             }
         };
         my $meta = $compc->meta;
@@ -407,6 +407,7 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     );
     die $@ if $@;
 
+    $compc->_set_class_cmeta($self);
     $self->add_default_render_method( $compc, $flags );
 }
 

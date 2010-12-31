@@ -21,7 +21,8 @@ sub new {
     my $plugins = delete( $params{plugins} ) || [];
     croak 'plugins must be an array reference' unless ref($plugins) eq 'ARRAY';
     $plugins = $class->process_plugins( [ @$plugins, @{ $class->default_plugins } ] );
-    my $interp_class = $class->find_subclass( 'Interp', $plugins );
+    my $interp_class = delete( $params{interp_class} )
+      || $class->find_subclass( 'Interp', $plugins );
     return $interp_class->new( mason_root_class => $class, plugins => $plugins, %params );
 }
 

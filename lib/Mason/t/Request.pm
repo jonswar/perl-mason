@@ -19,7 +19,8 @@ $.count => 0
 </%shared>
 
 <%method getset ($key)>
-<% $m->cache->compute($key, sub { $key . ++$.count }) %>
+<%perl>$.count($.count+1);</%perl>
+<% $m->cache->compute($key, sub { $key . $.count }) %>
 </%method>
 
 <% $.getset("foo") %>
@@ -29,8 +30,11 @@ $.count => 0
 ',
         expect => '
 foo1
+
 bar2
+
 bar2
+
 foo1
 ',
     );

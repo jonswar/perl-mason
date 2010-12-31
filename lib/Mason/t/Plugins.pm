@@ -8,7 +8,10 @@ use base qw(Mason::Test::Class);
 sub test_plugins : Test(6) {
     my $self = shift;
 
-    $self->{interp} = $self->create_interp( plugins => ['+Mason::Test::Plugins::Notify'] );
+    $self->{interp} = $self->create_interp(
+        plugins                => ['+Mason::Test::Plugins::Notify'],
+        no_source_line_numbers => 1,                                   # test a compiler param
+    );
     $self->add_comp( path => '/test_plugin_support.mi', src => 'hi' );
     my $output = capture_merged {
         $self->test_comp(

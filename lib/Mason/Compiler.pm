@@ -38,7 +38,7 @@ method _build_compiler_id () {
 
     # TODO - collect all attributes automatically
     my @vals = ( 'Mason::VERSION', $Mason::VERSION );
-    my @attrs = qw(default_escape_flags use_source_line_numbers);
+    my @attrs = qw(default_escape_flags no_source_line_numbers);
     foreach my $k (@attrs) {
         push @vals, $k, $self->{$k};
     }
