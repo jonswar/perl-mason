@@ -9,6 +9,7 @@ use warnings;
 # Passed attributes (generated in compiled component)
 has 'class'       => ( required => 1 );
 has 'dir_path'    => ( required => 1 );
+has 'interp'      => ( required => 1, weak_ref => 1 );
 has 'is_external' => ( required => 1 );
 has 'object_file' => ( required => 1 );
 has 'path'        => ( required => 1 );
