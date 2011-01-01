@@ -1,5 +1,7 @@
 package Mason::t::Request;
+use Log::Any::Adapter;
 use Test::More;
+use Test::Log::Dispatch;
 use strict;
 use warnings;
 use base qw(Mason::Test::Class);
@@ -23,12 +25,14 @@ $.count => 0
 <% $m->cache->compute($key, sub { $key . $.count }) %>
 </%method>
 
+namespace: <% $m->cache->namespace %>
 <% $.getset("foo") %>
 <% $.getset("bar") %>
 <% $.getset("bar") %>
 <% $.getset("foo") %>
 ',
         expect => '
+namespace: /cache.m
 foo1
 
 bar2
@@ -77,6 +81,26 @@ sub test_count : Test(3) {
     is( $self->{interp}->run('/count')->output, "count=0" );
     is( $self->{interp}->run('/count')->output, "count=1" );
     is( $self->{interp}->run('/count')->output, "count=2" );
+}
+
+sub test_log : Test(2) {
+    my $self = shift;
+    my $log = Test::Log::Dispatch->new( min_level => 'debug' );
+    Log::Any::Adapter->set( { category => 'Mason::Component::log::one.m', lexically => \my $lex },
+        'Dispatch', dispatcher => $log );
+    $self->add_comp( path => '/log/one.m', src => '% $m->log->info("message one")' );
+    $self->add_comp( path => '/log/two.m', src => '% $m->log->info("message two")' );
+    $self->run_test_in_comp(
+        path => '/log.m',
+        test => sub {
+            my $comp = shift;
+            my $m    = $comp->m;
+            $m->comp('/log/one.m');
+            $m->comp('/log/two.m');
+            $log->contains_ok("message one");
+            $log->does_not_contain_ok("message two");
+        },
+    );
 }
 
 sub test_page : Test(1) {

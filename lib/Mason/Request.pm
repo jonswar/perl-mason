@@ -168,7 +168,7 @@ method go () {
 }
 
 method log () {
-    return $self->_current_comp_class->cmeta->logger();
+    return $self->_current_comp_class->cmeta->log();
 }
 
 method notes () {
