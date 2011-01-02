@@ -216,14 +216,13 @@ method run () {
 
     # Find request component class.
     #
-    my ( $compc, $path_info ) = $self->resolve_request_path_to_component($path);
+    my $compc = $self->resolve_request_path_to_component($path);
     if ( !defined($compc) ) {
         croak sprintf( "could not find top-level component for path '%s' - component root is [%s]",
             $path, join( ", ", @{ $self->interp->comp_root } ) );
     }
 
     $self->_comp_not_found($path) if !defined($compc);
-    $self->{path_info} = $path_info;
 
     my $page = $compc->new( @_, 'm' => $self );
     $self->{page} = $page;
@@ -269,43 +268,8 @@ method create_result_object () {
 }
 
 method resolve_request_path_to_component ($request_path) {
-    my $interp               = $self->interp;
-    my @dhandler_subpaths    = map { "/$_" } @{ $interp->dhandler_names };
-    my @index_subpaths       = map { "/$_" } @{ $interp->index_names };
-    my @top_level_extensions = @{ $interp->top_level_extensions };
-    my $autobase_or_dhandler = $interp->autobase_or_dhandler_regex;
-    my $path                 = $request_path;
-    my $path_info            = '';
-    my $declined_paths       = $self->declined_paths;
-
-    # Given /foo/bar, look for (by default):
-    #   /foo/bar.{pm,m},
-    #   /foo/bar/index.{pm,m},
-    #   /foo/bar/dhandler.{pm,m},
-    #   /foo.{pm,m}
-    #   /dhandler.{pm,m}
-    #
-    while (1) {
-        my @candidate_paths =
-            ( $path eq '/' )
-          ? ( @index_subpaths, @dhandler_subpaths )
-          : (
-            ( grep { !/$autobase_or_dhandler/ } map { $path . $_ } @top_level_extensions ),
-            ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
-          );
-        foreach my $candidate_path (@candidate_paths) {
-            next if $declined_paths->{$candidate_path};
-            my $compc = $interp->load($candidate_path);
-            if ( defined($compc) && $compc->cmeta->is_external ) {
-                return ( $compc, $path_info );
-            }
-        }
-        return () if $path eq '/';
-        my $name = basename($path);
-        $path_info = length($path_info) ? "$name/$path_info" : $name;
-        $path = dirname($path);
-        @index_subpaths = ();    # only match in same directory
-    }
+    my $compc = $self->interp->load($request_path);
+    return ( defined($compc) && $compc->cmeta->is_external ) ? $compc : undef;
 }
 
 method visit () {
@@ -527,22 +491,6 @@ Returns the current component class.
 
 This class method returns the C<Mason::Request> currently in use.  If called
 when no Mason request is active it will return C<undef>.
-
-=item decline
-
-Clears the output buffer and issues the current request again, but acting as if
-the previously chosen page component(s) do not exist.
-
-For example, if the following components exist:
-
-    /news/sports.m
-    /news/dhandler.m
-    /dhandler.m
-
-then a request for path C</news/sports> will initially resolve to
-C</news/sports.m>.  A call to C<< $m->decline >> would restart the request and
-resolve to C</news/dhandler.m>, a second C<< $m->decline >> would resolve to
-C</dhandler.m>, and a third would throw a "not found" error.
 
 =item fetch_comp (path)
 

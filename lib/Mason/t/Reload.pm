@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use base qw(Mason::Test::Class);
 
-sub test_reload : Test(11) {
+sub test_reload : Test(12) {
     my $self = shift;
     my $class;
 
@@ -18,7 +18,7 @@ sub baz { 'baz1' }
 Foo
 EOF
     );
-    is( $self->{interp}->run("/reload")->output, "Foo\n", "before reload" );
+    is( $self->{interp}->run("/reload.m")->output, "Foo\n", "before reload" );
     $class = $self->{interp}->load("/reload.m");
     is( $class->foo(), 'foo',  "method foo" );
     is( $class->baz(), 'baz1', "method baz" );
@@ -38,13 +38,12 @@ sub baz { 'baz2' }
 Bar
 EOF
     );
-    is( $self->{interp}->run("/reload")->output, "Bar\n", "after reload" );
-    is( $class->bar(),                           'bar',   "method bar" );
-    is( $class->baz(),                           'baz2',  "method baz" );
-    ok( $class->can('bar'), "can call bar after reload" );
-
-    #    ok( !$class->can('foo'), "cannot call foo after reload" );  not working while delete_package is neutered
-    ok( $class->can('baz'), "can call baz after reload" );
+    is( $self->{interp}->run("/reload.m")->output, "Bar\n", "after reload" );
+    is( $class->bar(),                             'bar',   "method bar" );
+    is( $class->baz(),                             'baz2',  "method baz" );
+    ok( $class->can('bar'),  "can call bar after reload" );
+    ok( !$class->can('foo'), "cannot call foo after reload" );
+    ok( $class->can('baz'),  "can call baz after reload" );
 }
 
 1;

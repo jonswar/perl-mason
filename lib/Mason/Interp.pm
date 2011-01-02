@@ -35,9 +35,7 @@ has 'component_instance_meta_class'     => ( lazy_build => 1 );
 has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( );
-has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'distinct_string_count'    => ( default => 0 );
-has 'index_names'              => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
@@ -45,12 +43,10 @@ has 'request_class'            => ( lazy_build => 1 );
 has 'result_class'             => ( lazy_build => 1 );
 has 'static_source'            => ( );
 has 'static_source_touch_file' => ( );
-has 'top_level_extensions'     => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
 #
 has 'autobase_regex'                => ( lazy_build => 1, init_arg => undef );
-has 'autobase_or_dhandler_regex'    => ( lazy_build => 1, init_arg => undef );
 has 'code_cache'                    => ( init_arg => undef );
 has 'compiler_params'               => ( init_arg => undef );
 has 'request_params'                => ( init_arg => undef );
@@ -90,13 +86,8 @@ method BUILD ($params) {
     }
 }
 
-method _build_autobase_or_dhandler_regex () {
-    my $regex = '(' . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names } ) . ')$';
-    return qr/$regex/;
-}
-
 method _build_autobase_names () {
-    return [ map { "Base" . $_ } @{ $self->top_level_extensions } ];
+    return [ "Base.pm", "Base.m" ];
 }
 
 method _build_autobase_regex () {
@@ -125,14 +116,6 @@ method _build_component_base_class () {
 
 method _build_component_class_prefix () {
     return "MC" . $self->{id};
-}
-
-method _build_dhandler_names () {
-    return [ map { "dhandler" . $_ } @{ $self->top_level_extensions } ];
-}
-
-method _build_index_names () {
-    return [ map { "index" . $_ } @{ $self->top_level_extensions } ];
 }
 
 method _build_request_class () {
@@ -452,9 +435,11 @@ Mason::Interp - Mason Interpreter
 
 =head1 SYNOPSIS
 
-    my $i = Mason->new (comp_root => '/path/to/comps',
-                        data_dir  => '/path/to/data',
-                        ...);
+    my $interp = Mason->new (comp_root => '/path/to/comps',
+                             data_dir  => '/path/to/data',
+                             ...);
+
+    my $output = $interp->run('/request/path', foo => 5)->output();
 
 =head1 DESCRIPTION
 
@@ -477,32 +462,12 @@ check in order when determining a component's superclass. Default is
 The component root marks the top of your component hierarchy and defines how
 component paths are translated into real file paths. For example, if your
 component root is F</usr/local/httpd/docs>, a component path of
-F</products/index.html> translates to the file
-F</usr/local/httpd/docs/products/index.html>.
+F</products/sales.m> translates to the file
+F</usr/local/httpd/docs/products/sales.m>.
 
-This parameter may be either a scalar or an array reference.  If it is a
-scalar, it should be a filesystem path indicating the component root. If it is
-an array reference, it should be of the following form:
-
- [ [ foo => '/usr/local/foo' ],
-   [ bar => '/usr/local/bar' ] ]
-
-This is an array of two-element array references, not a hash.  The "keys" for
-each path must be unique and their "values" must be filesystem paths.  These
-paths will be searched in the provided order whenever a component path is
-resolved. For example, given the above component roots and a component path of
-F</products/index.html>, Mason would search first for
-F</usr/local/foo/products/index.html>, then for
-F</usr/local/bar/products/index.html>.
-
-The keys are used in several ways. They help to distinguish component caches
-and object files between different component roots, and they appear in the
-C<title()> of a component.
-
-When you specify a single path for a component root, this is actually
-translated into
-
-  [ [ MAIN => path ] ]
+This parameter may be either a single path or an array reference of paths. If
+it is an array reference, the paths will be searched in the provided order
+whenever a component path is resolved, much like Perl's C<< @INC >>.
 
 =item compiler
 
@@ -542,18 +507,6 @@ The data directory is a writable directory that Mason uses for various features
 and optimizations: for example, component object files and data cache files.
 Mason will create the directory on startup if necessary.
 
-=item dhandler_names
-
-Array reference of dhandler file names to check in order when resolving a
-top-level path. Default is C<< ["dhandler.pm", "dhandler.m"] >>. See
-L<Mason::Manual/Determining the page component>.
-
-=item index_names
-
-Array reference of index file names to check in order when resolving a
-top-level path (only in the bottom-most directory). Default is C<< ["index.pm",
-"index.m"] >>. See L<Mason::Manual/Determining the page component>.
-
 =item object_file_extension
 
 Extension to add to the end of object files. Default is ".mobj".
@@ -592,11 +545,6 @@ need to do is make sure that a single file gets touched whenever components
 change. For Mason's part, checking a single file at the beginning of a request
 is much cheaper than checking every component file when static_source=0.
 
-=item top_level_extensions
-
-Array reference of filename extensions for top-level components. Default is C<<
-[".pm", ".m"] >>.
-
 =back
 
 =head1 REQUEST AND COMPILER PARAMETERS
@@ -605,19 +553,9 @@ Constructor parameters for Compiler and Request objects (Mason::Compiler and
 Mason::Request by default) may be passed to the Interp constructor, and they
 will be passed along whenever a compiler or request is created.
 
-=head1 ACCESSOR METHODS
-
-All of the above properties have standard read-only accessor methods of the
-same name.
-
-=head1 OTHER METHODS
+=head1 THE RUN METHOD
 
 =over
-
-=item comp_exists (path)
-
-Given an I<absolute> component path, this method returns a boolean value
-indicating whether or not a component exists for that path.
 
 =item run ([request params], path, args...)
 
@@ -632,6 +570,22 @@ passed to the Mason::Request constructor. e.g. this tells the request to output
 to standard output:
 
     $interp->run({out_method => sub { print $_[0] }}, '/foo/bar', baz => 5);
+
+=back
+
+=head1 ACCESSOR METHODS
+
+All of the above properties have standard read-only accessor methods of the
+same name.
+
+=head1 OTHER METHODS
+
+=over
+
+=item comp_exists (path)
+
+Given an I<absolute> component path, this method returns a boolean value
+indicating whether or not a component exists for that path.
 
 =item flush_code_cache
 

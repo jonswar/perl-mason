@@ -1,8 +1,11 @@
-package Mason::t::TopLevelResolve;
+package Mason::t::AdvancedPageResolution;
 use strict;
 use warnings;
+use Mason;
 use Test::Most;
 use base qw(Mason::Test::Class);
+
+Mason->default_plugins( ['AdvancedPageResolution'] );
 
 sub test_resolve : Tests(19) {
     my $self = shift;

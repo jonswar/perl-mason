@@ -65,7 +65,7 @@ sub test_out_method : Test(15) {
         my ( $result, $stdout );
         my @params = ( $out_method ? ( { out_method => $out_method } ) : () );
         ($stdout) = capture {
-            $result = $self->{interp}->run( @params, '/out_method/hi' );
+            $result = $self->{interp}->run( @params, '/out_method/hi.m' );
         };
         is( $stdout,         $expect_stdout, "stdout - $desc" );
         is( $buffer,         $expect_buffer, "buffer - $desc" );

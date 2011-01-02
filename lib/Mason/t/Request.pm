@@ -78,9 +78,9 @@ sub test_count : Test(3) {
     my $self = shift;
     $self->setup_dirs;
     $self->add_comp( path => '/count.m', src => 'count=<% $m->count %>' );
-    is( $self->{interp}->run('/count')->output, "count=0" );
-    is( $self->{interp}->run('/count')->output, "count=1" );
-    is( $self->{interp}->run('/count')->output, "count=2" );
+    is( $self->{interp}->run('/count.m')->output, "count=0" );
+    is( $self->{interp}->run('/count.m')->output, "count=1" );
+    is( $self->{interp}->run('/count.m')->output, "count=2" );
 }
 
 sub test_log : Test(2) {
@@ -127,10 +127,10 @@ sub test_subrequest : Test(2) {
         path => '/subreq/go.m',
         src  => '
 This should not get printed.
-<%perl>$m->go("/subreq/other", foo => 5);</%perl>',
+<%perl>$m->go("/subreq/other.m", foo => 5);</%perl>',
         expect => '
 /subreq/other.m
-/subreq/other
+/subreq/other.m
 foo, 5
 ',
     );
@@ -138,13 +138,13 @@ foo, 5
         path => '/subreq/visit.m',
         src  => '
 begin
-<%perl>$m->visit("/subreq/other", foo => 5);</%perl>
+<%perl>$m->visit("/subreq/other.m", foo => 5);</%perl>
 end
 ',
         expect => '
 begin
 /subreq/other.m
-/subreq/other
+/subreq/other.m
 foo, 5
 end
 ',
