@@ -1,5 +1,4 @@
 package Mason::Result;
-use Method::Signatures::Simple;
 use Moose;
 use Mason::Moose;
 use strict;

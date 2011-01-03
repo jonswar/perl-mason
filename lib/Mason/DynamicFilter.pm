@@ -1,7 +1,6 @@
 package Mason::DynamicFilter;
 use Moose;
 use Mason::Moose;
-use Method::Signatures::Simple;
 use strict;
 use warnings;
 

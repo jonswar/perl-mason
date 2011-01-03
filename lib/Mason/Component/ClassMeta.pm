@@ -1,5 +1,4 @@
 package Mason::Component::ClassMeta;
-use Method::Signatures::Simple;
 use Moose;
 use Mason::Moose;
 use Log::Any;

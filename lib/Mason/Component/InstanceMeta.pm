@@ -1,5 +1,4 @@
 package Mason::Component::InstanceMeta;
-use Method::Signatures::Simple;
 use Moose;
 use Mason::Moose;
 use strict;

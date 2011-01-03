@@ -7,7 +7,6 @@ use Log::Any qw($log);
 use Mason::Exceptions;
 use Mason::TieHandle;
 use Mason::Types;
-use Method::Signatures::Simple;
 use Moose;
 use Mason::Moose;
 use Scalar::Util qw(blessed);

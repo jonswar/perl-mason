@@ -9,7 +9,6 @@ use Mason::Result;
 use Mason::Types;
 use Mason::Util qw(mason_canon_path);
 use Memoize;
-use Method::Signatures::Simple;
 use Moose::Util::TypeConstraints;
 use Moose;
 use Mason::Moose;
