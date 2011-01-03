@@ -473,21 +473,11 @@ whenever a component path is resolved, much like Perl's C<< @INC >>.
 The Compiler object to associate with this Interpreter.  By default a new
 object of class L</compiler_class> will be created.
 
-=item compiler_class
-
-The class to use when creating a compiler. Defaults to
-L<Mason::Compiler|Mason::Compiler>.
-
 =item component_class_prefix
 
 Prefix to use in generated component classnames. Defaults to 'MC' plus a unique
 number for the interpreter, e.g. MC0. So a component '/foo/bar' would get a
 classname like 'MC0::foo::bar'.
-
-=item component_class
-
-The base class for components that do not inherit from another component.
-Defaults to L<Mason::Component|Mason::Component>.
 
 =item chi_default_params
 
@@ -509,11 +499,6 @@ Mason will create the directory on startup if necessary.
 =item object_file_extension
 
 Extension to add to the end of object files. Default is ".mobj".
-
-=item request_class
-
-The class to use when creating requests. Defaults to
-L<Mason::Request|Mason::Request>.
 
 =item static_source
 
@@ -551,6 +536,43 @@ is much cheaper than checking every component file when static_source=0.
 Constructor parameters for Compiler and Request objects (Mason::Compiler and
 Mason::Request by default) may be passed to the Interp constructor, and they
 will be passed along whenever a compiler or request is created.
+
+=head1 SPECIFYING CUSTOM CLASSES
+
+The Interp is responsible, directly or indirectly, for creating all other core
+Mason objects. You can specify alternate classes to use instead of the default
+Mason:: classes. e.g.
+
+    my $interp = Mason->new(compiler_class => 'MyApp::Mason::Compiler', ...);
+
+=over
+
+=item compiler_class
+
+Specify alternate to L<Mason::Compiler|Mason::Compiler>
+
+=item component_class
+
+Specify alternate to L<Mason::Component|Mason::Component>
+
+=item component_class_meta_class
+
+Specify alternate to L<Mason::Component::ClassMeta|Mason::Component::ClassMeta>
+
+=item component_instance_meta_class
+
+Specify alternate to
+L<Mason::Component::IntanceMeta|Mason::Component::IntanceMeta>
+
+=item request_class
+
+Specify alternate to L<Mason::Request|Mason::Request>
+
+=item result_class
+
+Specify alternate to L<Mason::Result|Mason::Result>
+
+=back
 
 =head1 THE RUN METHOD
 
