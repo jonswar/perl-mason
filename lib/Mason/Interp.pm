@@ -28,7 +28,7 @@ has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coer
 has 'compiler'                 => ( lazy_build => 1 );
 has 'compiler_class'           => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
-has 'component_base_class'     => ( lazy_build => 1 );
+has 'component_class'     => ( lazy_build => 1 );
 has 'component_class_meta_class'     => ( lazy_build => 1 );
 has 'component_instance_meta_class'     => ( lazy_build => 1 );
 has 'chi_root_class'           => ( default => 'CHI' );
@@ -109,7 +109,7 @@ method _build_compiler_class () {
     return $self->find_subclass('Compiler');
 }
 
-method _build_component_base_class () {
+method _build_component_class () {
     return $self->find_subclass('Component');
 }
 
@@ -336,7 +336,7 @@ method default_parent_compc ($path) {
             }
         }
         if ( $path eq '/' ) {
-            return $self->component_base_class;
+            return $self->component_class;
         }
         $path = dirname($path);
     }
@@ -353,7 +353,7 @@ method determine_parent_compc ($path, $flags) {
               or die "could not load '$extends' for extends flag";
         }
         else {
-            $parent_compc = $self->component_base_class;
+            $parent_compc = $self->component_class;
         }
     }
     return $parent_compc;
@@ -484,7 +484,7 @@ Prefix to use in generated component classnames. Defaults to 'MC' plus a unique
 number for the interpreter, e.g. MC0. So a component '/foo/bar' would get a
 classname like 'MC0::foo::bar'.
 
-=item component_base_class
+=item component_class
 
 The base class for components that do not inherit from another component.
 Defaults to L<Mason::Component|Mason::Component>.
