@@ -16,7 +16,6 @@ use strict;
 use warnings;
 
 # Passed attributes
-has 'compilation_class'      => ( lazy_build => 1 );
 has 'interp'                 => ( required => 1, weak_ref => 1 );
 has 'no_source_line_numbers' => ( );
 
@@ -28,10 +27,6 @@ has 'unnamed_block_regex' => ( lazy_build => 1, init_arg => undef );
 has 'unnamed_block_types' => ( lazy_build => 1, init_arg => undef );
 has 'valid_flags'         => ( lazy_build => 1, init_arg => undef );
 has 'valid_flags_hash'    => ( lazy_build => 1, init_arg => undef );
-
-method _build_compilation_class () {
-    return $self->interp->find_subclass('Compilation');
-}
 
 method _build_compiler_id () {
 
@@ -72,7 +67,7 @@ method _build_valid_flags_hash () {
 }
 
 method compile ( $source_file, $path ) {
-    my $compilation = $self->compilation_class->new(
+    my $compilation = $self->interp->compilation_class->new(
         source_file => $source_file,
         path        => $path,
         compiler    => $self
@@ -129,11 +124,6 @@ creates a Compilation object to compile each component.
 =head1 PARAMETERS TO THE new() CONSTRUCTOR
 
 =over
-
-=item compilation_class
-
-The class to use when compiling a new component. Defaults to
-L<Mason::Compilation|Mason::Compilation>.
 
 =item no_source_line_numbers
 

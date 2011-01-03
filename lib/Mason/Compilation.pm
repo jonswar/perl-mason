@@ -41,10 +41,6 @@ method BUILD () {
     $self->{filtered_method_count} = 0;
 }
 
-method _build_compilation_class () {
-    return $self->compiler->interp->find_subclass('Compilation');
-}
-
 method _build_dir_path () {
     return dirname( $self->path );
 }

@@ -26,11 +26,7 @@ my $interp_id = 0;
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( lazy_build => 1 );
-has 'compiler_class'           => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
-has 'component_class'     => ( lazy_build => 1 );
-has 'component_class_meta_class'     => ( lazy_build => 1 );
-has 'component_instance_meta_class'     => ( lazy_build => 1 );
 has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( );
@@ -38,10 +34,26 @@ has 'distinct_string_count'    => ( default => 0 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
-has 'request_class'            => ( lazy_build => 1 );
-has 'result_class'             => ( lazy_build => 1 );
 has 'static_source'            => ( );
 has 'static_source_touch_file' => ( );
+
+# Class overrides. For each of these attributes, create a default build
+# method that calls find_subclass, which will use plugin logic.
+#
+my %class_overrides = (
+    compilation_class             => 'Compilation',
+    compiler_class                => 'Compiler',
+    component_class               => 'Component',
+    component_class_meta_class    => 'Component::ClassMeta',
+    component_instance_meta_class => 'Component::InstanceMeta',
+    request_class                 => 'Request',
+    result_class                  => 'Result',
+);
+while ( my ( $name, $class ) = each(%class_overrides) ) {
+    has $name => ( isa => 'Str', lazy_build => 1 );
+    __PACKAGE__->meta->add_method(
+        "_build_$name" => sub { my $self = shift; return $self->find_subclass($class) } );
+}
 
 # Derived attributes
 #
@@ -105,32 +117,8 @@ method _build_compiler () {
     return $self->compiler_class->new( interp => $self, %{ $self->compiler_params } );
 }
 
-method _build_compiler_class () {
-    return $self->find_subclass('Compiler');
-}
-
-method _build_component_class () {
-    return $self->find_subclass('Component');
-}
-
 method _build_component_class_prefix () {
     return "MC" . $self->{id};
-}
-
-method _build_request_class () {
-    return $self->find_subclass('Request');
-}
-
-method _build_result_class () {
-    return $self->find_subclass('Result');
-}
-
-method _build_component_class_meta_class () {
-    return $self->find_subclass('Component::ClassMeta');
-}
-
-method _build_component_instance_meta_class () {
-    return $self->find_subclass('Component::InstanceMeta');
 }
 
 #
@@ -546,6 +534,10 @@ Mason:: classes. e.g.
     my $interp = Mason->new(compiler_class => 'MyApp::Mason::Compiler', ...);
 
 =over
+
+=item compilation_class
+
+Specify alternate to L<Mason::Compiler|Mason::Compilation>
 
 =item compiler_class
 
