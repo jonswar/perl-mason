@@ -14,7 +14,7 @@ use warnings;
 
 $Mason::VERSION = '0.01';
 
-class_has 'default_plugins' => ( is => 'rw', isa => 'ArrayRef', default => sub { [] } );
+sub default_plugins { [] }
 
 sub new {
     my ( $class, %params ) = @_;

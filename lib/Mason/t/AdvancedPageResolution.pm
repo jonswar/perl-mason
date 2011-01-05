@@ -5,7 +5,7 @@ use Mason;
 use Test::Most;
 use base qw(Mason::Test::Class);
 
-Mason->default_plugins( ['AdvancedPageResolution'] );
+__PACKAGE__->default_plugins( ['AdvancedPageResolution'] );
 
 sub test_resolve : Tests(19) {
     my $self = shift;

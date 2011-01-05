@@ -16,6 +16,9 @@ use base qw(Test::Class);
 
 __PACKAGE__->SKIP_CLASS("abstract base class");
 
+my $default_plugins = [];
+sub default_plugins { $default_plugins = $_[1] if defined( $_[1] ); $default_plugins }
+
 my $gen_path_count = 0;
 my $parse_count    = 0;
 my $temp_dir_count = 0;
@@ -42,6 +45,7 @@ method create_interp () {
         comp_root              => $self->{comp_root},
         data_dir               => $self->{data_dir},
         no_source_line_numbers => 1,
+        plugins                => $default_plugins,
         @_
     );
 }
