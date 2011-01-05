@@ -8,9 +8,9 @@ use base qw(Mason::Test::Class);
 
 { package MyInterp; use Moose; extends 'Mason::Interp' }
 
-sub test_interp_class : Test(1) {
+sub test_base_interp_class : Test(1) {
     my $self = shift;
-    my $interp = $self->create_interp( interp_class => 'MyInterp' );
+    my $interp = $self->create_interp( base_interp_class => 'MyInterp' );
     is( ref($interp), 'MyInterp' );
 }
 

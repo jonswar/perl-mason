@@ -21,8 +21,8 @@ sub new {
     my $plugins = delete( $params{plugins} ) || [];
     croak 'plugins must be an array reference' unless ref($plugins) eq 'ARRAY';
     $plugins = $class->process_plugins( [ @$plugins, @{ $class->default_plugins } ] );
-    my $interp_class = delete( $params{interp_class} )
-      || $class->find_subclass( 'Interp', $plugins );
+    my $base_interp_class = delete( $params{base_interp_class} ) || 'Mason::Interp';
+    my $interp_class = $class->apply_plugins( $base_interp_class, 'Interp', $plugins );
     return $interp_class->new( mason_root_class => $class, plugins => $plugins, %params );
 }
 
@@ -44,28 +44,17 @@ sub process_plugin {
       || die "could not find plugin '$plugin' in " . join( " or ", @candidates );
 }
 
-my ( %find_subclass_cache, %final_subclass_seen );
+my ( %apply_plugins_cache, %final_subclass_seen );
 
-sub find_subclass {
-    my ( $class, $name, $plugins ) = @_;
+# Apply roles from plugins - adapted from MooseX::Traits
+#
+sub apply_plugins {
+    my ( $class, $base_subclass, $name, $plugins ) = @_;
     my $subclass;
 
-    my $key = join( ",", $class, $name, @$plugins );
-    return $find_subclass_cache{$key} if defined( $find_subclass_cache{$key} );
+    my $key = join( ",", $class, $base_subclass, @$plugins );
+    return $apply_plugins_cache{$key} if defined( $apply_plugins_cache{$key} );
 
-    # Look for subclass under root class, then use default
-    #
-    my $default_subclass = join( "::", "Mason", $name );
-    if ( $class eq 'Mason' ) {
-        $subclass = $default_subclass;
-    }
-    else {
-        my $try_subclass = join( "::", $class, $name );
-        $subclass = can_load($try_subclass) ? $try_subclass : $default_subclass;
-    }
-
-    # Apply roles from plugins - adapted from MooseX::Traits
-    #
     my $final_subclass;
     my @roles_to_try = map { join( "::", $_, $name ) } @$plugins;
     if ( $name eq 'Component' ) {
@@ -74,7 +63,7 @@ sub find_subclass {
     my @roles = grep { Class::MOP::is_class_loaded($_) || can_load($_) } @roles_to_try;
     if (@roles) {
         my $meta = Moose::Meta::Class->create_anon_class(
-            superclasses => [$subclass],
+            superclasses => [$base_subclass],
             roles        => \@roles,
             cache        => 1
         );
@@ -83,13 +72,13 @@ sub find_subclass {
           if !$final_subclass_seen{$final_subclass}++;
     }
     else {
-        $final_subclass = $subclass;
+        $final_subclass = $base_subclass;
     }
-    $log->debugf( "find_subclass(%s) - plugins=%s, roles=%s - %s",
-        $name, $plugins, \@roles, $final_subclass )
+    $log->debugf( "apply_plugins - base_subclass=%s, name=%s, plugins=%s, roles=%s - %s",
+        $base_subclass, $name, $plugins, \@roles, $final_subclass )
       if $log->is_debug;
 
-    $find_subclass_cache{$key} = $final_subclass;
+    $apply_plugins_cache{$key} = $final_subclass;
     return $final_subclass;
 }
 

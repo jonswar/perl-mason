@@ -37,8 +37,7 @@ has 'plugins'                  => ( default => sub { [] } );
 has 'static_source'            => ( );
 has 'static_source_touch_file' => ( );
 
-# Class overrides. For each of these attributes, create a default build
-# method that calls find_subclass, which will use plugin logic.
+# Class overrides
 #
 my %class_overrides = (
     compilation_class             => 'Compilation',
@@ -49,10 +48,18 @@ my %class_overrides = (
     request_class                 => 'Request',
     result_class                  => 'Result',
 );
-while ( my ( $name, $class ) = each(%class_overrides) ) {
-    has $name => ( isa => 'Str', lazy_build => 1 );
+while ( my ( $method_name, $name ) = each(%class_overrides) ) {
+    my $base_method_name   = "base_$method_name";
+    my $default_base_class = "Mason::$name";
+    has $method_name      => ( init_arg => undef, lazy_build => 1 );
+    has $base_method_name => ( isa      => 'Str', default    => $default_base_class );
     __PACKAGE__->meta->add_method(
-        "_build_$name" => sub { my $self = shift; return $self->find_subclass($class) } );
+        "_build_$method_name" => sub {
+            my $self = shift;
+            return $self->mason_root_class->apply_plugins( $self->$base_method_name, $name,
+                $self->plugins );
+        }
+    );
 }
 
 # Derived attributes
@@ -357,10 +364,6 @@ method extract_flags_from_object_file ($object_file) {
     return $flags;
 }
 
-method find_subclass ($name) {
-    return $self->mason_root_class->find_subclass( $name, $self->plugins );
-}
-
 method flush_load_cache () {
     Memoize::flush_cache('load');
 }
@@ -525,42 +528,49 @@ Constructor parameters for Compiler and Request objects (Mason::Compiler and
 Mason::Request by default) may be passed to the Interp constructor, and they
 will be passed along whenever a compiler or request is created.
 
-=head1 SPECIFYING CUSTOM CLASSES
+=head1 CUSTOM MASON CLASSES
 
 The Interp is responsible, directly or indirectly, for creating all other core
 Mason objects. You can specify alternate classes to use instead of the default
-Mason:: classes. e.g.
+Mason:: classes.
 
-    my $interp = Mason->new(compiler_class => 'MyApp::Mason::Compiler', ...);
+For example, to specify your own Compiler base class:
+
+    my $interp = Mason->new(base_compiler_class => 'MyApp::Mason::Compiler', ...);
+
+Relevant plugins, if any, will applied to this class to create a final class,
+which you can get with
+
+    $interp->compiler_class
 
 =over
 
-=item compilation_class
+=item base_compilation_class
 
 Specify alternate to L<Mason::Compiler|Mason::Compilation>
 
-=item compiler_class
+=item base_compiler_class
 
 Specify alternate to L<Mason::Compiler|Mason::Compiler>
 
-=item component_class
+=item base_component_class
 
 Specify alternate to L<Mason::Component|Mason::Component>
 
-=item component_class_meta_class
+=item base_component_class_meta_class
 
 Specify alternate to L<Mason::Component::ClassMeta|Mason::Component::ClassMeta>
 
-=item component_instance_meta_class
+=item base_component_instance_meta_class
 
 Specify alternate to
 L<Mason::Component::IntanceMeta|Mason::Component::IntanceMeta>
 
-=item request_class
+=item base_request_class
 
 Specify alternate to L<Mason::Request|Mason::Request>
 
-=item result_class
+=item base_result_class
 
 Specify alternate to L<Mason::Result|Mason::Result>
 
