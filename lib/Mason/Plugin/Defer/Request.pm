@@ -20,7 +20,6 @@ method defer ($code) {
 method _apply_defers_to_request_buffer () {
     if ( my @defers = @{ $self->{defers} } ) {
         my $request_buffer = ${ $self->_request_buffer };
-        $DB::single = 1;
         foreach my $defer (@defers) {
             my $subst = $defer->{marker};
             my $repl  = $defer->{code}->();

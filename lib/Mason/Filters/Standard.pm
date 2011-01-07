@@ -30,7 +30,6 @@ method CompCall ($path, @params) {
 method NoBlankLines () {
     sub {
         my $text = $_[0];
-        $DB::single = 1;
         $text =~ s/^\s*\n//mg;
         return $text;
     };

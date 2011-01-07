@@ -7,7 +7,7 @@ use Mason::Compiler;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
-use Mason::Util qw(mason_canon_path);
+use Mason::Util qw(mason_canon_path touch_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Moose;
@@ -79,9 +79,12 @@ method BUILD ($params) {
     $self->{code_cache} = {};
     $self->{id}         = $interp_id++;
 
+    # Initialize static source mode
+    #
     if ( $self->{static_source} ) {
-        $self->{static_source_touch_file_lastmod} = 0;
         $self->{static_source_touch_file} ||= catfile( $self->data_dir, 'purge.dat' );
+        $self->{static_source_touch_lastmod} = 0;
+        $self->check_static_source_touch_file();
     }
 
     # Separate out compiler and request parameters
@@ -138,50 +141,108 @@ method comp_exists ($path) {
 
 method load ($path) {
 
+    my $code_cache = $self->code_cache;
+
     # Canonicalize path
     #
     $path = Mason::Util::mason_canon_path($path);
 
-    # Resolve path to source file
-    #
-    my $source_file = $self->source_file_for_path($path)
-      or return undef;
-    my $source_lastmod = ( stat($source_file) )[9];
+    my $compile = 0;
+    my (
+        $default_parent_compc, $source_file, $source_lastmod, $object_file,
+        $object_lastmod,       @source_stat, @object_stat
+    );
 
-    # Determine default parent comp
-    #
-    my $default_parent_compc = $self->default_parent_compc($path);
+    my $stat_source_file = sub {
+        if ( $source_file = $self->source_file_for_path($path) ) {
+            @source_stat = stat $source_file;
+            if ( @source_stat && !-f _ ) {
+                die "source file '$source_file' exists but it is not a file";
+            }
+        }
+        $source_lastmod = @source_stat ? $source_stat[9] : 0;
+    };
 
-    # If code cache contains an entry for this source file and it is up to
-    # date, return the cached comp.
-    #
-    my $code_cache = $self->code_cache;
-    if ( my $entry = $code_cache->{$source_file} ) {
-        if (   $entry->{source_lastmod} >= $source_lastmod
-            && $entry->{default_parent_compc} eq $default_parent_compc )
-        {
+    my $stat_object_file = sub {
+        $object_file = $self->object_file_for_path($path);
+        @object_stat = stat $object_file;
+        if ( @object_stat && !-f _ ) {
+            die "object file '$object_file' exists but it is not a file";
+        }
+        $object_lastmod = @object_stat ? $object_stat[9] : 0;
+    };
+
+    if ( $self->static_source ) {
+
+        # Check memory cache
+        #
+        if ( my $entry = $code_cache->{$path} ) {
             return $entry->{compc};
         }
-        else {
 
-            # Delete old package (by freeing guard) and delete cache entry
+        # Determine source and object files and their modified times
+        #
+        $stat_source_file->() or return;
+        if ( $stat_object_file->() ) {
+
+            # If touch file is more recent than object file, we can't trust object file.
             #
-            undef $entry->{guard};
-            delete $code_cache->{$source_file};
+            if ( $self->{static_source_touch_lastmod} >= $object_lastmod ) {
+
+                # If source file is more recent, recompile. Otherwise, touch
+                # the object file so it will be trusted.
+                #
+                if ( $source_lastmod > $object_lastmod ) {
+                    $compile = 1;
+                }
+                else {
+                    touch_file($object_file);
+                }
+            }
         }
+        else {
+            $compile = 1;
+        }
+
+        # Determine default parent comp
+        #
+        $default_parent_compc = $self->default_parent_compc($path);
+    }
+    else {
+
+        # Determine source file and its last modified time
+        #
+        $stat_source_file->() or return;
+
+        # Determine default parent comp
+        #
+        $default_parent_compc = $self->default_parent_compc($path);
+
+        # Check memory cache
+        #
+        if ( my $entry = $code_cache->{$path} ) {
+            if (   $entry->{source_lastmod} >= $source_lastmod
+                && $entry->{source_file} eq $source_file
+                && $entry->{default_parent_compc} eq $default_parent_compc )
+            {
+                return $entry->{compc};
+            }
+            else {
+
+                # Delete old package (by freeing guard) and delete cache entry
+                #
+                undef $entry->{guard};
+                delete $code_cache->{$source_file};
+            }
+        }
+
+        # Determine object file and its last modified time
+        #
+        $stat_object_file->();
+        $compile = ( !$object_lastmod || $object_lastmod < $source_lastmod );
     }
 
-    # Determine object file and its last modified time
-    #
-    my $object_file = $self->object_file_for_path($path);
-    my @stat        = stat $object_file;
-    if ( @stat && !-f _ ) {
-        die "'$object_file' exists but it is not a file!";
-    }
-    my $object_lastmod = @stat ? $stat[9] : 0;
-    if ( !$object_lastmod || ( $object_lastmod < $source_lastmod && !$self->static_source ) ) {
-        $self->compiler->compile_to_file( $source_file, $path, $object_file );
-    }
+    $self->compiler->compile_to_file( $source_file, $path, $object_file ) if $compile;
 
     my $compc = $self->comp_class_for_path($path);
 
@@ -190,7 +251,8 @@ method load ($path) {
     # Save component class in the cache.
     #
     my $guard = guard { Mason::Util::delete_package($compc) };
-    $code_cache->{$source_file} = {
+    $code_cache->{$path} = {
+        source_file          => $source_file,
         source_lastmod       => $source_lastmod,
         default_parent_compc => $default_parent_compc,
         compc                => $compc,
@@ -259,37 +321,28 @@ method make_request () {
 method check_static_source_touch_file () {
 
     # Check the static_source_touch_file, if one exists, to see if it has
-    # changed since we last checked. If it has, clear the code cache and
-    # object files if appropriate.
+    # changed since we last checked. If it has, clear the code cache.
     #
     if ( my $touch_file = $self->static_source_touch_file ) {
         return unless -f $touch_file;
         my $touch_file_lastmod = ( stat($touch_file) )[9];
-        if ( $touch_file_lastmod > $self->{static_source_touch_file_lastmod} ) {
-
-            # File has been touched since we last checked.  First,
-            # clear the object file directory if the last mod of
-            # its ._object_create_marker is earlier than the touch file,
-            # or if the marker doesn't exist.
-            #
-            if ( $self->use_object_files ) {
-                my $object_create_marker_file = $self->object_create_marker_file;
-                if ( !-e $object_create_marker_file
-                    || ( stat($object_create_marker_file) )[9] < $touch_file_lastmod )
-                {
-                    $self->remove_object_files;
-                }
-            }
-
-            # Next, clear the in-memory component cache.
-            #
+        if ( $touch_file_lastmod > $self->{static_source_touch_lastmod} ) {
             $self->flush_code_cache;
-
-            # Reset lastmod value.
-            #
-            $self->{static_source_touch_file_lastmod} = $touch_file_lastmod;
+            $self->{static_source_touch_lastmod} = $touch_file_lastmod;
         }
     }
+}
+
+method flush_code_cache () {
+    my $code_cache = $self->code_cache;
+
+    # Try to dismantle code cache in a slightly orderly way before deleting
+    # the cache. Packages will be deleted as each guard is removed.
+    #
+    foreach my $entry ( values %$code_cache ) {
+        undef $entry->{guard};
+    }
+    $self->{code_cache} = {};
 }
 
 method comp_class_for_path ($path) {
@@ -501,24 +554,18 @@ development.  However it does entail a file stat for each component executed.
 When true, Mason assumes that the component source tree is unchanging: it will
 not check component source files to determine if the memory cache or object
 file has expired.  This can save many file stats per request. However, in order
-to get Mason to recognize a component source change, you must flush the memory
-cache and remove object files. See L</static_source_touch_file> for one easy
-way to arrange this.
+to get Mason to recognize a component source change, you must touch the
+L</static_source_touch_file>.
 
 We recommend turning this mode on in your production sites if possible, if
 performance is of any concern.
 
 =item static_source_touch_file
 
-Specifies a filename that Mason will check once at the beginning of of every
-request. When the file timestamp changes, Mason will (1) clear its in-memory
-component cache, and (2) remove object files if they have not already been
-deleted by another process.
-
-This provides a convenient way to implement L</static_source> mode. All you
-need to do is make sure that a single file gets touched whenever components
-change. For Mason's part, checking a single file at the beginning of a request
-is much cheaper than checking every component file when static_source=0.
+Specifies a filename that Mason will check once at the beginning of every
+request when in L</static_source> mode. When the file timestamp changes
+(indicating that a component has changed), Mason will clear its in-memory
+component cache and recheck existing object files.
 
 =back
 

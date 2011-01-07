@@ -23,6 +23,8 @@ my $gen_path_count = 0;
 my $parse_count    = 0;
 my $temp_dir_count = 0;
 
+our $current_test_object;
+
 sub _startup : Test(startup) {
     my $self    = shift;
     my $verbose = $ENV{TEST_VERBOSE};
@@ -85,6 +87,8 @@ method test_comp (%params) {
     my $run_path = $path;
 
     my @run_params = ( $run_path, %$args );
+    local $current_test_object = $self;
+
     if ( defined($expect_error) ) {
         $desc ||= $expect_error;
         throws_ok( sub { $self->{interp}->run(@run_params) }, $expect_error, $desc );
