@@ -8,7 +8,7 @@ sub test_cmeta : Test(16) {
         args => { foo => 5, bar => [ 'baz', 7 ] },
         test => sub {
             my $comp        = shift;
-            my $source_file = $self->{comp_root} . '/component/meta.m';
+            my $source_file = $self->comp_root . '/component/meta.m';
             foreach my $cmeta ( $comp->cmeta, ref($comp)->cmeta ) {
                 is( $cmeta->path,             '/component/meta.m', 'path' );
                 is( $cmeta->dir_path,         '/component',        'dir_path' );

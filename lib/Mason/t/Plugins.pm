@@ -5,7 +5,7 @@ use Capture::Tiny qw(capture_merged);
 sub test_plugins : Test(6) {
     my $self = shift;
 
-    $self->{interp} = $self->create_interp(
+    $self->setup_interp(
         plugins                => ['+Mason::Test::Plugins::Notify'],
         no_source_line_numbers => 1,                                   # test a compiler param
     );

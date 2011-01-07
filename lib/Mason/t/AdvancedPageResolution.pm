@@ -19,11 +19,11 @@ sub test_resolve : Tests(19) {
         }
         my $desc = sprintf( "run %s against %s", $run_path, join( ",", @$existing_paths ) );
         if ( defined($resolve_path) ) {
-            is( $self->{interp}->run($run_path)->output,
+            is( $self->interp->run($run_path)->output,
                 "path: $resolve_path; path_info: $path_info", $desc );
         }
         else {
-            throws_ok { $self->{interp}->run($run_path)->output }
+            throws_ok { $self->interp->run($run_path)->output }
             qr/could not find top-level component/,
               $desc;
         }
@@ -80,11 +80,11 @@ sub test_decline : Tests(7) {
         }
         my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) );
         if ( defined($resolve_path) ) {
-            is( $self->{interp}->run($run_path)->output,
+            is( $self->interp->run($run_path)->output,
                 "path: $resolve_path; path_info: $path_info", $desc );
         }
         else {
-            throws_ok { $self->{interp}->run($run_path)->output }
+            throws_ok { $self->interp->run($run_path)->output }
             qr/could not find top-level component/,
               $desc;
         }

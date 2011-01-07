@@ -19,13 +19,13 @@ sub setup : Test(setup) {
 
 sub write_comp {
     my ( $self, $path, $contents ) = @_;
-    my $source_file = $self->{interp}->load($path)->cmeta->source_file;
+    my $source_file = $self->interp->load($path)->cmeta->source_file;
     write_file( $source_file, $contents );
 }
 
 sub remove_comp {
     my ( $self, $path ) = @_;
-    my $source_file = $self->{interp}->load($path)->cmeta->source_file;
+    my $source_file = $self->interp->load($path)->cmeta->source_file;
     unlink($source_file);
 }
 
@@ -45,9 +45,8 @@ sub test_change_no_ss : Test(2) {
 
 sub test_change_and_touch_ss : Test(3) {
     my $self       = shift;
-    my $touch_file = $self->{temp_dir} . "/purge.dat";
-    $self->{interp} =
-      $self->create_interp( static_source => 1, static_source_touch_file => $touch_file );
+    my $touch_file = $self->temp_dir . "/purge.dat";
+    $self->setup_interp( static_source => 1, static_source_touch_file => $touch_file );
     $self->test_comp(
         src    => '<& /ss/change_component.m &>',
         expect => 'I will be changed.',
@@ -80,9 +79,8 @@ sub test_remove_no_ss : Test(2) {
 
 sub test_remove_and_touch_ss : Test(3) {
     my $self       = shift;
-    my $touch_file = $self->{temp_dir} . "/purge.dat";
-    $self->{interp} =
-      $self->create_interp( static_source => 1, static_source_touch_file => $touch_file );
+    my $touch_file = $self->temp_dir . "/purge.dat";
+    $self->setup_interp( static_source => 1, static_source_touch_file => $touch_file );
     $self->test_comp(
         src    => '<& /ss/remove_component.m &>',
         expect => 'I will be removed.',

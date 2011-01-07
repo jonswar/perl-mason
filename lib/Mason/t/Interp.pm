@@ -44,7 +44,7 @@ sub test_comp_exists : Test(3) {
     my $self = shift;
 
     $self->add_comp( path => '/comp_exists/one.m', src => 'hi' );
-    my $interp = $self->{interp};
+    my $interp = $self->interp;
     ok( $interp->comp_exists('/comp_exists/one.m') );
     ok( !$interp->comp_exists('/comp_exists/two.m') );
     throws_ok { $interp->comp_exists('one.m') } qr/not an absolute/;
@@ -61,7 +61,7 @@ sub test_out_method : Test(15) {
         my ( $result, $stdout );
         my @params = ( $out_method ? ( { out_method => $out_method } ) : () );
         ($stdout) = capture {
-            $result = $self->{interp}->run( @params, '/out_method/hi.m' );
+            $result = $self->interp->run( @params, '/out_method/hi.m' );
         };
         is( $stdout,         $expect_stdout, "stdout - $desc" );
         is( $buffer,         $expect_buffer, "buffer - $desc" );
@@ -74,8 +74,7 @@ sub test_out_method : Test(15) {
     $try->( \$buffer, '', 'HIhi', '', '\$buffer' );
 
     $buffer = '';
-    $self->{interp} =
-      $self->create_interp( out_method => sub { print scalar( reverse( $_[0] ) ) } );
+    $self->setup_interp( out_method => sub { print scalar( reverse( $_[0] ) ) } );
     $try->( undef, '', '', 'ih', 'print reverse' );
 }
 

@@ -7,7 +7,7 @@ sub test_errors : Test(18) {
         my ( $src, $expect_error ) = @_;
         $self->test_comp( src => $src, expect_error => $expect_error );
     };
-    my $root = $self->{interp}->comp_root->[0];
+    my $root = $self->interp->comp_root->[0];
 
     $try->(
         '<& /does/not/exist &>',

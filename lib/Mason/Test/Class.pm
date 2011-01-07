@@ -14,6 +14,14 @@ use warnings;
 
 __PACKAGE__->SKIP_CLASS("abstract base class");
 
+# RO accessors
+sub comp_root { $_[0]->{comp_root} }
+sub data_dir  { $_[0]->{data_dir} }
+sub interp    { $_[0]->{interp} }
+sub temp_dir  { $_[0]->{temp_dir} }
+sub temp_root { $_[0]->{temp_root} }
+
+# RW class accessors
 my $default_plugins = [];
 sub default_plugins { $default_plugins = $_[1] if defined( $_[1] ); $default_plugins }
 
@@ -36,14 +44,17 @@ method setup_dirs () {
     $self->{comp_root} = $self->{temp_dir} . "/comps";
     $self->{data_dir}  = $self->{temp_dir} . "/data";
     mkpath( [ $self->{comp_root}, $self->{data_dir} ], 0, 0775 );
+    $self->setup_interp();
+}
 
-    $self->{interp} = $self->create_interp();
+method setup_interp () {
+    $self->{interp} = $self->create_interp(@_);
 }
 
 method create_interp () {
     return Mason->new(
-        comp_root              => $self->{comp_root},
-        data_dir               => $self->{data_dir},
+        comp_root              => $self->comp_root,
+        data_dir               => $self->data_dir,
         no_source_line_numbers => 1,
         plugins                => $default_plugins,
         @_
@@ -55,18 +66,18 @@ method add_comp (%params) {
     my $source  = $params{src}  || die "must pass src";
     my $verbose = $params{v}    || $params{verbose};
     die "'$path' is not absolute" unless substr( $path, 0, 1 ) eq '/';
-    my $source_file = $self->{comp_root} . $path;
+    my $source_file = $self->comp_root . $path;
     $self->mkpath_and_write_file( $source_file, $source );
     if ($verbose) {
         print STDERR "*** $path ***\n";
-        my $output = $self->{interp}->compiler->compile( $source_file, $path );
+        my $output = $self->interp->compiler->compile( $source_file, $path );
         print STDERR "$output\n";
     }
 }
 
 method remove_comp (%params) {
     my $path = $params{path} || die "must pass path";
-    my $source_file = join( "/", $self->{comp_root}, $path );
+    my $source_file = join( "/", $self->comp_root, $path );
     unlink($source_file);
 }
 
@@ -89,11 +100,11 @@ method test_comp (%params) {
 
     if ( defined($expect_error) ) {
         $desc ||= $expect_error;
-        throws_ok( sub { $self->{interp}->run(@run_params) }, $expect_error, $desc );
+        throws_ok( sub { $self->interp->run(@run_params) }, $expect_error, $desc );
     }
     elsif ( defined($expect) ) {
         $desc ||= $caller;
-        my $output = trim( $self->{interp}->run(@run_params)->output );
+        my $output = trim( $self->interp->run(@run_params)->output );
         is( $output, $expect, $desc );
     }
 }
@@ -104,7 +115,7 @@ method run_test_in_comp (%params) {
     $self->add_comp( %params, src => '% $.cmeta->args->{_test}->($self);' );
     my $run_path = $params{path};
     my @run_params = ( $run_path, %$args );
-    $self->{interp}->run( @run_params, _test => $test );
+    $self->interp->run( @run_params, _test => $test );
 }
 
 method test_parse (%params) {
@@ -117,17 +128,16 @@ method test_parse (%params) {
     croak "must pass either expect or expect_error" unless $expect_list || $expect_error;
 
     my $path = "/parse/comp" . $parse_count++;
-    my $file = $self->{temp_dir} . $path;
+    my $file = $self->temp_dir . $path;
     $self->mkpath_and_write_file( $file, $source );
 
     if ($expect_error) {
         $desc ||= $expect_error;
-        throws_ok( sub { $self->{interp}->compiler->compile( $file, $path ) },
-            $expect_error, $desc );
+        throws_ok( sub { $self->interp->compiler->compile( $file, $path ) }, $expect_error, $desc );
     }
     else {
         $desc ||= $caller;
-        my $output = $self->{interp}->compiler->compile( $file, $path );
+        my $output = $self->interp->compiler->compile( $file, $path );
         foreach my $expect (@$expect_list) {
             if ( ref($expect) eq 'Regexp' ) {
                 like_string( $output, $expect, "$desc - $expect" );

@@ -3,7 +3,7 @@ use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_autobase : Test(19) {
     my $self   = shift;
-    my $interp = $self->{interp};
+    my $interp = $self->interp;
 
     my $check_parent = sub {
         my ( $path, $parent ) = @_;
@@ -43,7 +43,7 @@ sub test_autobase : Test(19) {
 
     # Add autobases, test the parents of the components and autobases
     #
-    $self->{interp}->flush_load_cache();
+    $self->interp->flush_load_cache();
     $check_parent->( '/Base.m',             'Mason::Component' );
     $check_parent->( '/foo/Base.m',         '/Base.m' );
     $check_parent->( '/foo/bar/baz/Base.m', '/foo/Base.m' );
@@ -66,7 +66,7 @@ sub test_autobase : Test(19) {
 
     # Remove most autobases, test parents again
     #
-    $self->{interp}->flush_load_cache();
+    $self->interp->flush_load_cache();
     $check_parent->( '/comp.m',             'Mason::Component' );
     $check_parent->( '/foo/comp.m',         'Mason::Component' );
     $check_parent->( '/foo/bar/comp.m',     'Mason::Component' );
