@@ -450,7 +450,7 @@ page templates, for example:
 
     # /Base.m - top-most template
     #
-    <%wrap render>
+    <%wrap>
       <html>
         <body>
           <% $self->call_next %>
@@ -461,7 +461,7 @@ page templates, for example:
     
     # /product/Base.m - product-specific template
     #
-    <%wrap render>
+    <%wrap>
       <h2>Products</h2>
       <div class="products_body">
         <% $self->call_next %>

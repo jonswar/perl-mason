@@ -77,10 +77,11 @@ sub test_autobase : Test(19) {
 
 sub test_wrapping : Tests(2) {
     my $self = shift;
+
     $self->add_comp(
         path => '/wrap/Base.m',
         src  => '
-<%wrap render>
+<%wrap>
 <html>
 % $m->call_next;
 </html>
@@ -100,7 +101,7 @@ Hello world
     $self->add_comp(
         path => '/wrap/subdir/subdir2/Base.m',
         src  => '
-<%wrap render>
+<%wrap>
 <body>
 % $m->call_next;
 </body>

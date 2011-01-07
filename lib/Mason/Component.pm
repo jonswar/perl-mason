@@ -34,10 +34,16 @@ method cmeta () {
     }
 }
 
-# Top render
+# Top wrap
+#
+method wrap () {
+    inner();
+}
+
+# Default render - call wrap
 #
 method render () {
-    inner();
+    $self->wrap(@_);
 }
 
 # Default dispatch - reject path_info, otherwise call render
@@ -74,6 +80,13 @@ create methods in your own components without worrying about name clashes.
 
 =head1 STRUCTURAL METHODS
 
+This is the standard call chain for the page component (the initial component
+of a request).
+
+    dispatch -> render -> wrap -> main
+
+In many cases only C<main> will actually do anything.
+
 =over
 
 =item dispatch
@@ -88,10 +101,15 @@ appropriate action before rendering starts.
 
 =item render
 
-This method is invoked from dispatch on the page component. By convention,
-render operates in an inverted direction: the superclass method gets to act
-before and after the subclass method. See "Content wrapping" for more
-information.
+This method is invoked from dispatch on the page component. By default, it
+calls L</wrap>.
+
+=item wrap
+
+By convention, C<wrap> operates in an inverted direction: the superclass method
+gets to act before and after the subclass method. See "Content wrapping" for
+more information. By default, C<wrap> just calls C<< $m->call_next >> to go to
+the next subclass, and then L</main> at the final subclass.
 
 =item main
 

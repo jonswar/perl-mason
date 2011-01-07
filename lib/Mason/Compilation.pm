@@ -88,28 +88,28 @@ method dollar_dot_replacement ($code) {
 }
 
 method _match_unnamed_block () {
-    my $unnamed_block_regex = $self->compiler->unnamed_block_regex;
-    $self->_match_block( qr/\G(\n?)<%($unnamed_block_regex)>/, 0 );
+    $self->_match_block( $self->compiler->unnamed_block_regex, 0 );
 }
 
 method _match_named_block () {
-    my $named_block_regex = $self->compiler->named_block_regex;
-    $self->_match_block(
-        qr/
-               \G(\n?)
-               <% ($named_block_regex)
-               (?: \s+ ([^\s\(>]+) ([^>]*) )?
-               >
-    /x, 1
-    );
+    $self->_match_block( $self->compiler->named_block_regex, 1 );
 }
 
-method _match_block ( $regex, $named ) {
+method _match_block ($block_regex, $named) {
+    my $regex = qr/
+               \G(\n?)
+               <% ($block_regex)
+               (?: \s+ ([^\s\(>]+) ([^>]*) )?
+               >
+    /x;
     if ( $self->{source} =~ /$regex/gcs ) {
         my ( $preceding_newline, $block_type, $name, $arglist ) = ( $1, $2, $3, $4 );
 
-        $self->throw_syntax_error("$block_type block requires a name")
+        $self->throw_syntax_error("<%$block_type> block requires a name")
           if ( $named && !defined($name) );
+
+        $self->throw_syntax_error("<%$block_type> block does not take a name")
+          if ( !$named && defined($name) );
 
         $self->throw_syntax_error(
             "Cannot nest a $block_type block inside a $self->{in_block} block")
@@ -535,13 +535,13 @@ method _handle_method_block ( $contents, $name, $arglist ) {
     $self->_recursive_parse( $contents, $method );
 }
 
-method _handle_after_block ()  { $self->_handle_method_modifier_block( 'after',  @_ ) }
-method _handle_around_block () { $self->_handle_method_modifier_block( 'around', @_ ) }
-method _handle_wrap_block ()   { $self->_handle_method_modifier_block( 'wrap',   @_ ) }
-method _handle_before_block () { $self->_handle_method_modifier_block( 'before', @_ ) }
+method _handle_after_block ()   { $self->_handle_method_modifier_block( 'after',   @_ ) }
+method _handle_around_block ()  { $self->_handle_method_modifier_block( 'around',  @_ ) }
+method _handle_augment_block () { $self->_handle_method_modifier_block( 'augment', @_ ) }
+method _handle_before_block ()  { $self->_handle_method_modifier_block( 'before',  @_ ) }
 
 method _handle_method_modifier_block ( $block_type, $contents, $name ) {
-    my $modifier = ( $block_type eq 'wrap' ? 'augment' : $block_type );
+    my $modifier = $block_type;
 
     $self->throw_syntax_error("Invalid method modifier name '$name'")
       if $name !~ /^$identifier$/;
@@ -556,6 +556,12 @@ method _handle_method_modifier_block ( $block_type, $contents, $name ) {
     $self->{methods}->{"$method_key"} = $method;
 
     $self->_recursive_parse( $contents, $method );
+}
+
+method _handle_wrap_block ($contents) {
+    $self->throw_syntax_error("Multiple wrap blocks found")
+      if exists $self->{methods}->{"augment wrap"};
+    $self->_handle_method_modifier_block( 'augment', $contents, 'wrap' );
 }
 
 method _handle_doc_block () {
