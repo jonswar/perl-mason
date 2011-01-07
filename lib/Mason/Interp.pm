@@ -1,6 +1,7 @@
 package Mason::Interp;
 use File::Basename;
 use File::Spec::Functions qw(canonpath catdir catfile);
+use File::Temp qw(tempdir);
 use Guard;
 use List::Util qw(first);
 use Mason::Compiler;
@@ -29,7 +30,7 @@ has 'compiler'                 => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
-has 'data_dir'                 => ( );
+has 'data_dir'                 => ( lazy_build => 1 );
 has 'distinct_string_count'    => ( default => 0 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
@@ -129,6 +130,10 @@ method _build_compiler () {
 
 method _build_component_class_prefix () {
     return "MC" . $self->{id};
+}
+
+method _build_data_dir () {
+    return tempdir( 'mason-data-XXXX', TMPDIR => 1, CLEANUP => 1 );
 }
 
 #
@@ -539,6 +544,9 @@ Defaults to 'CHI'.
 The data directory is a writable directory that Mason uses for various features
 and optimizations: for example, component object files and data cache files.
 Mason will create the directory on startup if necessary.
+
+Defaults to a temporary directory that will be cleaned up at process end. This
+will hurt performance as Mason will have to recompile components on each run.
 
 =item object_file_extension
 

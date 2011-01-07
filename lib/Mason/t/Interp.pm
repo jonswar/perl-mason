@@ -35,6 +35,12 @@ sub test_component_class_prefix : Test(6) {
     $check_prefix->( $interp[2] );
 }
 
+sub test_no_data_dir : Test(1) {
+    my $self = shift;
+    my $interp = Mason->new( comp_root => $self->comp_root );
+    ok( -d $interp->data_dir );
+}
+
 sub test_bad_param : Test(1) {
     my $self = shift;
     throws_ok { $self->create_interp( foo => 5 ) } qr/Found unknown attribute/;
