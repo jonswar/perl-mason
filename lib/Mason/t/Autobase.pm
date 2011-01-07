@@ -1,8 +1,5 @@
 package Mason::t::Autobase;
-use strict;
-use warnings;
-use Test::Most;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_autobase : Test(19) {
     my $self   = shift;

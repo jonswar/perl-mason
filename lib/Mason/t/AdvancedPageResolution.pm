@@ -1,9 +1,5 @@
 package Mason::t::AdvancedPageResolution;
-use strict;
-use warnings;
-use Mason;
-use Test::Most;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 __PACKAGE__->default_plugins( ['AdvancedPageResolution'] );
 

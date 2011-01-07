@@ -1,8 +1,5 @@
 package Mason::t::Filters;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
-use Test::More;
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_filters : Test(1) {
     my $self = shift;

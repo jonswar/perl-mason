@@ -1,7 +1,5 @@
 package Mason::t::Errors;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_errors : Test(18) {
     my $self = shift;

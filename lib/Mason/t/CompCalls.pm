@@ -1,7 +1,5 @@
 package Mason::t::CompCalls;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_ampersand : Test(2) {
     my $self = shift;

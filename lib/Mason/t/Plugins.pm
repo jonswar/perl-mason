@@ -1,9 +1,6 @@
 package Mason::t::Plugins;
-use strict;
-use warnings;
+use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture_merged);
-use Test::Most;
-use base qw(Mason::Test::Class);
 
 sub test_plugins : Test(6) {
     my $self = shift;

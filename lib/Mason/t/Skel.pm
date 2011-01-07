@@ -1,8 +1,5 @@
 package Mason::t::Skel;
-use Test::More;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_ : Test(1) {
     my $self = shift;

@@ -1,8 +1,5 @@
 package Mason::t::Reload;
-use strict;
-use warnings;
-use Test::More;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_reload : Test(12) {
     my $self = shift;

@@ -1,7 +1,5 @@
 package Mason::t::Syntax;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_replace : Test(1) {
     shift->test_comp(

@@ -1,10 +1,7 @@
 package Mason::t::Request;
+use Test::Class::Most parent => 'Mason::Test::Class';
 use Log::Any::Adapter;
-use Test::More;
 use Test::Log::Dispatch;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
 
 sub _get_current_comp_class {
     my $m = shift;

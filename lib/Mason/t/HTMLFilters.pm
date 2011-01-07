@@ -1,8 +1,5 @@
 package Mason::t::HTMLFilters;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
-use Test::More;
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_html_filters : Test(4) {
     my $self = shift;

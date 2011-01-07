@@ -7,12 +7,10 @@ use File::Temp qw(tempdir);
 use Mason;
 use Mason::Util qw(trim);
 use Method::Signatures::Simple;
-use Test::Exception;
+use Test::Class::Most;
 use Test::LongString;
-use Test::More;
 use strict;
 use warnings;
-use base qw(Test::Class);
 
 __PACKAGE__->SKIP_CLASS("abstract base class");
 

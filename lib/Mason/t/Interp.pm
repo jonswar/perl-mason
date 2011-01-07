@@ -1,10 +1,6 @@
 package Mason::t::Interp;
+use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture);
-use File::Temp qw(tempdir);
-use Test::Most;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
 
 { package MyInterp; use Moose; extends 'Mason::Interp' }
 

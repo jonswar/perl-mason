@@ -1,8 +1,5 @@
 package Mason::t::ComponentMeta;
-use Test::Most;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_cmeta : Test(16) {
     my $self = shift;

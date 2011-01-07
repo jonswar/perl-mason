@@ -1,10 +1,7 @@
 package Mason::t::StaticSource;
+use Test::Class::Most parent => 'Mason::Test::Class';
 use File::Slurp;
-use Test::More;
 use Mason::Util qw(touch_file);
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
 
 sub setup : Test(setup) {
     my ($self) = @_;

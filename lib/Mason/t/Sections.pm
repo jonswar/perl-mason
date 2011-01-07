@@ -1,7 +1,5 @@
 package Mason::t::Sections;
-use strict;
-use warnings;
-use base qw(Mason::Test::Class);
+use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_sections : Test(1) {
     my $self = shift;
