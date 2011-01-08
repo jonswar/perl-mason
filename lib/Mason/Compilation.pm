@@ -32,13 +32,10 @@ method BUILD () {
     $self->{blocks}->{class} = '';
     $self->{source}          = read_file( $self->source_file );
     $self->{source} =~ s/\r\n?/\n/g;
-    $self->{ending}                = qr/\G\z/;
-    $self->{in_method_block}       = undef;
-    $self->{line_number}           = 1;
-    $self->{methods}               = { main => $self->_new_method_hash( name => 'main' ) };
-    $self->{current_method}        = $self->{methods}->{main};
-    $self->{is_pure_perl}          = $self->compiler->is_pure_perl_comp_path( $self->path );
-    $self->{filtered_method_count} = 0;
+    $self->{line_number}    = 1;
+    $self->{methods}        = { main => $self->_new_method_hash( name => 'main' ) };
+    $self->{current_method} = $self->{methods}->{main};
+    $self->{is_pure_perl}   = $self->compiler->is_pure_perl_comp_path( $self->path );
 }
 
 method _build_dir_path () {
@@ -276,10 +273,7 @@ method _match_plain_text () {
 }
 
 method _match_end () {
-
-    # $self->{ending} is a qr// 'string'.  No need to escape.  It will
-    # also include the needed \G marker
-    if ( $self->{source} =~ /($self->{ending})/gcs ) {
+    if ( $self->{source} =~ /(\G\z)/gcs ) {
         $self->{line_number} += $1 =~ tr/\n//;
         return defined $1 && length $1 ? $1 : 1;
     }
@@ -495,10 +489,8 @@ method _recursive_parse ($contents, $method) {
     my $save_pos = pos( $self->{source} );
     scope_guard { pos( $self->{source} ) = $save_pos };
     {
-        local $self->{source}          = $contents;
-        local $self->{current_method}  = $method;
-        local $self->{in_method_block} = 1;
-
+        local $self->{source}         = $contents;
+        local $self->{current_method} = $method;
         $self->parse();
     }
 }
