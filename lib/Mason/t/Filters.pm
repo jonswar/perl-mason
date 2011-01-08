@@ -29,6 +29,36 @@ hello world!
     );
 }
 
+sub test_filter_block : Test(1) {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+<%filter MyRepeat ($count)>
+% for (my $i=0; $i<$count; $i++) {
+* <% $yield->() %>\
+% }
+</%filter>
+
+% my $count = 0;
+<% $.MyRepeat(3) { %>
+count = <% ++$count %>
+</%>
+
+<%perl>
+my $content = $m->apply_filter($.MyRepeat(2), sub { "count == " . ++$count . "\n" });
+print(uc($content));
+</%perl>
+',
+        expect => '
+* count = 1
+* count = 2
+* count = 3
+* COUNT == 4
+* COUNT == 5
+',
+    );
+}
+
 sub test_lexical : Test(1) {
     my $self = shift;
     $self->test_comp(

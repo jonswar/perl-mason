@@ -1,3 +1,4 @@
+## Please see file perltidy.ERR
 # Copyright (c) 1998-2005 by Jonathan Swartz. All rights reserved.
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
@@ -556,13 +557,24 @@ method _handle_wrap_block ($contents) {
     $self->_handle_method_modifier_block( 'augment', $contents, 'wrap' );
 }
 
+method _handle_filter_block ($contents, $name, $arglist) {
+    my $new_contents = join( '',
+        '<%perl>',
+        'return Mason::DynamicFilter->new(',
+        'filter => sub {',
+        'my $yield = shift;',
+        '$m->capture(sub {',
+        'my $_buffer = $m->_current_buffer;',
+        '</%perl>',
+        $contents,
+        '<%perl>}); });</%perl>',
+    );
+    $self->_handle_method_block( $new_contents, $name, $arglist );
+}
+
 method _handle_doc_block () {
 
     # Don't do anything - just discard the comment.
-}
-
-method _handle_filter_block ($contents) {
-    $self->{current_method}->{filter} = $self->_output_line_number_comment . $contents;
 }
 
 method _handle_flags_block ($contents) {

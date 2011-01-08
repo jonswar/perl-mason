@@ -218,4 +218,22 @@ if it is in the cache. Only on a cache miss do we actually execute the
 C<< Defer >> and C<< Repeat >> are two other examples of dynamic filters. See
 L<Mason::Filters::Standard|Mason::Filters::Standard> for their implementations.
 
+=head2 <%filter> block
+
+You can use the C<< <%filter> >> block to define filters that output content. 
+It works just like a C<< <%method> >> block, except that you can call C<<
+$yield->() >> to generate the original content. e.g.
+
+    <%filter Item ($class)>
+    <li class="<% $class %>"><% $yield->() %></li>
+    </%filter>
+
+    <% $.Item('std') %> First </%>
+    <% $.Item('std') %> Second </%>
+
+generates
+
+    <li class="std"> First </li>
+    <li class="std"> Second </li>
+
 =cut
