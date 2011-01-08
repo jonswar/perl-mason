@@ -1,0 +1,58 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Mason::App;
+Mason::App->run();
+
+__END__
+
+=head1 NAME
+
+mason - evaluate a mason template and output the result
+
+=head1 SYNOPSIS
+
+   # Evaluate template from STDIN
+   mason [mason options] [--args json-string]
+
+   # Evaluate template in file
+   mason [mason options] [--args json-string] template-file
+
+=head1 DESCRIPTION
+
+Reads a Mason template (component) from STDIN or a file, runs it and outputs
+the result to STDOUT.
+
+=head1 MASON OPTIONS
+
+Any Mason options can be specified on the command line and will be passed to
+Mason->new, via L<MooseX::Getopt|MooseX::Getopt>. e.g.
+
+    --comp_root /path/to/comp_root --data_dir /path/to/data_dir
+    --plugins MyPlugin --plugins MyOtherPlugin
+
+By default C<comp_root> will be set to the directory of the template file, or
+to a temporary directory if using STDIN, and C<data_dir> will be set to a
+temporary directory.
+
+=head1 ADDITIONAL OPTIONS
+
+=over
+
+=item --args json-string
+
+A list of arguments to pass to the component, in JSON form. e.g.
+
+    --args '["count",5,"names",["Alice","Bob"]]'
+
+=back
+
+=head1 AUTHOR
+
+Jonathan Swartz
+
+=head1 SEE ALSO
+
+L<Mason|Mason>
+
+=cut

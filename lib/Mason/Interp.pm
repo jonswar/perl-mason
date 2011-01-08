@@ -31,7 +31,6 @@ has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'chi_root_class'           => ( default => 'CHI' );
 has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
-has 'distinct_string_count'    => ( default => 0 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
@@ -65,12 +64,13 @@ while ( my ( $method_name, $name ) = each(%class_overrides) ) {
 
 # Derived attributes
 #
-has 'autobase_regex'                => ( lazy_build => 1, init_arg => undef );
-has 'code_cache'                    => ( init_arg => undef );
-has 'compiler_params'               => ( init_arg => undef );
-has 'request_params'                => ( init_arg => undef );
-has 'id'                            => ( init_arg => undef );
-has 'request_count'                 => ( init_arg => undef, default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
+has 'autobase_regex'        => ( lazy_build => 1, init_arg => undef );
+has 'code_cache'            => ( init_arg => undef );
+has 'compiler_params'       => ( init_arg => undef );
+has 'distinct_string_count' => ( init_arg => undef, default => 0 );
+has 'id'                    => ( init_arg => undef );
+has 'request_count'         => ( init_arg => undef, default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
+has 'request_params'        => ( init_arg => undef );
 
 #
 # BUILD
