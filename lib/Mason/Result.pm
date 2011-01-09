@@ -44,8 +44,4 @@ anything (usually the case).
 
 =back
 
-=head1 SEE ALSO
-
-L<Mason|Mason>
-
 =cut

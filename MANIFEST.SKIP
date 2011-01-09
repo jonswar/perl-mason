@@ -1,0 +1,29 @@
+^bench
+^cp\.yml
+^data
+^dist
+^docs
+^git
+^inc/\.author
+^tmp
+^TODO
+^VERSION
+
+# pod2html files
+\.pm\.html
+
+# Backup files, etc.
+~$
+(^|/)#
+(^|/)\.
+\.bak$
+\.tar\.gz$
+
+# SVN cruft
+^\.svn
+
+# MakeMaker cruft
+^Makefile$
+^Makefile.old$
+^blib
+^MANIFEST.SKIP$

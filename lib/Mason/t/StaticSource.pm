@@ -1,7 +1,6 @@
 package Mason::t::StaticSource;
 use Test::Class::Most parent => 'Mason::Test::Class';
-use File::Slurp;
-use Mason::Util qw(touch_file);
+use Mason::Util qw(write_file touch_file);
 
 sub setup : Test(setup) {
     my ($self) = @_;
@@ -52,6 +51,7 @@ sub test_change_and_touch_ss : Test(3) {
         expect => 'I will be changed.',
     );
     sleep(1);    # Make sure timestamp changes
+    $DB::single = 1;
     $self->write_comp( "/ss/change_component.m", "I have changed!\n" );
     $self->test_comp(
         src    => '<& /ss/change_component.m &>',

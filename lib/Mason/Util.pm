@@ -3,17 +3,19 @@ use Carp;
 use Class::MOP;
 use Class::Unload;
 use Data::UUID;
-use Fcntl qw( :DEFAULT );
+use Fcntl qw( :DEFAULT :seek );
+use File::Spec::Functions ();
 use Try::Tiny;
 use strict;
 use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(can_load checksum dump_one_line mason_canon_path read_file touch_file trim unique_id write_file);
+  qw(can_load catdir catfile checksum dump_one_line mason_canon_path read_file touch_file trim unique_id write_file);
 
-my $Fetch_Flags = O_RDONLY | O_BINARY;
-my $Store_Flags = O_WRONLY | O_CREAT | O_BINARY;
+my $Fetch_Flags          = O_RDONLY | O_BINARY;
+my $Store_Flags          = O_WRONLY | O_CREAT | O_BINARY;
+my $File_Spec_Using_Unix = $File::Spec::ISA[0] eq 'File::Spec::Unix';
 
 sub can_load {
 
@@ -36,6 +38,14 @@ sub can_load {
         }
     };
     return $result;
+}
+
+sub catdir {
+    return $File_Spec_Using_Unix ? join( "/", @_ ) : File::Spec::Functions::catdir(@_);
+}
+
+sub catfile {
+    return $File_Spec_Using_Unix ? join( "/", @_ ) : File::Spec::Functions::catfile(@_);
 }
 
 sub checksum {
@@ -163,6 +173,7 @@ sub write_file {
             $size_left -= $write_cnt;
             $offset += $write_cnt;
         } while ( $size_left > 0 );
+        truncate( $write_fh, sysseek( $write_fh, 0, SEEK_CUR ) )
     }
 }
 

@@ -573,12 +573,4 @@ See also L</go>.
 
 =back
 
-=head1 AUTHORS
-
-Jonathan Swartz <swartz@pobox.com>
-
-=head1 SEE ALSO
-
-L<Mason|Mason>
-
 =cut

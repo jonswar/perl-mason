@@ -6,10 +6,9 @@ package Mason::Compiler;
 use Data::Dumper;
 use File::Basename;
 use File::Path;
-use File::Slurp;
 use Mason::Compilation;
 use Mason::Types;
-use Mason::Util qw(checksum);
+use Mason::Util qw(checksum write_file);
 use Moose;
 use Mason::Moose;
 use strict;
@@ -137,9 +136,5 @@ than the source component.
 
 All of the above properties have standard read-only accessor methods of the
 same name.
-
-=head1 SEE ALSO
-
-L<Mason|Mason>
 
 =cut

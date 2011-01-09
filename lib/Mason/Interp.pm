@@ -1,20 +1,19 @@
 package Mason::Interp;
 use File::Basename;
-use File::Spec::Functions qw(canonpath catdir catfile);
 use File::Temp qw(tempdir);
 use Guard;
+use JSON;
 use List::Util qw(first);
 use Mason::Compiler;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
-use Mason::Util qw(mason_canon_path touch_file);
+use Mason::Util qw(catdir catfile mason_canon_path touch_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Moose;
 use Mason::Moose;
 use MooseX::StrictConstructor;
-use JSON;
 use autodie qw(:all);
 use strict;
 use warnings;
@@ -678,9 +677,5 @@ undef if none exists. Dies with an error if the component fails to load because
 of a syntax error.
 
 =back
-
-=head1 SEE ALSO
-
-L<Mason|Mason>
 
 =cut

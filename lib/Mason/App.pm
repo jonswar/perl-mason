@@ -34,12 +34,4 @@ Mason::App - implementation of bin/mason
 
 See documentation for bin/mason.
 
-=head1 AUTHOR
-
-Jonathan Swartz
-
-=head1 SEE ALSO
-
-L<Mason|Mason>
-
 =cut
