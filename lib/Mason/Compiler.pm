@@ -137,4 +137,3 @@ than the source component.
 All of the above properties have standard read-only accessor methods of the
 same name.
 
-=cut
