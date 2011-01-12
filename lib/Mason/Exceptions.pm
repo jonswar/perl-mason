@@ -18,11 +18,8 @@ use Exception::Class (
 
 1;
 
+# ABSTRACT: Exception objects thrown by Mason
 __END__
-
-=head1 NAME
-
-Mason::Exceptions - Exception objects thrown by Mason
 
 =head1 DESCRIPTION
 

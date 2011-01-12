@@ -84,10 +84,7 @@ sub apply_plugins {
 
 1;
 
+# ABSTRACT: Powerful class-based templating system
 __END__
 
-=head1 NAME
-
-Mason - Powerful class-based templating system
-
-=cut
+=pod

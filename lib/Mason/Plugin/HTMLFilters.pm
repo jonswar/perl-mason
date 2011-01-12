@@ -53,11 +53,8 @@ method HTMLParaBreak () {
 
 1;
 
+# ABSTRACT: HTML filters
 __END__
-
-=head1 NAME
-
-Mason::Plugin::HTMLFilters - HTML filters
 
 =head1 DESCRIPTION
 

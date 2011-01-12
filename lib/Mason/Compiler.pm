@@ -108,11 +108,8 @@ method is_pure_perl_comp_path ($path) {
 
 1;
 
+# ABSTRACT: Mason Compiler
 __END__
-
-=head1 NAME
-
-Mason::Compiler - Mason Compiler
 
 =head1 DESCRIPTION
 

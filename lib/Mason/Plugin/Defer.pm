@@ -4,12 +4,8 @@ extends 'Mason::Plugin';
 
 1;
 
+# ABSTRACT: Defer computing parts of output until the end of the request
 __END__
-
-=head1 NAME
-
-Mason::Plugin::Defer - Defer computing parts of output until the end of the
-request
 
 =head1 SYNOPSIS
 

@@ -12,11 +12,10 @@ __PACKAGE__->meta->make_immutable();
 
 1;
 
+# ABSTRACT: Result returned from Mason request
 __END__
 
-=head1 NAME
-
-Mason::Result - Result returned from request
+=pod
 
 =head1 SYNOPSIS
 

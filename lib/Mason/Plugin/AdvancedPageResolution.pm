@@ -6,12 +6,8 @@ extends 'Mason::Plugin';
 
 1;
 
+# ABSTRACT: advanced resolution of request paths to page components
 __END__
-
-=head1 NAME
-
-Mason::Plugin::AdvancedPageResolution - advanced resolution of request paths to
-page components
 
 =head1 DESCRIPTION
 

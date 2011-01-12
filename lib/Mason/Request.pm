@@ -343,11 +343,8 @@ method _request_buffer () {
 
 1;
 
+# ABSTRACT: Mason Request Class
 __END__
-
-=head1 NAME
-
-Mason::Request - Mason Request Class
 
 =head1 SYNOPSIS
 

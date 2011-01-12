@@ -60,11 +60,8 @@ __PACKAGE__->meta->make_immutable();
 
 1;
 
+# ABSTRACT: Mason Component base class
 __END__
-
-=head1 NAME
-
-Mason::Component - Mason Component base class
 
 =head1 DESCRIPTION
 

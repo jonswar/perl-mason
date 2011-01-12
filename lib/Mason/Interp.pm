@@ -474,11 +474,8 @@ __PACKAGE__->meta->make_immutable();
 
 1;
 
+# ABSTRACT: Mason Interpreter
 __END__
-
-=head1 NAME
-
-Mason::Interp - Mason Interpreter
 
 =head1 SYNOPSIS
 

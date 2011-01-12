@@ -11,12 +11,8 @@ has 'instance'    => ( required => 1, weak_ref => 1 );
 
 1;
 
+# ABSTRACT: Meta-information about Mason component instance
 __END__
-
-=head1 NAME
-
-Mason::Component::InstanceMeta - Meta-information about Mason component
-instance
 
 =head1 SYNOPSIS
 
