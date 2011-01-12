@@ -104,7 +104,7 @@ Repeat the content block I<$count> times. Note that the block is re-executed
 each time, which may result in different content.
 
     <!-- Prints 1 to 5 -->
-    % my $i = 1; 
+    % my $i = 1;
     <% $.Repeat(5) { %>
        <% $i++ %><br>
     </%>

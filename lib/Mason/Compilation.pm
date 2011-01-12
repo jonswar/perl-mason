@@ -216,8 +216,8 @@ method _match_component_call () {
 method _match_perl_line () {
     if ( $self->{source} =~ /\G(?<=^)(%%?)([^\n]*)(?:\n|\z)/gcm ) {
         my ( $percents, $line ) = ( $1, $2 );
-        if ( $line !~ /^\s/ ) {
-            $self->throw_syntax_error("$percents must be followed by whitespace");
+        if ( length($line) && $line !~ /^\s/ ) {
+            $self->throw_syntax_error("$percents must be followed by whitespace or EOL");
         }
         $self->_handle_perl_line( ( $percents eq '%' ? 'perl' : 'class' ), $line );
         $self->{line_number}++;

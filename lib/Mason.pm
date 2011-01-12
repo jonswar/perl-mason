@@ -88,6 +88,6 @@ __END__
 
 =head1 NAME
 
-Mason - High-performance, dynamic web site authoring system
+Mason - Powerful class-based templating system
 
 =cut

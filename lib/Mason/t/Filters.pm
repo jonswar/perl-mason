@@ -206,7 +206,7 @@ hello
 <% sub { uc($_[0]) } { %>
 % $self->$orig();
 </%>
-</%around>        
+</%around>
 
 EOF
         expect => <<'EOF',
