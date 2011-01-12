@@ -12,8 +12,6 @@ use MooseX::ClassAttribute;
 use strict;
 use warnings;
 
-$Mason::VERSION = '0.01';
-
 sub default_plugins { [] }
 
 sub new {
