@@ -119,8 +119,7 @@ The parsing rules for these Perl sections are as follows:
 
 Blocks of the form <% xxx %> are replaced with the result of evaluating xxx as
 a single Perl expression.  These are often used for variable replacement. such
-as 'Hello, <% $name %>!'. The whitespace separating the '<%' and '%>' from the
-inner expression is required.
+as 'Hello, <% $name %>!'. Whitespace after '<%' and before '%>' is required.
 
 =item 2.
 

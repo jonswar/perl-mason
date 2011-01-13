@@ -1,11 +1,11 @@
 package Mason::t::Errors;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_errors : Test(20) {
+sub test_errors : Test(22) {
     my $self = shift;
     my $try  = sub {
         my ( $src, $expect_error ) = @_;
-        $self->test_comp( src => $src, expect_error => $expect_error );
+        $self->test_comp( src => $src, expect_error => $expect_error, desc => $expect_error );
     };
     my $root = $self->interp->comp_root->[0];
 
@@ -20,6 +20,8 @@ sub test_errors : Test(20) {
     $try->( '<& foo',                     qr/'<&' without matching '&>'/ );
     $try->( '%my $i = 1;',                qr/% must be followed by whitespace/ );
     $try->( '%%my $i = 1;',               qr/%% must be followed by whitespace/ );
+    $try->( '<%2+2 %>',                   qr/whitespace required after '<%'/ );
+    $try->( '<% 2+2%>',                   qr/whitespace required before '%>'/ );
     $try->( "<%attr>\n123\n</%attr>",     qr/Invalid attribute line '123'/ );
     $try->( "<%attr>\n\$\$abc\n</%attr>", qr/Invalid attribute line '\$\$abc'/ );
     $try->( '<% $.Upper { %>Hi',          qr/<% { %> without matching <\/%>/ );

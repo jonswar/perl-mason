@@ -171,6 +171,7 @@ method _match_substitution () {
     if (
         $self->{source} =~ m{
            \G
+           (\s*)                # Initial whitespace
            (.+?)                # Substitution body ($1)
            (
             \s*
@@ -181,15 +182,20 @@ method _match_substitution () {
              $identifier            # A filter name
              (?:\s*,\s*$identifier)*  # More filter names, with comma separators
             )
-            \s*
            )?
+           (\s*)                # Final whitespace
            %>                   # Closing tag
           }xcigs
       )
     {
-        $self->{line_number} += tr/\n// foreach grep defined, ( $1, $2 );
+        my ( $start_ws, $body, $after_body, $filters, $end_ws ) = ( $1, $2, $3, $4, $5 );
+        $self->{line_number} += tr/\n//
+          foreach grep defined, ( $start_ws, $body, $after_body, $end_ws );
 
-        $self->_handle_substitution( $1, $3 );
+        $self->throw_syntax_error("whitespace required after '<%'")  unless length($start_ws);
+        $self->throw_syntax_error("whitespace required before '%>'") unless length($end_ws);
+
+        $self->_handle_substitution( $body, $filters );
 
         return 1;
     }
