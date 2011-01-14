@@ -27,8 +27,6 @@ has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
 has 'compiler'                 => ( lazy_build => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
-has 'chi_root_class'           => ( default => 'CHI' );
-has 'chi_default_params'       => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
 has 'object_file_extension'    => ( default => '.mobj' );
@@ -114,13 +112,6 @@ method _build_autobase_names () {
 method _build_autobase_regex () {
     my $regex = '(' . join( "|", @{ $self->autobase_names } ) . ')$';
     return qr/$regex/;
-}
-
-method _build_chi_default_params () {
-    return {
-        driver   => 'File',
-        root_dir => catdir( $self->data_dir, 'cache' )
-    };
 }
 
 method _build_compiler () {
@@ -523,17 +514,6 @@ object of class L</compiler_class> will be created.
 Prefix to use in generated component classnames. Defaults to 'MC' plus a unique
 number for the interpreter, e.g. MC0. So a component '/foo/bar' would get a
 classname like 'MC0::foo::bar'.
-
-=item chi_default_params
-
-A hashref of parameters that L<$m-E<gt>cache|cache> should pass to each cache
-constructor. Defaults to C<< { driver => 'File', root_dir => 'DATA_DIR/cache' }
->>.
-
-=item chi_root_class
-
-The class that L<$m-E<gt>cache|cache> should use for creating cache objects.
-Defaults to 'CHI'.
 
 =item data_dir
 

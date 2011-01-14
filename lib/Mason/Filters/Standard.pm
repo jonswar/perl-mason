@@ -6,14 +6,6 @@ use Moose::Role;
 use strict;
 use warnings;
 
-method Cache ( $key, $set_options ) {
-    Mason::DynamicFilter->new(
-        filter => sub {
-            $self->cmeta->cache->compute( $key, $_[0], $set_options );
-        }
-    );
-}
-
 method Capture ($outref) {
     sub { $$outref = $_[0]; return '' }
 }
@@ -64,16 +56,6 @@ L<Mason::Component|Mason::Component>.
 =head1 FILTERS
 
 =over
-
-=item Cache ($key, $set_options)
-
-Caches the content using C<< $m->cache >> and the supplied cache I<$key>.
-I<$set_options>, if provided, is passed as the third argument to C<<
-$m->cache->set >>.
-
-    <% $.Cache($my_key, '1 hour') { %>
-      <!-- this will be cached for an hour -->
-    </%>
 
 =item Capture ($ref)
 

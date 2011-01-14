@@ -194,14 +194,14 @@ the above:
 The dynamic filter obviously doesn't buy you anything in this case, and for the
 majority of filters they are unneeded.  The real power of dynamic filters is
 that they can choose if and when to execute the yield block. For example, here
-is an implementation (slightly expanded for explanatory purposes) of the
-standard C<< Cache >> filter:
+is an implementation (slightly expanded for explanatory purposes) of the C<<
+Cache >> filter:
 
     method Cache ( $key, $set_options ) {
         return Mason::DynamicFilter->new(
             filter => sub {
                 my $yield = $_[0];
-                my $cache = $self->cmeta->cache;
+                my $cache = $self->cache;
                 my $output = $cache->get( $key );
                 if (!$output) {
                     $output = $yield->();

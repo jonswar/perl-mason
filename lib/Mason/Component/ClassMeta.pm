@@ -15,7 +15,6 @@ has 'path'        => ( required => 1 );
 has 'source_file' => ( required => 1 );
 
 # Derived attributes
-has 'cache' => ( init_arg => undef, lazy_build => 1 );
 has 'log' => ( init_arg => undef, lazy_build => 1 );
 
 # These only exist in InstanceMeta
@@ -26,17 +25,6 @@ foreach my $method (qw(args)) {
             die sprintf( "cannot call %s() from %s->cmeta", $method, $self->class );
         }
     );
-}
-
-method _build_cache () {
-    my $interp         = $self->interp;
-    my $chi_root_class = $interp->chi_root_class;
-    Class::MOP::load_class($chi_root_class);
-    my %options = ( %{ $interp->chi_default_params }, @_ );
-    if ( !exists( $options{namespace} ) ) {
-        $options{namespace} = $self->path;
-    }
-    return $chi_root_class->new(%options);
 }
 
 method _build_log () {
@@ -71,8 +59,6 @@ which supplies all the information here plus a few other things such as the
 arguments the instance was created with.
 
 =over
-
-=item cache
 
 =item dir_path
 

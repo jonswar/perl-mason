@@ -19,6 +19,7 @@
 ^localcpan
 ^misc
 ^release
+^t/make
 ^tmp
 ^weaver.ini
 ^wiki

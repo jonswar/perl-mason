@@ -115,48 +115,6 @@ EOF
     );
 }
 
-sub test_cache : Test(2) {
-    my $self = shift;
-
-    $self->test_comp(
-        src => <<'EOF',
-% my $i = 1;
-% foreach my $key (qw(foo bar)) {
-<% $.Repeat(3), $.Cache($key) { %>
-i = <% $i++ %>
-</%>
-% }
-EOF
-        expect => <<'EOF',
-i = 1
-i = 1
-i = 1
-i = 2
-i = 2
-i = 2
-EOF
-    );
-
-    $self->test_comp(
-        src => <<'EOF',
-% my $i = 1;
-% foreach my $key (qw(foo foo)) {
-<% $.Cache($key), $.Repeat(3) { %>
-i = <% $i++ %>
-</%>
-% }
-EOF
-        expect => <<'EOF',
-i = 1
-i = 2
-i = 3
-i = 1
-i = 2
-i = 3
-EOF
-    );
-}
-
 sub test_misc_standard_filters : Test(2) {
     my $self = shift;
 

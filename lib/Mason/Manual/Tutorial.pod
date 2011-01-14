@@ -755,32 +755,10 @@ outputs 'HELLO WORLD', and
     # ... some computed output ...
     </%>
 
-caches the computed output for 5 minutes via << %m->cache >>.
+caches the computed output for 5 minutes.
 
 See L<Mason::Filters|Mason::Filters> for the set of built-in filters and
 instructions on creating your own filters.
-
-=head1 CACHING
-
-Mason provides a convenient way to do per-component caching of data or HTML.
-The C<< $m->cache >> method returns a L<CHI|CHI> object with a namespace equal
-to the component's path. Here's the typical usage of C<< $m->cache >>:
-
-    my $result = $m->cache->get('key');
-    if (!defined($result)) {
-        ... compute $result ...
-        $m->cache->set('key', $result, '5 minutes');
-    }
-
-C<< $m->cache->get >> attempts to retrieve this component's cache value. If the
-value is available it is placed in C<$result>. If the value is not available,
-C<$result> is computed and stored in the cache by C<< $m->cache->set >> for 5
-minutes.
-
-You can specify the root CHI class with L<Mason::Interp/chi_root_class> and
-default CHI parameters with L<Mason::Interp/chi_default_params>.
-
-See L<CHI|CHI> for many more details and features.
 
 =head1 LOGGING
 

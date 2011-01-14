@@ -82,10 +82,6 @@ method apply_filter ($filter, $yield) {
     return $filtered_output;
 }
 
-method cache () {
-    return $self->_current_comp_class->cmeta->cache();
-}
-
 method call_next () {
     return $self->_current_comp_class->_inner();
 }
@@ -427,14 +423,6 @@ This method is syntactic sugar for calling C<clear_buffer()> and then
 C<abort()>.  If you are aborting the request because of an error, you will
 often want to clear the buffer first so that any output generated up to that
 point is not sent to the client.
-
-=item cache ()
-
-C<$m-E<gt>cache> returns a new L<CHI object|CHI> with a namespace specific to
-this component. All other parameters are taken from
-L<Interp/chi_default_parameters> and passed to the L<Interp/chi_root_class>
-constructor. Unless overriden, L<Interp/chi_default_parameters> will use a
-L<File|CHI::Driver::File> cache in your data directory.
 
 =item capture (code)
 

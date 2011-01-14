@@ -8,9 +8,10 @@ use strict;
 
 my $cwd = dirname( realpath($0) );
 
-my $class    = shift(@ARGV) or die "usage: $0 MyClass";
+my $class = shift(@ARGV) or die "usage: $0 MyClass";
+$class =~ s/\.(t|pm)$//;
 my $filename = "$cwd/$class.t";
-my $source   = sprintf( "#!perl -w\nuse Mason::t::%s;\nMason::t::%s->runtests;\n", $class, $class );
+my $source = sprintf( "#!perl -w\nuse Mason::t::%s;\nMason::t::%s->runtests;\n", $class, $class );
 write_file( $filename, $source );
 run("git add $filename");
 print "$filename:\n$source\n";

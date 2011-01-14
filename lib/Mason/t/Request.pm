@@ -8,39 +8,6 @@ sub _get_current_comp_class {
     return $m->_current_comp_class;
 }
 
-sub test_cache : Test(1) {
-    my $self = shift;
-    $self->test_comp(
-        path => '/cache.m',
-        src  => '
-<%shared>
-$.count => 0
-</%shared>
-
-<%method getset ($key)>
-<%perl>$.count($.count+1);</%perl>
-<% $m->cache->compute($key, sub { $key . $.count }) %>
-</%method>
-
-namespace: <% $m->cache->namespace %>
-<% $.getset("foo") %>
-<% $.getset("bar") %>
-<% $.getset("bar") %>
-<% $.getset("foo") %>
-',
-        expect => '
-namespace: /cache.m
-foo1
-
-bar2
-
-bar2
-
-foo1
-',
-    );
-}
-
 sub test_comp_exists : Test(1) {
     my $self = shift;
 
