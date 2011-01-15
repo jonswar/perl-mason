@@ -2,7 +2,7 @@ package Mason;
 use Carp;
 use List::Util qw(first);
 use Mason::Interp;
-use Mason::Plugin;
+use Mason::PluginManager;
 use Moose;
 use strict;
 use warnings;
@@ -17,9 +17,9 @@ sub new {
 
     # Process plugins and determine real interp_class
     #
-    $plugins = Mason::Plugin->process_plugins_list($plugins);
+    $plugins = Mason::PluginManager->process_plugins_list($plugins);
     my $interp_class =
-      Mason::Plugin->apply_plugins_to_class( $base_interp_class, 'Interp', $plugins );
+      Mason::PluginManager->apply_plugins_to_class( $base_interp_class, 'Interp', $plugins );
 
     # Create and return interp
     #

@@ -26,4 +26,49 @@ sub test_plugins : Test(6) {
     $like->(qr/starting compilation compile - \/test_plugin.m/);
 }
 
+{ package Mason::Test::Plugins::A; use Moose; with 'Mason::Plugin'; }
+{ package Mason::Plugin::B;        use Moose; with 'Mason::Plugin'; }
+{ package Mason::Plugin::C;        use Moose; with 'Mason::Plugin'; }
+{ package Mason::Plugin::D;        use Moose; with 'Mason::Plugin'; }
+{ package Mason::Plugin::E;        use Moose; with 'Mason::Plugin'; }
+{
+    package Mason::PluginBundle::F;
+    use Moose;
+    with 'Mason::PluginBundle';
+    sub provides_plugins { return qw(C D) }
+}
+{
+    package Mason::Test::PluginBundle::G;
+    use Moose;
+    with 'Mason::PluginBundle';
+    sub provides_plugins { return qw(C E) }
+}
+{ package Mason::Plugin::H; use Moose; with 'Mason::Plugin'; }
+{
+    package Mason::PluginBundle::I;
+    use Moose;
+    with 'Mason::PluginBundle';
+
+    sub provides_plugins {
+        return ( '+Mason::Test::Plugins::A', 'B', '@F', '+Mason::Test::PluginBundle::G', );
+    }
+}
+
+sub test_bundles : Test(5) {
+    my $self = shift;
+
+    my $test = sub {
+        my ( $plugin_list, $expected_plugins ) = @_;
+        my $interp = Mason->new( plugins => $plugin_list );
+        my $got_plugins =
+          [ map { /Mason::Plugin::/ ? substr( $_, 15 ) : $_ } @{ $interp->plugins } ];
+        cmp_deeply( $got_plugins, $expected_plugins );
+    };
+    $test->( ['H'],  ['H'] );
+    $test->( ['@F'], [ 'C', 'D' ] );
+    $test->( ['@I'], [ 'Mason::Test::Plugins::A', 'B', 'C', 'D', 'E' ] );
+    throws_ok { $test->( ['@X'] ) } qr/could not load 'Mason::PluginBundle::X'/;
+    throws_ok { $test->( ['Y'] ) } qr/could not load 'Mason::Plugin::Y'/;
+}
+
 1;

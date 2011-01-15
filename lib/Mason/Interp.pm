@@ -53,7 +53,7 @@ while ( my ( $method_name, $name ) = each(%class_overrides) ) {
     __PACKAGE__->meta->add_method(
         "_build_$method_name" => sub {
             my $self = shift;
-            return Mason::Plugin->apply_plugins_to_class( $self->$base_method_name, $name,
+            return Mason::PluginManager->apply_plugins_to_class( $self->$base_method_name, $name,
                 $self->plugins );
         }
     );

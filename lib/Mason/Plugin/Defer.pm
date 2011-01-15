@@ -1,6 +1,6 @@
 package Mason::Plugin::Defer;
 use Moose;
-extends 'Mason::Plugin';
+with 'Mason::Plugin';
 
 1;
 

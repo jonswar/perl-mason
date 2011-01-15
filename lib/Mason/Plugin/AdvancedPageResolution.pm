@@ -1,8 +1,6 @@
 package Mason::Plugin::AdvancedPageResolution;
 use Moose;
-use strict;
-use warnings;
-extends 'Mason::Plugin';
+with 'Mason::Plugin';
 
 1;
 
