@@ -108,11 +108,11 @@ method clear_buffer () {
 }
 
 method comp () {
-    $self->_fetch_comp_or_die(@_)->main();
+    $self->_construct_or_die(@_)->main();
 }
 
 method comp_exists ($path) {
-    return $self->fetch_compc($path) ? 1 : 0;
+    return $self->interp->comp_exists( $self->rel_to_abs($path) );
 }
 
 method decline () {
@@ -120,9 +120,9 @@ method decline () {
         $self->request_path, @{ $self->request_args } );
 }
 
-method fetch_comp () {
+method construct () {
     my $path  = shift;
-    my $compc = $self->fetch_compc($path);
+    my $compc = $self->load($path);
     return undef unless defined($compc);
 
     # Create and return a component instance
@@ -130,22 +130,6 @@ method fetch_comp () {
     my $comp = $compc->new( @_, 'm' => $self );
 
     return $comp;
-}
-
-method fetch_compc ($path) {
-    return undef unless defined($path);
-
-    # Make absolute based on current component path
-    #
-    $path = join( "/", $self->_current_comp_class->cmeta->dir_path, $path )
-      unless substr( $path, 0, 1 ) eq '/';
-
-    # Load the component class
-    #
-    my $compc = $self->interp->load($path)
-      or return undef;
-
-    return $compc;
 }
 
 method flush_buffer () {
@@ -156,10 +140,19 @@ method flush_buffer () {
 }
 
 method go () {
+    my @extra_request_params;
+    while ( ref( $_[0] ) eq 'HASH' ) {
+        push( @extra_request_params, shift(@_) );
+    }
+    my $path = $self->rel_to_abs( shift(@_) );
     $self->clear_buffer;
-    my $result = $self->interp->run( $self->request_params, @_ );
+    my $result = $self->interp->run( $self->request_params, @extra_request_params, $path, @_ );
     $self->{go_result} = $result;
     $self->abort();
+}
+
+method load ($path) {
+    return $self->interp->load( $self->rel_to_abs($path) );
 }
 
 method log () {
@@ -181,9 +174,15 @@ method print () {
     }
 }
 
-method scomp () {
-    my $buf = $self->capture( sub { $self->comp(@_) } );
-    return $buf;
+method rel_to_abs ($path) {
+    $path = join( "/", $self->_current_comp_class->cmeta->dir_path, $path )
+      unless substr( $path, 0, 1 ) eq '/';
+    return $path;
+}
+
+method resolve_request_path_to_component ($request_path) {
+    my $compc = $self->interp->load($request_path);
+    return ( defined($compc) && $compc->cmeta->is_external ) ? $compc : undef;
 }
 
 method run () {
@@ -255,20 +254,21 @@ method run () {
     # Create and return result object
     #
     $retval = $self->aborted($err) ? $err->aborted_value : $retval;
-    return $self->create_result_object( output => $self->output, retval => $retval );
+    return $self->_create_result_object( output => $self->output, retval => $retval );
 }
 
-method create_result_object () {
-    return $self->interp->result_class->new(@_);
-}
-
-method resolve_request_path_to_component ($request_path) {
-    my $compc = $self->interp->load($request_path);
-    return ( defined($compc) && $compc->cmeta->is_external ) ? $compc : undef;
+method scomp () {
+    my $buf = $self->capture( sub { $self->comp(@_) } );
+    return $buf;
 }
 
 method visit () {
-    my $retval = $self->interp->run( { out_method => \my $buf }, @_ );
+    my @extra_request_params;
+    while ( ref( $_[0] ) eq 'HASH' ) {
+        push( @extra_request_params, shift(@_) );
+    }
+    my $path = $self->rel_to_abs( shift(@_) );
+    my $retval = $self->interp->run( { out_method => \my $buf }, @extra_request_params, $path, @_ );
     $self->print($buf);
     return $retval;
 }
@@ -301,6 +301,10 @@ method _comp_not_found ($path) {
         $path, join( ", ", @{ $self->interp->comp_root } ) );
 }
 
+method _create_result_object () {
+    return $self->interp->result_class->new(@_);
+}
+
 method _current_buffer () {
     $self->{buffer_stack}->[-1];
 }
@@ -318,8 +322,8 @@ method _current_comp_class () {
     }
 }
 
-method _fetch_comp_or_die () {
-    my $comp = $self->fetch_comp(@_)
+method _construct_or_die () {
+    my $comp = $self->construct(@_)
       or $self->_comp_not_found( $_[0] );
     return $comp;
 }
@@ -357,15 +361,12 @@ component, you can use the class method C<Mason::Request->current_request>.
 
 =head1 COMPONENT PATHS
 
-The methods L<Request-E<gt>comp|Mason::Request/item_comp>,
-L<Request-E<gt>comp_exists|Mason::Request/item_comp_exists>, and
-L<Request-E<gt>fetch_comp|Mason::Request/item_fetch_comp> take a component path
-argument.  Component paths are like URL paths, and always use a forward slash
-(/) as the separator, regardless of what your operating system uses.
+The methods L<comp>, L<comp_exists>, L<construct>, L<go>, L<load>, and L<visit>
+take a component path argument. If the path does not begin with a '/', then it
+is made absolute based on the current component path (using L<rel_to_abs>).
 
-If the path is absolute (starting with a '/'), then the component is found
-relative to the component root. If the path is relative (no leading '/'), then
-the component is found relative to the current component's directory.
+Component paths are like URL paths, and always use a forward slash (/) as the
+separator, regardless of what your operating system uses.
 
 =head1 PARAMETERS TO THE new() CONSTRUCTOR
 
@@ -443,24 +444,18 @@ a request.
 
 clear_buffer is, of course, thwarted by L</flush_buffer>.
 
-=item comp (path, args...)
+=item comp (path[, params ...])
 
-Calls the component designated by I<path>. Any additional arguments are passed
-as attributes to the new component instance.
+Creates a new instance of the component designated by I<path>, and calls its
+C<main> method. I<params>, if any, are passed to the constructor.
 
-I<path> may be an absolute or relative component path, in which case it will be
-passed to L</fetch_comp>; or it may be a component class such as is returned by
-L</fetch_comp>.
-
-The <& &> tag provides a convenient shortcut for C<$m-E<gt>comp>.
+The C<< <& &> >> tag provides a shortcut for C<$m-E<gt>comp>.
 
 =item comp_exists (path)
 
-Returns 1 if I<path> is the path of an existing component, 0 otherwise.
-
-Depending on implementation, <comp_exists> may try to load the component
-referred to by the path, and may throw an error if the component contains a
-syntax error.
+Makes the component I<path> absolute if necessary, and calls L<Interp
+comp_exists|Mason::Interp/comp_exists> to determine whether a component exists
+at that path.
 
 =item count
 
@@ -476,9 +471,10 @@ Returns the current component class.
 This class method returns the C<Mason::Request> currently in use.  If called
 when no Mason request is active it will return C<undef>.
 
-=item fetch_comp (path)
+=item construct (path[, params ...])
 
-Return a new instance of the component at I<path>.
+Constructs and return a new instance of the component designated by I<path>.
+I<params>, if any, are passed to the constructor.
 
 =item flush_buffer
 
@@ -501,7 +497,12 @@ See also L</visit>.
 
 =item interp
 
-Returns the Interp object associated with this request.
+Returns the L<Interp|Mason::Interp> object associated with this request.
+
+=item load (path)
+
+Makes the component I<path> absolute if necessary, and calls L<Interp
+load|Mason::Interp/load> to load the component class associated with the path.
 
 =item log
 
@@ -537,6 +538,11 @@ all content placed in the main component body.
 =item page
 
 Returns the page component originally called in the request.
+
+=item rel_to_abs (path)
+
+Converts a component I<path> to absolute form based on the current component,
+if it does not already begin with a '/'.
 
 =item scomp (comp, args...)
 

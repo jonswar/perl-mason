@@ -507,7 +507,8 @@ whenever a component path is resolved, much like Perl's C<< @INC >>.
 =item compiler
 
 The Compiler object to associate with this Interpreter.  By default a new
-object of class L</compiler_class> will be created.
+object of class L</compiler_class> will be created, including any appropriate
+parameters that were passed to this constructor.
 
 =item component_class_prefix
 
@@ -527,6 +528,19 @@ will hurt performance as Mason will have to recompile components on each run.
 =item object_file_extension
 
 Extension to add to the end of object files. Default is ".mobj".
+
+=item plugins
+
+A list of plugins and/or plugin bundles:
+
+    plugins => [
+      'OnePlugin', 
+      'AnotherPlugin',
+      '+My::Mason::Plugin::AThirdPlugin',
+      '@APluginBundle',
+    ]);
+
+See L<Mason::Manual::Plugins>.
 
 =item static_source
 
@@ -555,9 +569,10 @@ component cache and recheck existing object files.
 
 =head1 REQUEST AND COMPILER PARAMETERS
 
-Constructor parameters for Compiler and Request objects (Mason::Compiler and
-Mason::Request by default) may be passed to the Interp constructor, and they
-will be passed along whenever a compiler or request is created.
+Constructor parameters for Compiler and Request objects (L<Mason::Compiler> and
+L<Mason::Request>, plus any applied plugins) may be passed to the Interp
+constructor, and they will be passed along whenever a compiler or request is
+created.
 
 =head1 CUSTOM MASON CLASSES
 
@@ -569,8 +584,8 @@ For example, to specify your own Compiler base class:
 
     my $interp = Mason->new(base_compiler_class => 'MyApp::Mason::Compiler', ...);
 
-Relevant plugins, if any, will applied to this class to create a final class,
-which you can get with
+L<Relevant plugins|Mason::Manual::Plugins>, if any, will applied to this class
+to create a final class, which you can get with
 
     $interp->compiler_class
 
@@ -638,14 +653,12 @@ same name.
 
 =item comp_exists (path)
 
-Given an I<absolute> component path, this method returns a boolean value
-indicating whether or not a component exists for that path.
+Returns a boolean indicating whether a component exists for the absolute
+component I<path>.
 
 =item flush_code_cache
 
-Empties the component cache. When using Perl 5.00503 or earlier, you should
-call this when finished with an interpreter, in order to remove circular
-references that would prevent the interpreter from being destroyed.
+Empties the component cache and removes all component classes.
 
 =item load (path)
 
