@@ -132,6 +132,10 @@ method construct () {
     return $comp;
 }
 
+method create_result_object () {
+    return $self->interp->result_class->new(@_);
+}
+
 method flush_buffer () {
     my $request_buffer = $self->_request_buffer;
     $self->out_method->( $$request_buffer, $self )
@@ -254,7 +258,7 @@ method run () {
     # Create and return result object
     #
     $retval = $self->aborted($err) ? $err->aborted_value : $retval;
-    return $self->_create_result_object( output => $self->output, retval => $retval );
+    return $self->create_result_object( output => $self->output, retval => $retval );
 }
 
 method scomp () {
@@ -299,10 +303,6 @@ method _apply_filters_to_output ($filters, $output_method) {
 method _comp_not_found ($path) {
     croak sprintf( "could not find component for path '%s' - component root is [%s]",
         $path, join( ", ", @{ $self->interp->comp_root } ) );
-}
-
-method _create_result_object () {
-    return $self->interp->result_class->new(@_);
 }
 
 method _current_buffer () {
@@ -464,7 +464,8 @@ interpreter.
 
 =item current_comp_class
 
-Returns the current component class.
+Returns the current component class. This is determined by walking up the Perl
+caller() stack until the first Mason::Component subclass is found.
 
 =item current_request
 
