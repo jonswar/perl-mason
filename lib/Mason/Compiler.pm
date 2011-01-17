@@ -54,7 +54,7 @@ method _build_unnamed_block_regex () {
 }
 
 method _build_unnamed_block_types () {
-    return [qw(attr class doc flags init perl shared text wrap)];
+    return [qw(args class doc flags init perl shared text wrap)];
 }
 
 method _build_valid_flags () {

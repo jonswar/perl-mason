@@ -84,7 +84,7 @@ sub test_subrequest : Test(2) {
         src  => '
 <% $m->page->cmeta->path %>
 <% $m->request_path %>
-<% join(", ", @{ $m->request_args }) %>
+<% Mason::Util::dump_one_line($m->request_args) %>
 ',
     );
     $self->test_comp(
@@ -95,7 +95,7 @@ This should not get printed.
         expect => '
 /subreq/other.m
 /subreq/other.m
-foo, 5
+{foo => 5}
 ',
     );
     $self->test_comp(
@@ -109,7 +109,7 @@ end
 begin
 /subreq/other.m
 /subreq/other.m
-foo, 5
+{foo => 5}
 end
 ',
     );

@@ -9,7 +9,7 @@ use Mason::TieHandle;
 use Mason::Types;
 use Moose;
 use Mason::Moose;
-use Scalar::Util qw(blessed);
+use Scalar::Util qw(blessed reftype);
 use Try::Tiny;
 use strict;
 use warnings;
@@ -132,6 +132,10 @@ method construct () {
     return $comp;
 }
 
+method construct_page_component ($compc, $args) {
+    return $compc->new( %$args, 'm' => $self );
+}
+
 method create_result_object () {
     return $self->interp->result_class->new(@_);
 }
@@ -184,15 +188,23 @@ method rel_to_abs ($path) {
     return $path;
 }
 
-method resolve_request_path_to_component ($request_path) {
+method resolve_page_component ($request_path) {
     my $compc = $self->interp->load($request_path);
     return ( defined($compc) && $compc->cmeta->is_external ) ? $compc : undef;
 }
 
 method run () {
 
-    my $path      = shift;
-    my $wantarray = wantarray();
+    # Get path and either hash or hashref of arguments
+    #
+    my $path = shift;
+    my $args;
+    if ( @_ == 1 && reftype( $_[0] ) eq 'HASH' ) {
+        $args = shift;
+    }
+    else {
+        $args = {@_};
+    }
 
     # Flush interp load cache
     #
@@ -205,7 +217,7 @@ method run () {
     # Save off the requested path and args, e.g. for decline.
     #
     $self->{request_path} = $path;
-    $self->{request_args} = [@_];
+    $self->{request_args} = $args;
 
     # Check the static_source touch file, if it exists, before the
     # first component is loaded.
@@ -214,15 +226,16 @@ method run () {
 
     # Find request component class.
     #
-    my $compc = $self->resolve_request_path_to_component($path);
+    my $compc = $self->resolve_page_component($path);
     if ( !defined($compc) ) {
         croak sprintf( "could not find top-level component for path '%s' - component root is [%s]",
             $path, join( ", ", @{ $self->interp->comp_root } ) );
     }
-
     $self->_comp_not_found($path) if !defined($compc);
 
-    my $page = $compc->new( @_, 'm' => $self );
+    # Construct page component.
+    #
+    my $page = $self->construct_page_component( $compc, $args );
     $self->{page} = $page;
     $log->debugf( "starting request with component '%s'", $page->cmeta->path )
       if $log->is_debug;

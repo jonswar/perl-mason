@@ -106,7 +106,7 @@ sub test_attr : Test(1) {
     $self->add_comp(
         path => '/attr.m',
         src  => '
-<%attr>
+<%args>
 a
 b # comment
 
@@ -117,7 +117,7 @@ e => "foo" # comment
 
 f => (isa => "Num", default => 7)
 g => (isa => "Num", default => 8) # comment
-</%attr>
+</%args>
 
 a = <% $.a %>
 b = <% $.b %>
@@ -162,9 +162,9 @@ $.baz => ( isa => "Num", default => 5 )
 sub test_dollar_dot : Test(1) {
     shift->test_comp(
         src => '
-<%attr>
+<%args>
 foo => 3
-</%attr>
+</%args>
 <%shared>
 bar => 4
 </%shared>

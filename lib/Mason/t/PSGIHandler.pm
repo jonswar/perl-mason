@@ -11,14 +11,20 @@ sub test_psgi_comp {
     my $interp = $self->interp;
     my $app    = sub { my $env = shift; $interp->handle_psgi($env) };
     my $path   = $params{path} or die "must pass path";
+    my $qs     = $params{qs} || '';
     $self->add_comp( path => $path, src => $params{src} );
     test_psgi(
         $app,
         sub {
             my $cb  = shift;
-            my $res = $cb->( GET $path );
+            my $res = $cb->( GET( $path . $qs ) );
             if ( my $expect_content = $params{expect_content} ) {
-                is( trim( $res->content ), trim($expect_content), "$path - content" );
+                if ( ref($expect_content) eq 'Regexp' ) {
+                    like( trim( $res->content ), $expect_content, "$path - content" );
+                }
+                else {
+                    is( trim( $res->content ), trim($expect_content), "$path - content" );
+                }
             }
             if ( my $expect_code = $params{expect_code} ) {
                 is( $res->code, $expect_code, "$path - code" );
@@ -39,6 +45,49 @@ sub test_basic : Tests(2) {
         src            => 'path = <% $m->req->path %>',
         expect_content => 'path = /hi.m',
         expect_code    => 200
+    );
+}
+
+sub test_error : Tests(2) {
+    my $self = shift;
+    $self->test_psgi_comp(
+        path           => '/die.m',
+        src            => '% die "bleah";',
+        expect_code    => 500,
+        expect_content => qr/bleah at/,
+    );
+}
+
+sub test_args : Tests(2) {
+    my $self = shift;
+    $self->test_psgi_comp(
+        path => '/args.m',
+        qs   => '?a=1&a=2&b=3&b=4&c=5&c=6&d=7&d=8',
+        src  => '
+<%args>
+$.a
+$.b => (isa => "Int")
+$.c => (isa => "ArrayRef");
+$.d => (isa => "ArrayRef[Int]");
+</%args>
+
+a = <% $.a %>
+b = <% $.b %>
+c = <% join(",", @{$.c}) %>
+d = <% join(",", @{$.d}) %>
+
+% my $args = $.cmeta->args;
+<% Mason::Util::dump_one_line($args) %>
+',
+        expect_content => <<EOF,
+a = 2
+b = 4
+c = 5,6
+d = 7,8
+
+{a => '2',b => '4',c => ['5','6'],d => ['7','8']}
+EOF
+        expect_code => 200
     );
 }
 

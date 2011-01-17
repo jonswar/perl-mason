@@ -12,7 +12,7 @@ use warnings;
 #   /foo.{pm,m}
 #   /dhandler.{pm,m}
 #
-method resolve_request_path_to_component ($request_path) {
+method resolve_page_component ($request_path) {
     my $interp               = $self->interp;
     my @dhandler_subpaths    = map { "/$_" } @{ $interp->dhandler_names };
     my @index_subpaths       = map { "/$_" } @{ $interp->index_names };

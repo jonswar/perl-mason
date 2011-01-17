@@ -22,8 +22,8 @@ sub test_errors : Test(22) {
     $try->( '%%my $i = 1;',               qr/%% must be followed by whitespace/ );
     $try->( '<%2+2 %>',                   qr/whitespace required after '<%'/ );
     $try->( '<% 2+2%>',                   qr/whitespace required before '%>'/ );
-    $try->( "<%attr>\n123\n</%attr>",     qr/Invalid attribute line '123'/ );
-    $try->( "<%attr>\n\$\$abc\n</%attr>", qr/Invalid attribute line '\$\$abc'/ );
+    $try->( "<%args>\n123\n</%args>",     qr/Invalid attribute line '123'/ );
+    $try->( "<%args>\n\$\$abc\n</%args>", qr/Invalid attribute line '\$\$abc'/ );
     $try->( '<% $.Upper { %>Hi',          qr/<% { %> without matching <\/%>/ );
     $try->( '<%method 1a>Hi</%method>',   qr/Invalid method name '1a'/ );
     $try->(

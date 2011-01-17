@@ -417,8 +417,8 @@ method _output_line_number_comment ($line_number) {
     return "";
 }
 
-method _handle_attr_block ($contents) {
-    $self->_handle_attributes_list( $contents, 'attr' );
+method _handle_args_block ($contents) {
+    $self->_handle_attributes_list( $contents, 'args' );
 }
 
 method _handle_shared_block ($contents) {
@@ -454,7 +454,7 @@ method _handle_attributes_list ($contents, $attr_type) {
                 }
             }
             else {
-                $params = $attr_type eq 'attr' ? "(required => 1);" : "();";
+                $params = $attr_type eq 'args' ? "(required => 1);" : "();";
             }
             if ( $attr_type eq 'shared' ) {
                 $params = '(' . 'init_arg => undef, ' . substr( $params, 1 );
