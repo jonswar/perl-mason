@@ -273,8 +273,8 @@ method run () {
     while ( ref( $_[0] ) eq 'HASH' ) {
         %request_params = ( %request_params, %{ shift(@_) } );
     }
-    my $path = shift;
-    my $request = $self->make_request( %request_params, request_params => \%request_params );
+    my $path    = shift;
+    my $request = $self->make_request(%request_params);
     $request->run( $path, @_ );
 }
 

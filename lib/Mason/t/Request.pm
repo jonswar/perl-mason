@@ -77,7 +77,7 @@ sub test_page : Test(1) {
     );
 }
 
-sub test_subrequest : Test(2) {
+sub test_subrequest : Test(4) {
     my $self = shift;
     $self->add_comp(
         path => '/subreq/other.m',
@@ -113,7 +113,16 @@ begin
 end
 ',
     );
-
+    my $buf;
+    my $result = $self->interp->run( { out_method => \$buf }, '/subreq/go.m' );
+    is( $result->output, '', 'no output' );
+    is(
+        $buf, '
+/subreq/other.m
+/subreq/other.m
+{foo => 5}
+', 'output in buf'
+    );
 }
 
 1;
