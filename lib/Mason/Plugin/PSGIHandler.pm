@@ -26,17 +26,16 @@ __END__
 Provides a L<PSGI|http://plackperl.org/> handler for Mason. It allows Mason to
 handle requests directly from any web servers that support PSGI.
 
-=head2 Run path and parameters
+=head2 Run path
 
-The top-level run path and parameters are taken from the method
-L<Plack::Request/path> and L<Plack::Request/parameters> respectively. So in a
+The top-level run path is taken from the method L<Plack::Request/path>. So in a
 simple Plack configuration like the one above, a URL like
 
-    /foo/bar?a=5&b=6
+    /foo/bar
 
 would result in
 
-    $interp->run("/foo/bar", a=>5, b=>6);
+    $interp->run("/foo/bar");
 
 However, if you mounted your Mason app under "/mason",
 
@@ -50,6 +49,45 @@ However, if you mounted your Mason app under "/mason",
 
 then the "/mason" portion of the URL would get stripped off in the top-level
 run path.
+
+=head2 Run parameters
+
+The top-level run parameters are taken from the method
+L<Plack::Request/parameters>, which combines GET and POST parameters. So
+
+    /foo/bar?a=5&b=6
+
+would generally result in
+
+    $interp->run("/foo/bar", a=>5, b=>6);
+
+If there are multiple values for a parameter, generally only the last value
+will be kept, as per L<Hash::MultiValue|Hash::MultiValue>. However, if the
+corresponding attribute in the page component is declared an C<ArrayRef>, then
+all values will be kept and passed in as an arrayref. For example, if the page
+component C</foo/bar.m> has these declarations:
+
+    <%args>
+    $.a
+    $.b => (isa => "Int")
+    $.c => (isa => "ArrayRef");
+    $.d => (isa => "ArrayRef[Int]");
+    </%args>
+
+then this URL
+
+    /foo/bar?a=1&a=2&b=3&b=4&c=5&c=6&d=7&d=8
+
+would result in
+
+    $interp->run("/foo/bar", a=>2, b=>4, c=>[5,6], d => [7,8]);
+
+You can always get the original Hash::MultiValue object from C<<
+$m->request_args >>. e.g.
+
+    my $hmv = $m->request_args;
+    # get all values for 'e'
+    $hmv->get_all('e');
 
 =head2 Plack request object
 
