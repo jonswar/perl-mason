@@ -89,15 +89,8 @@ development mode or a 500 error response in deployment mode.
 
 =item handle_psgi ($env)
 
-Takes a PSGI environment hash and returns a standard PSGI response array.
-
-, along with an empty  These are thin subclasses of L<Plack::Request> and
-L<Plack::Response>, and are available within components via C<< $m->req >> and
-C<< $m->res >>.
-
-The initial Mason path and parameters passed to C<< $interp->run() >> are taken
-from the plack request methods C<< path_info() >> and C<< parameters() >>.
-
+Takes a PSGI environment hash, calls an appropriate Mason request as detailed
+above, and returns a standard PSGI response array.
 
 =back
 
