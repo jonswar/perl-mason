@@ -2,11 +2,8 @@ package Mason::PluginManager;
 use Carp;
 use List::MoreUtils qw(uniq);
 use Log::Any qw($log);
-use Moose;
 use Mason::Moose;
 use Mason::Util qw(can_load);
-use strict;
-use warnings;
 
 my ( %apply_plugins_cache, %final_subclass_seen );
 

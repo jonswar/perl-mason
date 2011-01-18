@@ -1,8 +1,7 @@
 package Mason::Plugin::Defer::Filters;
 use Method::Signatures::Simple;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 method Defer () {
     Mason::DynamicFilter->new(

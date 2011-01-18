@@ -1,9 +1,6 @@
 package Mason::Component::ClassMeta;
-use Moose;
 use Mason::Moose;
 use Log::Any;
-use strict;
-use warnings;
 
 # Passed attributes (generated in compiled component)
 has 'class'       => ( required => 1 );

@@ -2,8 +2,7 @@ package Mason::Plugin;
 use Moose::Role;
 use Method::Signatures::Simple;
 use Mason::Util qw(can_load);
-use strict;
-use warnings;
+use namespace::autoclean;
 
 method expand_to_plugins ($plugin_class:) {
     return ($plugin_class);

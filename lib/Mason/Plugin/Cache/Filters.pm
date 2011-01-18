@@ -1,6 +1,7 @@
 package Mason::Plugin::Cache::Filters;
 use Method::Signatures::Simple;
 use Moose::Role;
+use namespace::autoclean;
 
 method Cache ( $key, $set_options, %cache_options ) {
     Mason::DynamicFilter->new(

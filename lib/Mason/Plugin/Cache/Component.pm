@@ -2,8 +2,7 @@ package Mason::Plugin::Cache::Component;
 use Method::Signatures::Simple;
 use Moose::Role;
 use MooseX::ClassAttribute;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 # class_has 'cache_memoized' => ( is => 'rw' );
 my %memoized;

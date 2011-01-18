@@ -1,8 +1,7 @@
 package Mason::Plugin::AdvancedPageResolution::Interp;
 use Method::Signatures::Simple;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 # Passed attributes
 #

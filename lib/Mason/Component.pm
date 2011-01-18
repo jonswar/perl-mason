@@ -4,8 +4,7 @@ use Moose;    # Not Mason::Moose - we don't want strict constructor
 use Method::Signatures::Simple;
 use MooseX::HasDefaults::RO;
 use Log::Any;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 # Bring in standard filters
 with 'Mason::Filters::Standard';
@@ -14,15 +13,18 @@ with 'Mason::Filters::Standard';
 has 'm' => ( required => 1, weak_ref => 1 );
 
 method BUILD ($params) {
-    $self->{cmeta_args} = { map { /^cmeta|m$/ ? () : ( $_, $params->{$_} ) } keys(%$params) };
+    $self->{_orig_params} = $params;
 }
 
 method cmeta () {
     if ( ref($self) ) {
         if ( !$self->{cmeta} ) {
+            my $orig_params = $self->{_orig_params};
+            my $cmeta_args =
+              { map { /^cmeta|m$/ ? () : ( $_, $orig_params->{$_} ) } keys(%$orig_params) };
             my $component_instance_meta_class = $self->m->interp->component_instance_meta_class;
             $self->{cmeta} = $component_instance_meta_class->new(
-                args        => $self->{cmeta_args},
+                args        => $cmeta_args,
                 class_cmeta => $self->_class_cmeta,
                 instance    => $self,
             );

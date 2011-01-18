@@ -3,8 +3,7 @@ use Mason::DynamicFilter;
 use Mason::Util;
 use Method::Signatures::Simple;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 method Capture ($outref) {
     sub { $$outref = $_[0]; return '' }

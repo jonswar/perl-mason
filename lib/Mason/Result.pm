@@ -1,8 +1,5 @@
 package Mason::Result;
-use Moose;
 use Mason::Moose;
-use strict;
-use warnings;
 
 # Public attributes
 has 'output' => ( required => 1 );

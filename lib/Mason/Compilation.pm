@@ -8,11 +8,8 @@ use Guard;
 use JSON;
 use Mason::Component::ClassMeta;
 use Mason::Util qw(dump_one_line read_file unique_id);
-use Moose;
 use Mason::Moose;
 use Mason::Util qw(trim);
-use strict;
-use warnings;
 
 # Passed attributes
 has 'compiler' => ( required => 1, weak_ref => 1 );
@@ -307,6 +304,7 @@ method output_compiled_component () {
         map { trim($_) } grep { defined($_) && length($_) } (
             $self->_output_flag_comment, $self->_output_class_header, $self->_output_cmeta,
             $self->_output_attributes,   $self->_output_class_block,  $self->_output_methods,
+            $self->_output_class_footer,
         )
     ) . "\n";
 }
@@ -324,6 +322,10 @@ method _output_flag_comment () {
     }
 }
 
+method _output_class_footer () {
+    return "";
+}
+
 method _output_class_header () {
     return join(
         "\n",
@@ -331,6 +333,7 @@ method _output_class_header () {
         "use MooseX::HasDefaults::RW;",
         "use strict;",
         "use warnings;",
+        "use namespace::autoclean;",
 
         # Must be defined here since inner relies on caller()
         "sub _inner { inner() }"
@@ -454,7 +457,7 @@ method _handle_attributes_list ($contents, $attr_type) {
                 }
             }
             else {
-                $params = $attr_type eq 'args' ? "(required => 1);" : "();";
+                $params = '();';
             }
             if ( $attr_type eq 'shared' ) {
                 $params = '(' . 'init_arg => undef, ' . substr( $params, 1 );
@@ -735,5 +738,7 @@ method _add_to_current_method ($text) {
 method throw_syntax_error ($msg) {
     die sprintf( "%s at %s line %d\n", $msg, $self->source_file, $self->{line_number} );
 }
+
+__PACKAGE__->meta->make_immutable();
 
 1;

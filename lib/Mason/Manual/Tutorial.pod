@@ -249,7 +249,7 @@ Here are some examples:
     <& $comp &>
 
     # variable component and attributes
-    <& $comp, %attr &>
+    <& $comp, %args &>
 
     # you can use arbitrary expression for component path, but it cannot
     # begin with a letter or number; delimit with () to remedy this
@@ -273,28 +273,28 @@ As we saw above, you can pass name/value attributes when calling components.
 Here's how to declare and access them.
 
 =head2 Read-write by default
-
+ 
 By default, Mason uses 'MooseX::HasDefaults::RW' in each component, which makes
 attributes read-write unless stated otherwise. This is not considered best
 practice for general OO programming, but component instances are short-lived
 and not usually accessed outside of their class so we think the convenience is
 warranted.
 
-=head2 Public attributes - C<< <%attr> >>
+=head2 Public attributes - C<< <%args> >>
 
-Mason's C<< <%attr> >> section is the most convenient way to declare public
+Mason's C<< <%args> >> section is the most convenient way to declare public
 attributes:
 
-    <%attr>
+    <%args>
     a
     b => 'default value'
     c => (isa => 'Str', default => 'something')
-    </%attr>
+    </%args>
 
 This is equivalent to the following Moose syntax (which you can also use):
 
     <%class>
-    has 'a' => (required => 1);
+    has 'a' => ();
     has 'b' => (default => 'default value');
     has 'c' => (isa => 'Str',
                 default => 'something');
@@ -338,20 +338,20 @@ but the interpretation is slightly different:
     </%class>
 
 Note that all are declared with C<< init_arg => 1 >> (meaning they can't be
-passed in), and thus bare internal attributes are no longer C<< required >>.
+passed in).
 
 =head2 Comments and blank lines in attribute declarations
 
 You may place a '#' comment at the end of an attribute line or on its own line,
-and you may put blank lines in C<< <%attr> >> or << <%shared> >> sections. Both
+and you may put blank lines in C<< <%args> >> or << <%shared> >> sections. Both
 are ignored.
 
-    <%attr>
+    <%args>
     g   # a comment
     # another comment
 
     h
-    </%attr>
+    </%args>
 
 =head2 Accessing all attributes
 

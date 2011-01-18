@@ -1,7 +1,6 @@
 package Mason::Test::Plugins::Notify::Component;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 # This doesn't work - it interrupts the inner() chain. Investigate later.
 #

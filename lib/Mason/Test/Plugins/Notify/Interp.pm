@@ -1,7 +1,6 @@
 package Mason::Test::Plugins::Notify::Interp;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 before 'run' => sub {
     print STDERR "starting interp run\n";

@@ -1,7 +1,6 @@
 package Mason::Test::Plugins::Notify::Compilation;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 before 'compile' => sub {
     my ($self) = @_;

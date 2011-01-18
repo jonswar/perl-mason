@@ -7,12 +7,9 @@ use Log::Any qw($log);
 use Mason::Exceptions;
 use Mason::TieHandle;
 use Mason::Types;
-use Moose;
 use Mason::Moose;
 use Scalar::Util qw(blessed reftype);
 use Try::Tiny;
-use strict;
-use warnings;
 
 my $default_out = sub { my ( $text, $self ) = @_; $self->{output} .= $text };
 
@@ -108,7 +105,7 @@ method clear_buffer () {
 }
 
 method comp () {
-    $self->_construct_or_die(@_)->main();
+    $self->construct(@_)->main();
 }
 
 method comp_exists ($path) {
@@ -117,19 +114,14 @@ method comp_exists ($path) {
 
 method decline () {
     $self->go( { declined_paths => { %{ $self->declined_paths }, $self->page->cmeta->path => 1 } },
-        $self->request_path, @{ $self->request_args } );
+        $self->request_path, %{ $self->request_args } );
 }
 
 method construct () {
     my $path  = shift;
-    my $compc = $self->load($path);
-    return undef unless defined($compc);
-
-    # Create and return a component instance
-    #
-    my $comp = $compc->new( @_, 'm' => $self );
-
-    return $comp;
+    my $compc = $self->load($path)
+      or $self->_comp_not_found($path);
+    return $compc->new( @_, 'm' => $self );
 }
 
 method construct_page_component ($compc, $args) {
@@ -161,7 +153,7 @@ method go () {
 }
 
 method load ($path) {
-    return $self->interp->load( $self->rel_to_abs($path) );
+    my $compc = $self->interp->load( $self->rel_to_abs($path) );
 }
 
 method log () {
@@ -336,12 +328,6 @@ method _current_comp_class () {
     }
 }
 
-method _construct_or_die () {
-    my $comp = $self->construct(@_)
-      or $self->_comp_not_found( $_[0] );
-    return $comp;
-}
-
 method _pop_buffer () {
     pop( @{ $self->{buffer_stack} } );
 }
@@ -354,6 +340,8 @@ method _push_buffer () {
 method _request_buffer () {
     $self->{buffer_stack}->[0];
 }
+
+__PACKAGE__->meta->make_immutable();
 
 1;
 
@@ -488,7 +476,8 @@ when no Mason request is active it will return C<undef>.
 =item construct (path[, params ...])
 
 Constructs and return a new instance of the component designated by I<path>.
-I<params>, if any, are passed to the constructor.
+I<params>, if any, are passed to the constructor. Throws an error if I<path>
+does not exist.
 
 =item flush_buffer ()
 

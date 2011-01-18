@@ -9,10 +9,7 @@ use File::Path;
 use Mason::Compilation;
 use Mason::Types;
 use Mason::Util qw(checksum write_file);
-use Moose;
 use Mason::Moose;
-use strict;
-use warnings;
 
 # Passed attributes
 has 'interp'                 => ( required => 1, weak_ref => 1 );
@@ -105,6 +102,8 @@ method is_external_comp_path ($path) {
 method is_pure_perl_comp_path ($path) {
     return ( $path =~ /\.pm$/ ) ? 1 : 0;
 }
+
+__PACKAGE__->meta->make_immutable();
 
 1;
 

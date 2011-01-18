@@ -1,7 +1,6 @@
 package Mason::Test::Plugins::Notify::Request;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 before 'run' => sub {
     my ( $self, $path ) = @_;

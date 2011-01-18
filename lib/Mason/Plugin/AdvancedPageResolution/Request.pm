@@ -2,8 +2,7 @@ package Mason::Plugin::AdvancedPageResolution::Request;
 use File::Basename;
 use Method::Signatures::Simple;
 use Moose::Role;
-use strict;
-use warnings;
+use namespace::autoclean;
 
 # Given /foo/bar, look for (by default):
 #   /foo/bar.{pm,m},

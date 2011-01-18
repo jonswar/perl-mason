@@ -1,4 +1,5 @@
 package Mason::Interp;
+use Devel::GlobalDestruction;
 use File::Basename;
 use File::Temp qw(tempdir);
 use Guard;
@@ -11,12 +12,8 @@ use Mason::Types;
 use Mason::Util qw(catdir catfile mason_canon_path touch_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
-use Moose;
 use Mason::Moose;
-use MooseX::StrictConstructor;
 use autodie qw(:all);
-use strict;
-use warnings;
 
 my $default_out = sub { print( $_[0] ) };
 my $interp_id = 0;
@@ -243,9 +240,17 @@ method load ($path) {
 
     $self->load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
 
+    # When cache entry is destroyed, delete the package.
+    #
+    my $guard = guard {
+        if ( !in_global_destruction ) {
+            $compc->meta->make_mutable();
+            Mason::Util::delete_package($compc);
+        }
+    };
+
     # Save component class in the cache.
     #
-    my $guard = guard { Mason::Util::delete_package($compc) };
     $code_cache->{$path} = {
         source_file          => $source_file,
         source_lastmod       => $source_lastmod,
@@ -420,6 +425,7 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     my $flags = $self->extract_flags_from_object_file($object_file);
     my $parent_compc = $self->determine_parent_compc( $path, $flags )
       || $default_parent_compc;
+
     eval(
         sprintf(
             'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
@@ -430,6 +436,7 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
 
     $compc->_set_class_cmeta($self);
     $self->add_default_render_method( $compc, $flags );
+    $compc->meta->make_immutable();
 }
 
 method construct_distinct_string () {

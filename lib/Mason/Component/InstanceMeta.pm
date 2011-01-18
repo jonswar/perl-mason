@@ -1,13 +1,12 @@
 package Mason::Component::InstanceMeta;
-use Moose;
 use Mason::Moose;
-use strict;
-use warnings;
 
 # Passed attributes
 has 'args'        => ( required => 1 );
 has 'class_cmeta' => ( handles => [qw(cache dir_path interp is_external log object_file path source_file)] );
 has 'instance'    => ( required => 1, weak_ref => 1 );
+
+__PACKAGE__->meta->make_immutable();
 
 1;
 
