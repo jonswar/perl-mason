@@ -19,3 +19,24 @@ sub init_meta {
 }
 
 1;
+
+# ABSTRACT: Mason Moose policies
+__END__
+
+=pod
+
+=head1 SYNOPSIS
+
+    # instead of use Moose;
+    use Mason::Moose;
+
+=head1 DESCRIPTION
+
+Sets certain Moose policies for Mason's internal classes. Using this module is
+roughly equivalent to
+
+    use Moose;
+    use MooseX::HasDefaults::RO;
+    use MooseX::StrictConstructor;
+    use Method::Signatures::Simple;
+    use namespace::autoclean;
