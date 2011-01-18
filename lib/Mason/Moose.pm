@@ -1,4 +1,5 @@
 package Mason::Moose;
+use Moose                      ();
 use MooseX::HasDefaults::RO    ();
 use MooseX::StrictConstructor  ();
 use Method::Signatures::Simple ();
