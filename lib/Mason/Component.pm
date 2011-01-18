@@ -1,10 +1,10 @@
 package Mason::Component;
 use Mason::Component::InstanceMeta;
-use Moose;    # Not Mason::Moose - we don't want strict constructor
-use Method::Signatures::Simple;
+use Moose;    # no Mason::Moose - don't want StrictConstructor
 use MooseX::HasDefaults::RO;
-use Log::Any;
+use Method::Signatures::Simple;
 use namespace::autoclean;
+use Log::Any;
 
 # Bring in standard filters
 with 'Mason::Filters::Standard';
