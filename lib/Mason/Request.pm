@@ -45,7 +45,7 @@ method BUILD ($params) {
     $self->_push_buffer();
     $self->{request_code_cache}  = {};
     $self->{orig_request_params} = $params;
-    $self->{count}               = $self->{interp}->request_count;
+    $self->{count}               = $self->{interp}->_incr_request_count;
 }
 
 #
@@ -463,8 +463,8 @@ at that path.
 
 =item count ()
 
-Returns the number of this request, which is unique for a given request and
-interpreter.
+Returns the number of this request for the interpreter, a monotonically
+increasing integer starting at 0.
 
 =item current_comp_class ()
 

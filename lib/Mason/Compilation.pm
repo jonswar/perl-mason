@@ -334,8 +334,7 @@ method _output_class_header () {
         "use strict;",
         "use warnings;",
         "use namespace::autoclean;",
-        "our \$m;",
-        "*m = \\\$Mason::Request::current_request;",
+        "our \$m; *m = \\\$Mason::Request::current_request;",
 
         # Must be defined here since inner relies on caller()
         "sub _inner { inner() }"

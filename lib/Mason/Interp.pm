@@ -16,7 +16,7 @@ use Mason::Moose;
 use autodie qw(:all);
 
 my $default_out = sub { print( $_[0] ) };
-my $interp_id = 0;
+my $interp_count = 0;
 
 # Passed attributes
 #
@@ -61,9 +61,9 @@ while ( my ( $method_name, $name ) = each(%class_overrides) ) {
 has 'autobase_regex'        => ( lazy_build => 1, init_arg => undef );
 has 'code_cache'            => ( init_arg => undef );
 has 'compiler_params'       => ( init_arg => undef );
+has 'count'                 => ( init_arg => undef );
 has 'distinct_string_count' => ( init_arg => undef, default => 0 );
-has 'id'                    => ( init_arg => undef );
-has 'request_count'         => ( init_arg => undef, default => 0, reader => { request_count => sub { $_[0]->{request_count}++ } } );
+has 'request_count'         => ( init_arg => undef, default => 0 );
 has 'request_params'        => ( init_arg => undef );
 
 #
@@ -72,7 +72,7 @@ has 'request_params'        => ( init_arg => undef );
 
 method BUILD ($params) {
     $self->{code_cache} = {};
-    $self->{id}         = $interp_id++;
+    $self->{count}      = $interp_count++;
 
     # Initialize static source mode
     #
@@ -116,7 +116,7 @@ method _build_compiler () {
 }
 
 method _build_component_class_prefix () {
-    return "MC" . $self->{id};
+    return "MC" . $self->count;
 }
 
 method _build_data_dir () {
@@ -468,6 +468,10 @@ method source_file_for_path ($path) {
     return undef;
 }
 
+method _incr_request_count  () {
+    return $self->{request_count}++;
+}
+
 __PACKAGE__->meta->make_immutable();
 
 1;
@@ -519,9 +523,9 @@ parameters that were passed to this constructor.
 
 =item component_class_prefix
 
-Prefix to use in generated component classnames. Defaults to 'MC' plus a unique
-number for the interpreter, e.g. MC0. So a component '/foo/bar' would get a
-classname like 'MC0::foo::bar'.
+Prefix to use in generated component classnames. Defaults to 'MC' plus the
+interpreter's count, e.g. MC0. So a component '/foo/bar' would get a classname
+like 'MC0::foo::bar'.
 
 =item data_dir
 
@@ -662,6 +666,11 @@ same name.
 
 Returns a boolean indicating whether a component exists for the absolute
 component I<path>.
+
+=item count
+
+Returns the number of this interpreter, a monotonically increasing integer for
+the process starting at 0.
 
 =item flush_code_cache
 
