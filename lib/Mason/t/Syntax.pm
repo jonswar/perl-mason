@@ -188,4 +188,26 @@ bar = 6
     );
 }
 
+sub test_dollar_m : Test(1) {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+<%class>
+method foo  () { $m->print("foo\n") }
+</%class>
+<%method bar><%perl>$m->print("bar\n");</%perl></%method>
+<% $.foo %>
+<% $.bar %>
+% $m->print("baz\n");
+',
+        expect => '
+foo
+
+bar
+
+baz
+',
+    );
+}
+
 1;
