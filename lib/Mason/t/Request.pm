@@ -79,9 +79,14 @@ sub test_page : Test(1) {
 
 sub test_subrequest : Test(4) {
     my $self = shift;
+
+    # call setup_interp each time to reset request count
+    #
+    $self->setup_interp;
     $self->add_comp(
         path => '/subreq/other.m',
         src  => '
+count=<% $m->count %>
 <% $m->page->cmeta->path %>
 <% $m->request_path %>
 <% Mason::Util::dump_one_line($m->request_args) %>
@@ -93,31 +98,40 @@ sub test_subrequest : Test(4) {
 This should not get printed.
 <%perl>$m->go("/subreq/other.m", foo => 5);</%perl>',
         expect => '
+count=1
 /subreq/other.m
 /subreq/other.m
 {foo => 5}
 ',
     );
+    $self->setup_interp;    # reset request count
     $self->test_comp(
         path => '/subreq/visit.m',
         src  => '
 begin
+count=<% $m->count %>
 <%perl>$m->visit("/subreq/other.m", foo => 5);</%perl>
+count=<% $m->count %>
 end
 ',
         expect => '
 begin
+count=0
+count=1
 /subreq/other.m
 /subreq/other.m
 {foo => 5}
+count=0
 end
 ',
     );
     my $buf;
+    $self->setup_interp;    # reset request count
     my $result = $self->interp->run( { out_method => \$buf }, '/subreq/go.m' );
     is( $result->output, '', 'no output' );
     is(
         $buf, '
+count=1
 /subreq/other.m
 /subreq/other.m
 {foo => 5}

@@ -203,9 +203,12 @@ method run () {
     #
     $self->interp->flush_load_cache();
 
-    # Make this the current request.
+    # Make this the current request until end of scope. Use a guard
+    # because 'local' doesn't work with the $m alias inside components.
     #
-    local $current_request = $self;
+    my $save_current_request = $current_request;
+    scope_guard { $current_request = $save_current_request };
+    $current_request = $self;
 
     # Save off the requested path and args, e.g. for decline.
     #
