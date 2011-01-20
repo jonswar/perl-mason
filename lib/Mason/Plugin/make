@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+use Cwd qw(realpath);
+use File::Basename;
+use File::Path;
+use File::Slurp;
+use IPC::System::Simple qw(run);
+use warnings;
+use strict;
+
+my $cwd = dirname( realpath($0) );
+
+my $class = shift(@ARGV) or die "usage: $0 Plugin";
+$class =~ s/\.pm$//;
+my $pmfile    = "$cwd/$class.pm";
+my $plugindir = "$cwd/$class";
+my $source    = "
+package Mason::Plugin::$class;
+use Moose;
+with 'Mason::Plugin';
+
+1;
+
+# ABSTRACT: Provide a cache object to each component
+__END__
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+";
+write_file( $pmfile, $source );
+mkpath( $plugindir, 0, 0775 );
+run("git add $pmfile $plugindir");
+run("$cwd/../../../t/make $class");
