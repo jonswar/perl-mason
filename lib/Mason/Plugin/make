@@ -13,14 +13,13 @@ my $class = shift(@ARGV) or die "usage: $0 Plugin";
 $class =~ s/\.pm$//;
 my $pmfile    = "$cwd/$class.pm";
 my $plugindir = "$cwd/$class";
-my $source    = "
-package Mason::Plugin::$class;
+my $source    = "package Mason::Plugin::$class;
 use Moose;
 with 'Mason::Plugin';
 
 1;
 
-# ABSTRACT: Provide a cache object to each component
+# ABSTRACT:
 __END__
 
 =head1 SYNOPSIS

@@ -55,6 +55,7 @@ method parse () {
         $self->_match_apply_filter_end && last;
         $self->_match_unnamed_block    && next;
         $self->_match_named_block      && next;
+        $self->_match_unknown_block    && next;
         $self->_match_apply_filter     && next;
         $self->_match_substitution     && next;
         $self->_match_component_call   && next;
@@ -66,19 +67,14 @@ method parse () {
     }
 }
 
-# Can be overriden to arbitrarily process Perl code in
-# <%perl>, <%class>, <%init>, <% %>, and %-lines
-#
-method process_perl_code ($code) {
-    $code = $self->dollar_dot_replacement($code);
-    return $code;
+method _processed_perl_code ($code) {
+    my $coderef = \$code;
+    $self->process_perl_code($coderef);
+    return $$coderef;
 }
 
-# Replace $.foo with $self->foo()
-#
-method dollar_dot_replacement ($code) {
-    $code =~ s/\$\.([^\W\d]\w*)/\$self->$1/g;
-    return $code;
+method process_perl_code ($coderef) {
+    return $coderef;
 }
 
 method _match_unnamed_block () {
@@ -87,6 +83,12 @@ method _match_unnamed_block () {
 
 method _match_named_block () {
     $self->_match_block( $self->compiler->named_block_regex, 1 );
+}
+
+method _match_unknown_block () {
+    if ( $self->{source} =~ /\G(?:\n?)<%([A-Za-z_]+)>/gc ) {
+        $self->throw_syntax_error("unknown block '<%$1>'");
+    }
 }
 
 method _match_block ($block_regex, $named) {
@@ -186,10 +188,9 @@ method _match_substitution () {
       )
     {
         my ( $start_ws, $body, $after_body, $filters, $end_ws ) = ( $1, $2, $3, $4, $5 );
+        $self->throw_syntax_error("whitespace required after '<%'") unless length($start_ws);
         $self->{line_number} += tr/\n//
           foreach grep defined, ( $start_ws, $body, $after_body, $end_ws );
-
-        $self->throw_syntax_error("whitespace required after '<%'")  unless length($start_ws);
         $self->throw_syntax_error("whitespace required before '%>'") unless length($end_ws);
 
         $self->_handle_substitution( $body, $filters );
@@ -472,7 +473,7 @@ method _handle_attributes_list ($contents, $attr_type) {
 }
 
 method _attribute_declaration ($name, $params, $line_number) {
-    return $self->process_perl_code(
+    return $self->_processed_perl_code(
         sprintf(
             "%shas '%s' => %s",
             $self->_output_line_number_comment($line_number),
@@ -483,12 +484,12 @@ method _attribute_declaration ($name, $params, $line_number) {
 
 method _handle_class_block ($contents) {
     $self->{blocks}->{class} .=
-      $self->_output_line_number_comment . $self->process_perl_code($contents);
+      $self->_output_line_number_comment . $self->_processed_perl_code($contents);
 }
 
 method _handle_init_block ($contents) {
     $self->{current_method}->{init} =
-      $self->_output_line_number_comment . $self->process_perl_code($contents);
+      $self->_output_line_number_comment . $self->_processed_perl_code($contents);
 }
 
 # Save current regex position, then locally set source to the contents and
@@ -517,7 +518,7 @@ method _handle_apply_filter ($filter_expr) {
     }
     my $code = sprintf(
         "\$self->m->_apply_filters_to_output([%s], %s);\n",
-        $self->process_perl_code($filter_expr),
+        $self->_processed_perl_code($filter_expr),
         $self->_output_method($method)
     );
     $self->_add_to_current_method($code);
@@ -620,7 +621,7 @@ method _handle_flags_block ($contents) {
 }
 
 method _handle_perl_block ($contents) {
-    $self->_add_to_current_method( $self->process_perl_code($contents) );
+    $self->_add_to_current_method( $self->_processed_perl_code($contents) );
 
     $self->{last_code_type} = 'perl_block';
 }
@@ -649,7 +650,7 @@ method _handle_substitution ( $text, $filter_list ) {
         return;
     }
 
-    $text = $self->process_perl_code($text);
+    $text = $self->_processed_perl_code($text);
 
     if ($filter_list) {
         if ( my @filters = grep { /\S/ } split( /\s*,\s*/, $filter_list ) ) {
@@ -682,7 +683,7 @@ method _handle_component_call ($contents) {
 }
 
 method _handle_perl_line ($type, $contents) {
-    my $code = $self->process_perl_code( $contents . "\n" );
+    my $code = $self->_processed_perl_code( $contents . "\n" );
 
     if ( $type eq 'perl' ) {
         $self->_add_to_current_method($code);

@@ -1,7 +1,7 @@
 package Mason::t::Errors;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_errors : Test(20) {
+sub test_errors : Test(21) {
     my $self = shift;
     my $try  = sub {
         my ( $src, $expect_error ) = @_;
@@ -16,12 +16,13 @@ sub test_errors : Test(20) {
     $try->( '<%method>',                  qr/<%method> block requires a name/ );
     $try->( '<%before>',                  qr/<%before> block requires a name/ );
     $try->( '<%init>',                    qr/<%init> without matching <\/%init>/ );
+    $try->( '<%attr>',                    qr/unknown block '<%attr>'/ );
     $try->( '<%',                         qr/'<%' without matching '%>'/ );
     $try->( '<& foo',                     qr/'<&' without matching '&>'/ );
     $try->( '%my $i = 1;',                qr/% must be followed by whitespace/ );
     $try->( '%%my $i = 1;',               qr/%% must be followed by whitespace/ );
-    $try->( '<%2+2 %>',                   qr/whitespace required after '<%'/ );
-    $try->( '<% 2+2%>',                   qr/whitespace required before '%>'/ );
+    $try->( "<%5\n\n%>",                  qr/whitespace required after '<%' at .* line 1/ );
+    $try->( "<%\n\n5%>",                  qr/whitespace required before '%>' at .* line 3/ );
     $try->( "<%args>\n123\n</%args>",     qr/Invalid attribute line '123'/ );
     $try->( "<%args>\n\$\$abc\n</%args>", qr/Invalid attribute line '\$\$abc'/ );
     $try->( '<% $.Upper { %>Hi',          qr/<% { %> without matching <\/%>/ );
