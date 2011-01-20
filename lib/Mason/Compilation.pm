@@ -559,12 +559,6 @@ method _handle_method_modifier_block ( $block_type, $contents, $name ) {
     $self->_recursive_parse( $contents, $method );
 }
 
-method _handle_wrap_block ($contents) {
-    $self->throw_syntax_error("Multiple wrap blocks found")
-      if exists $self->{methods}->{"augment wrap"};
-    $self->_handle_method_modifier_block( 'augment', $contents, 'wrap' );
-}
-
 method _handle_filter_block ($contents, $name, $arglist) {
     my $new_contents = join( '',
         '<%perl>',

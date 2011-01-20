@@ -287,33 +287,6 @@ method run () {
 # PRIVATE METHODS
 #
 
-method add_default_render_method ($compc, $flags) {
-
-    # Default render method for any component that doesn't define one.
-    # Call inner() until we're back down at the page component ($self),
-    # then call main().
-    #
-    unless ( $compc->meta->has_method('render') ) {
-        my $path = $compc->cmeta->path;
-        my $code = sub {
-            my $self = shift;
-            if ( $self->cmeta->path eq $path ) {
-                $self->main(@_);
-            }
-            else {
-                $compc->_inner();
-            }
-        };
-        my $meta = $compc->meta;
-        if ( $flags->{ignore_wrap} ) {
-            $meta->add_method( render => $code );
-        }
-        else {
-            $meta->add_augment_method_modifier( render => $code );
-        }
-    }
-}
-
 method make_request () {
     return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
 }
@@ -435,8 +408,29 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     die $@ if $@;
 
     $compc->_set_class_cmeta($self);
-    $self->add_default_render_method( $compc, $flags );
+    $self->add_default_wrap_method( $compc, $flags );
     $compc->meta->make_immutable();
+}
+
+method add_default_wrap_method ($compc) {
+
+    # Default wrap method for any component that doesn't define one.
+    # Call inner() until we're back down at the page component ($self),
+    # then call main().
+    #
+    unless ( $compc->meta->has_method('wrap') ) {
+        my $path = $compc->cmeta->path;
+        my $code = sub {
+            my $self = shift;
+            if ( $self->cmeta->path eq $path ) {
+                $self->main(@_);
+            }
+            else {
+                $compc->_inner();
+            }
+        };
+        $compc->meta->add_augment_method_modifier( wrap => $code );
+    }
 }
 
 method construct_distinct_string () {
@@ -468,7 +462,7 @@ method source_file_for_path ($path) {
     return undef;
 }
 
-method _incr_request_count  () {
+method _incr_request_count () {
     return $self->{request_count}++;
 }
 

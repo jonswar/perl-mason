@@ -81,11 +81,11 @@ sub test_wrapping : Tests(2) {
     $self->add_comp(
         path => '/wrap/Base.m',
         src  => '
-<%wrap>
+<%augment wrap>
 <html>
-% $m->call_next;
+% inner();
 </html>
-</%wrap>
+</%augment>
 '
     );
     $self->add_comp(
@@ -101,11 +101,11 @@ Hello world
     $self->add_comp(
         path => '/wrap/subdir/subdir2/Base.m',
         src  => '
-<%wrap>
+<%augment wrap>
 <body>
-% $m->call_next;
+% inner();
 </body>
-</%wrap>
+</%augment>
 '
     );
     $self->test_comp(
@@ -124,9 +124,7 @@ Hello world
     $self->test_comp(
         path => '/wrap/subdir/subdir2/dont_wrap_me.m',
         src  => '
-<%flags>
-ignore_wrap=>1
-</%flags>
+%% method wrap { $.main() }
 <% $self->hello() %>
 ',
         expect => 'Hello world'

@@ -79,10 +79,6 @@ method apply_filter ($filter, $yield) {
     return $filtered_output;
 }
 
-method call_next () {
-    return $self->_current_comp_class->_inner();
-}
-
 method capture ($code) {
     my $output;
     {

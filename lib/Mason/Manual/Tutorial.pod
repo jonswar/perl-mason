@@ -443,29 +443,29 @@ of the component.
 
 =head2 Content wrapping
 
-You can use the C<< <%wrap> >> section in superclasses to wrap content before
-and/or after the subclass content. This is useful for creating cascading web
-page templates, for example:
+You can use the C<< <%augment wrap> >> modifier in superclasses to wrap content
+before and/or after the subclass content. This is useful for creating cascading
+web page templates, for example:
 
     # /Base.m - top-most template
     #
-    <%wrap>
+    <%augment wrap>
       <html>
         <body>
-          <% $self->call_next %>
+          <% inner() %>
           <div class="footer">Copyright 2010 McHuffy Inc.</div>
         </body>
       </html>
-    </%wrap>
+    </%augment>
     
     # /product/Base.m - product-specific template
     #
-    <%wrap>
+    <%augment wrap>
       <h2>Products</h2>
       <div class="products_body">
-        <% $self->call_next %>
+        <% inner() %>
       </div>
-    </%wrap>
+    </%augment>
     
     # /product/sales/Base.pm - utility methods, no additional template
     #
@@ -480,9 +480,8 @@ page templates, for example:
 
 When Mason calls render on /product/sales/display.m, its content will be
 wrapped by two templates: the outermost in /Base.pm, and the next one in
-/product/Base.pm. C<< <% $self->call_next %> >> passes control to the next
-inner component. The final output will be (with indentation added for
-readability):
+/product/Base.pm. C<< inner >> passes control to the next inner component. The
+final output will be (with indentation added for readability):
 
       <html>
         <body>
@@ -496,18 +495,12 @@ readability):
       </html>
 
 Note that neither /product/sales/Base.pm nor /product/sales/display.m need to
-define a C<render> method or C<< <%wrap> >> section. A default render will be
-defined automatically and will do the right thing.
+define a C<wrap> method or C<< <%augment wrap> >> modifier. A default wrap will
+be defined automatically and will do the right thing.
 
-If you want a page component or a superclass to ignore its superclass's
-wrappers, use the ignore_wrap flag:
+If you want a page component to ignore the wrappers above it:
 
-    <%flags>
-    ignore_wrap => 1
-    </%flags>
-
-Note: Wrapping currently uses Moose's augment/render underneath, but this is
-subject to change and should not be depended on.
+    %% method wrap { $.main() }
 
 =head2 Accessing the page component
 
@@ -680,10 +673,9 @@ Specifies flags that affect the compilation of the component. e.g.
 
     <%flags>
     extends => '/foo/bar'
-    ignore_wrap => 1
     </%flags>
 
-C<extends> and C<ignore_wrap> are currently the only flags.
+C<extends> is currently the only flag.
 
 =head2 <%text>
 
