@@ -49,7 +49,7 @@ A full plugin or bundle classname prefixed with '+'.
 
 =back
 
-=head1 CREATING PLUGINS
+=head1 WRITING PLUGINS
 
 A plugin consists of the main plugin class and one or more roles. The main
 class currently looks like this:
@@ -57,6 +57,9 @@ class currently looks like this:
     package Mason::Plugin::MyPlugin;
     use Moose;
     with 'Mason::Plugin';
+
+    # Optional: declare other plugin dependencies
+    method requires_plugins { qw(A @D) }
 
     1;
 
@@ -70,9 +73,12 @@ class currently looks like this:
 
     ....
 
-That is, it doesn't have to do anything other than include the role
-'Mason::Plugin', and document itself. The real action is in the roles, which
-live underneath, and each modify a single Mason class:
+Its main responsibilities are to include the role 'Mason::Plugin' and document
+itself. It may also specify a C<requires_plugins> that returns a list of
+dependencies with the same syntax as the C<plugins> parameter to C<Mason->new>.
+
+The real action is in the role classes, which live underneath, and each modify
+a single Mason class:
 
     package Mason::Plugin::MyPlugin::Interp;
     use Moose::Role;
@@ -89,21 +95,23 @@ live underneath, and each modify a single Mason class:
     ...
 
 When a plugin is applied, each of its roles will be automatically applied to
-the appropriate Mason class.
+the appropriate Mason class. For example, in the example above
+C<Mason::Plugin::MyPlugin::Interp> and C<Mason::Plugin::MyPlugin::Compiler>
+will be applied to Mason::Interp and Mason::Compiler respectively.
 
 Private or app-specific plugins need not be named "Mason::Plugin::*"; call them
 whatever you want and use the '+' prefix to refer to them.
 
 =head1 CREATING PLUGIN BUNDLES
 
-A plugin bundle collects one or more plugins and/or bundles. It looks like
-this:
+A plugin bundle just collects one or more plugins and/or other bundles. It
+looks like this:
 
     package Mason::PluginBundle::MyBundle
     use Moose;
     with 'Mason::PluginBundle';
     
-    sub provides_plugins {
+    sub requires_plugins {
         return (
             'A',
             'B',
@@ -125,7 +133,7 @@ this:
 
     ....
 
-The C<provides_plugins> method returns a list of entries, with the same syntax
+The C<requires_plugins> method returns a list of entries, with the same syntax
 as the C<plugins> parameter to C<Mason->new>.
 
 =head1 PLUGGABLE MASON CLASSES
@@ -144,5 +152,5 @@ As of this writing the following Mason classes can be modified with plugins:
 
 Thanks to Ricardo SIGNES <rjbs@cpan.org> for L<Dist::Zilla|Dist::Zilla> and
 L<Pod::Weaver|Pod::Weaver>, which got me to start thinking in plugins and lent
-the plugin and bundle syntax.
+the plugin and bundle name syntax.
 

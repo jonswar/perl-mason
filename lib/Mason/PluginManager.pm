@@ -10,14 +10,21 @@ my ( %apply_plugins_cache, %final_subclass_seen );
 # CLASS METHODS
 #
 
-our $depth = 0;
+our $depth   = 0;
+our %visited = ();
+my $max_depth = 16;
 
 method process_plugins_list ($class: $plugins) {
-    local $depth = $depth + 1;
-    die "10 levels deep in process_plugins_list (plugin cycle?)" if $depth >= 10;
+    local $depth   = $depth + 1;
+    local %visited = %visited;
+    die ">$max_depth levels deep in process_plugins_list (plugin cycle?)" if $depth >= $max_depth;
     croak 'plugins must be an array reference' unless ref($plugins) eq 'ARRAY';
-    $plugins =
-      [ uniq( map { $_->expand_to_plugins } map { $class->process_plugin_name($_) } @$plugins ) ];
+    $plugins = [
+        uniq(
+            map { !$visited{$_}++ ? $_->expand_to_plugins : () }
+            map { $class->process_plugin_name($_) } @$plugins
+        )
+    ];
     return $plugins;
 }
 

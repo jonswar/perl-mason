@@ -4,9 +4,9 @@ use Method::Signatures::Simple;
 use namespace::autoclean;
 
 method expand_to_plugins ($bundle_class:) {
-    return @{ Mason::PluginManager->process_plugins_list( [ $bundle_class->provides_plugins ] ) };
+    return @{ Mason::PluginManager->process_plugins_list( [ $bundle_class->requires_plugins ] ) };
 }
 
-requires 'provides_plugins';
+requires 'requires_plugins';
 
 1;

@@ -35,26 +35,31 @@ sub test_plugins : Test(6) {
     package Mason::PluginBundle::F;
     use Moose;
     with 'Mason::PluginBundle';
-    sub provides_plugins { return qw(C D) }
+    sub requires_plugins { return qw(C D) }
 }
 {
     package Mason::Test::PluginBundle::G;
     use Moose;
     with 'Mason::PluginBundle';
-    sub provides_plugins { return qw(C E) }
+    sub requires_plugins { return qw(C E) }
 }
-{ package Mason::Plugin::H; use Moose; with 'Mason::Plugin'; }
+{
+    package Mason::Plugin::H;
+    use Moose;
+    with 'Mason::Plugin';
+    sub requires_plugins { return qw(@F) }
+}
 {
     package Mason::PluginBundle::I;
     use Moose;
     with 'Mason::PluginBundle';
 
-    sub provides_plugins {
+    sub requires_plugins {
         return ( '+Mason::Test::Plugins::A', 'B', '@F', '+Mason::Test::PluginBundle::G', );
     }
 }
 
-sub test_bundles : Test(5) {
+sub test_bundles : Test(6) {
     my $self = shift;
 
     my $test = sub {
@@ -64,7 +69,8 @@ sub test_bundles : Test(5) {
           [ map { /Mason::Plugin::/ ? substr( $_, 15 ) : $_ } @{ $interp->plugins } ];
         cmp_deeply( $got_plugins, $expected_plugins );
     };
-    $test->( ['H'],  ['H'] );
+    $test->( ['E'], ['E'] );
+    $test->( ['H'], [ 'H', 'C', 'D' ] );
     $test->( ['@F'], [ 'C', 'D' ] );
     $test->( ['@I'], [ 'Mason::Test::Plugins::A', 'B', 'C', 'D', 'E' ] );
     throws_ok { $test->( ['@X'] ) } qr/could not load 'Mason::PluginBundle::X'/;
