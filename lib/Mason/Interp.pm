@@ -408,8 +408,12 @@ method load_class_from_object_file ( $compc, $object_file, $path, $default_paren
     die $@ if $@;
 
     $compc->_set_class_cmeta($self);
-    $self->add_default_wrap_method( $compc, $flags );
+    $self->modify_loaded_class($compc);
     $compc->meta->make_immutable();
+}
+
+method modify_loaded_class ( $compc, $flags ) {
+    $self->add_default_wrap_method($compc);
 }
 
 method add_default_wrap_method ($compc) {

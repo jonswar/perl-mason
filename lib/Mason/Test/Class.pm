@@ -106,7 +106,12 @@ method test_comp (%params) {
     elsif ( defined($expect) ) {
         $desc ||= $caller;
         my $output = trim( $self->interp->run(@run_params)->output );
-        is( $output, $expect, $desc );
+        if ( ref($expect) eq 'Regexp' ) {
+            like( $output, $expect, $desc );
+        }
+        else {
+            is( $output, $expect, $desc );
+        }
     }
 }
 
