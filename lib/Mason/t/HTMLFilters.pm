@@ -3,7 +3,7 @@ use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_html_filters : Test(4) {
     my $self = shift;
-    $self->setup_interp( plugins => ['HTMLFilters'] );
+    $self->setup_interp( plugins => [ '@Default', 'HTMLFilters' ] );
     $self->test_comp( src => '<% "<a>" | HTML %>',         expect => '&lt;a&gt;' );
     $self->test_comp( src => '<% "/foo/bar?a=5" | URI %>', expect => '%2Ffoo%2Fbar%3Fa%3D5' );
     $self->test_comp(

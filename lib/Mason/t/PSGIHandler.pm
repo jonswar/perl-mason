@@ -4,7 +4,7 @@ use Mason::Util qw(trim);
 use HTTP::Request::Common;
 use Plack::Test;
 
-__PACKAGE__->default_plugins( ['PSGIHandler'] );
+__PACKAGE__->default_plugins( [ '@Default', 'PSGIHandler' ] );
 
 sub test_psgi_comp {
     my ( $self, %params ) = @_;

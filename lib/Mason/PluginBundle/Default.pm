@@ -1,0 +1,39 @@
+package Mason::PluginBundle::Default;
+use Moose::Role;
+with 'Mason::PluginBundle';
+use strict;
+use warnings;
+
+sub requires_plugins { qw(DollarDot) }
+
+1;
+
+# ABSTRACT: Default plugins
+__END__
+
+=head1 INCLUDED PLUGINS
+
+=over
+
+=item L<DollarDot|Mason::Plugin::DollarDot>
+
+=back
+
+=head1 DESCRIPTION
+
+Plugins in this bundle are always added by default, regardless of whether you
+pass a plugins list to C<< Mason->new >>. You can use the '-' prefix to remove
+individual plugins or the whole bundle. e.g.
+
+    # Will get just the default plugins
+    Mason->new(...);
+    Mason->new(plugins => [], ...);
+
+    # Will get the default plugins plus the 'Foo' plugin
+    Mason->new(plugins => ['Foo'], ...);
+
+    # Will get the default plugins except for 'DollarDot'
+    Mason->new(plugins => ['-DollarDot'], ...);
+
+    # Will get no plugins
+    Mason->new(plugins => ['-Default'], ...);

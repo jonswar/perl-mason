@@ -19,7 +19,7 @@ this search:
 
 =head1 USING PLUGINS
 
-Pass a plugins list to the Mason constructor:
+Pass a list of plugin specs to the Mason constructor:
 
     Mason->new(plugins =>
             [
@@ -28,15 +28,16 @@ Pass a plugins list to the Mason constructor:
              '+My::Mason::Plugin::AThirdPlugin',
              '@APluginBundle',
              '+My::Mason::PluginBundle::AnotherBundle',
+             '-PluginIDontLike',
             ]);
 
-Each entry can be either
+Each plugin spec can be one of the following;
 
 =over
 
 =item *
 
-A plugin name, which will have "Mason::Plugin::" prepended to it.
+A simple name, which will have "Mason::Plugin::" prepended to it.
 
 =item *
 
@@ -45,11 +46,31 @@ prepended to it.
 
 =item *
 
-A full plugin or bundle classname prefixed with '+'.
+A full plugin or bundle class name prefixed with '+'.
+
+=item *
+
+Any spec prefixed with '-', which means do not include these plugin(s) in the
+final list.
 
 =back
 
-=head1 WRITING PLUGINS
+See Mason::t::Plugins::test_plugin_specs in the Mason distribution for some
+examples.
+
+=head1 DEFAULT PLUGINS
+
+Mason will always add the L<@Default|Mason::PluginBundle::Default> bundle
+regardless of whether you pass your own list. You can remove individual default
+plugins that you don't like:
+
+    plugins => ['-DollarDot', ...]
+
+or the whole list:
+
+    plugins => ['-@Default', ...]
+
+=head1 CREATING PLUGINS
 
 A plugin consists of the main plugin class and one or more roles. The main
 class currently looks like this:
@@ -99,8 +120,29 @@ the appropriate Mason class. For example, in the example above
 C<Mason::Plugin::MyPlugin::Interp> and C<Mason::Plugin::MyPlugin::Compiler>
 will be applied to Mason::Interp and Mason::Compiler respectively.
 
-Private or app-specific plugins need not be named "Mason::Plugin::*"; call them
-whatever you want and use the '+' prefix to refer to them.
+=head2 Pluggable Mason classes
+
+As of this writing the following Mason classes can be modified with plugins:
+
+    Mason::Compilation
+    Mason::Compiler
+    Mason::Component
+    Mason::Component::ClassMeta
+    Mason::Component::InstanceMeta
+    Mason::Request
+    Mason::Result
+
+=head2 Extra classes in plugin
+
+If you have extra classes in your plugin that aren't automatically providing a
+role to a Mason class, put them in C<Extra.pm> or the C<Extra> subdirectory,
+e.g.
+
+   package Mason::Plugin::MyPlugin::Extra::Utils;
+   ...
+
+That will ensure that your classname will not conflict with a future Mason
+class name.
 
 =head1 CREATING PLUGIN BUNDLES
 
@@ -131,26 +173,26 @@ looks like this:
 
     Mason::PluginBundle::MyBundle - My plugin bundle
 
+    =head1 INCLUDED PLUGINS
+
+    =over
+
+    =item A
+    =item B
+    =item +My::Plugin::C
+    =item @D
+    =item +My::PluginBundle::E
+
+    =back
+
     ....
 
 The C<requires_plugins> method returns a list of entries, with the same syntax
 as the C<plugins> parameter to C<Mason->new>.
 
-=head1 PLUGGABLE MASON CLASSES
-
-As of this writing the following Mason classes can be modified with plugins:
-
-    Mason::Compilation
-    Mason::Compiler
-    Mason::Component
-    Mason::Component::ClassMeta
-    Mason::Component::InstanceMeta
-    Mason::Request
-    Mason::Result
-
 =head1 ACKNOWLEDGEMENTS
 
 Thanks to Ricardo SIGNES <rjbs@cpan.org> for L<Dist::Zilla|Dist::Zilla> and
-L<Pod::Weaver|Pod::Weaver>, which got me to start thinking in plugins and lent
-the plugin and bundle name syntax.
+L<Pod::Weaver|Pod::Weaver>, which got me thinking in plugins and lent the
+plugin and bundle name syntax.
 

@@ -1,7 +1,7 @@
 package Mason::t::Cache;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-__PACKAGE__->default_plugins( ['Cache'] );
+__PACKAGE__->default_plugins( [ '@Default', 'Cache' ] );
 
 sub test_cache_defaults : Test(2) {
     my $self = shift;

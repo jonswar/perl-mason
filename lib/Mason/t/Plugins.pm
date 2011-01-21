@@ -1,6 +1,7 @@
 package Mason::t::Plugins;
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture_merged);
+use Mason::Util qw(dump_one_line);
 
 sub test_plugins : Test(6) {
     my $self = shift;
@@ -59,7 +60,17 @@ sub test_plugins : Test(6) {
     }
 }
 
-sub test_bundles : Test(6) {
+{
+    package Mason::PluginBundle::J;
+    use Moose;
+    with 'Mason::PluginBundle';
+
+    sub requires_plugins {
+        return ('@I');
+    }
+}
+
+sub test_plugin_specs : Test(9) {
     my $self = shift;
 
     my $test = sub {
@@ -67,12 +78,16 @@ sub test_bundles : Test(6) {
         my $interp = Mason->new( plugins => $plugin_list );
         my $got_plugins =
           [ map { /Mason::Plugin::/ ? substr( $_, 15 ) : $_ } @{ $interp->plugins } ];
-        cmp_deeply( $got_plugins, $expected_plugins );
+        cmp_deeply( $got_plugins, [ @$expected_plugins, 'DollarDot' ],
+            dump_one_line($plugin_list) );
     };
+    $test->( [], [] );
     $test->( ['E'], ['E'] );
     $test->( ['H'], [ 'H', 'C', 'D' ] );
     $test->( ['@F'], [ 'C', 'D' ] );
     $test->( ['@I'], [ 'Mason::Test::Plugins::A', 'B', 'C', 'D', 'E' ] );
+    $test->( [ '-C', '@I', '-+Mason::Test::Plugins::A' ], [ 'B', 'D', 'E' ] );
+    $test->( [ '-@I', '@J' ], [] );
     throws_ok { $test->( ['@X'] ) } qr/could not load 'Mason::PluginBundle::X'/;
     throws_ok { $test->( ['Y'] ) } qr/could not load 'Mason::Plugin::Y'/;
 }

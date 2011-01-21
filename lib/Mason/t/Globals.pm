@@ -1,7 +1,7 @@
 package Mason::t::Globals;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-__PACKAGE__->default_plugins( ['Globals'] );
+__PACKAGE__->default_plugins( [ '@Default', 'Globals' ] );
 
 sub test_globals : Tests(2) {
     my $self = shift;

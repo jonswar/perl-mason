@@ -1,7 +1,7 @@
 package Mason::t::Lvalue;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-__PACKAGE__->default_plugins( ['Lvalue'] );
+__PACKAGE__->default_plugins( [ '@Default', 'Lvalue' ] );
 
 sub test_lvalue : Test(1) {
     my $self = shift;

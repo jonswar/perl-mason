@@ -6,7 +6,7 @@ use base qw(Mason::Test::Class);
 
 sub test_defer : Test(1) {
     my $self = shift;
-    $self->{interp} = $self->create_interp( plugins => ['Defer'] );
+    $self->{interp} = $self->create_interp( plugins => [ '@Default', 'Defer' ] );
     $self->test_comp(
         src => <<'EOF',
 <%class>

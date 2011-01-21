@@ -52,8 +52,7 @@ method setup_interp () {
 
 method create_interp () {
     my (%params) = @_;
-    $params{plugins} ||= [];
-    push( @{ $params{plugins} }, 'DollarDot', @$default_plugins );
+    $params{plugins} = $default_plugins if @$default_plugins;
     return Mason->new(
         comp_root              => $self->comp_root,
         data_dir               => $self->data_dir,

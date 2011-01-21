@@ -1,7 +1,7 @@
 package Mason::t::AdvancedPageResolution;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-__PACKAGE__->default_plugins( ['AdvancedPageResolution'] );
+__PACKAGE__->default_plugins( [ '@Default', 'AdvancedPageResolution' ] );
 
 sub test_resolve : Tests(19) {
     my $self = shift;
