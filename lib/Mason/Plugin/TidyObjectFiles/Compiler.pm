@@ -1,7 +1,6 @@
 package Mason::Plugin::TidyObjectFiles::Compiler;
-use Moose::Role;
+use Mason::PluginRole;
 use Perl::Tidy;
-use namespace::autoclean;
 
 has 'tidy_options' => ( is => 'ro' );
 

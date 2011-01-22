@@ -1,6 +1,6 @@
 package Mason::Plugin::AdvancedPageResolution::Interp;
 use File::Basename;
-use Mason::Moose::Role;
+use Mason::PluginRole;
 
 # Passed attributes
 #

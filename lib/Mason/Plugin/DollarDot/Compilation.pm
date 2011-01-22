@@ -1,7 +1,5 @@
 package Mason::Plugin::DollarDot::Compilation;
-use Moose::Role;
-use strict;
-use warnings;
+use Mason::PluginRole;
 
 after 'process_perl_code' => sub {
     my ( $self, $coderef ) = @_;

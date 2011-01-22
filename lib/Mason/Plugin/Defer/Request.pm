@@ -1,7 +1,5 @@
 package Mason::Plugin::Defer::Request;
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 has 'defers' => (is => 'rw', init_arg => undef, default => sub { [] });
 

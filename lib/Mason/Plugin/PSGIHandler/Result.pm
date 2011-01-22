@@ -1,6 +1,5 @@
 package Mason::Plugin::PSGIHandler::Result;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 has 'plack_response' => (is => 'rw');
 

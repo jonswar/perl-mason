@@ -1,9 +1,7 @@
 package Mason::Plugin::Cache::Interp;
 use CHI;
 use Mason::Util qw(catdir);
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 # Passed attributes
 #

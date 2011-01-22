@@ -134,8 +134,7 @@ the standard filters at least.
 Here's a filter package that implements two filters, C<Upper> and C<Lower>:
 
     package MyApp::Filters;
-    use Method::Signatures::Simple;
-    use Moose::Role;
+    use Mason::PluginRole;
     
     method Upper () {
         return sub { uc($_[0]) }
@@ -194,8 +193,8 @@ the above:
 The dynamic filter obviously doesn't buy you anything in this case, and for the
 majority of filters they are unneeded.  The real power of dynamic filters is
 that they can choose if and when to execute the yield block. For example, here
-is an implementation (slightly expanded for explanatory purposes) of the C<<
-Cache >> filter:
+is an implementation (slightly expanded for explanatory purposes) of the  C<<
+Cache >> filter in L<Mason::Plugin::Cache|Mason::Plugin::Cache>:
 
     method Cache ( $key, $set_options ) {
         return Mason::DynamicFilter->new(

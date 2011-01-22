@@ -1,8 +1,6 @@
 package Mason::Plugin::Globals::Interp;
 use Carp;
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 # Passed attributes
 #

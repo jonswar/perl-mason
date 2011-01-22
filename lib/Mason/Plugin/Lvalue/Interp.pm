@@ -1,7 +1,5 @@
 package Mason::Plugin::Lvalue::Interp;
-use Moose::Role;
-use strict;
-use warnings;
+use Mason::PluginRole;
 
 after 'modify_loaded_class' => sub {
     my ( $self, $class ) = @_;

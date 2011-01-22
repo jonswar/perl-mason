@@ -1,5 +1,5 @@
 package Mason::Plugin::AdvancedPageResolution::Request;
-use Mason::Moose::Role;
+use Mason::PluginRole;
 
 has 'path_info'  => ( init_arg => undef, default => '' );
 

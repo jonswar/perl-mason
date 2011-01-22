@@ -1,8 +1,6 @@
 package Mason::Plugin;
-use Moose::Role;
-use Method::Signatures::Simple;
+use Mason::PluginRole;
 use Mason::Util qw(can_load);
-use namespace::autoclean;
 
 method requires_plugins ($plugin_class:) {
     return ();

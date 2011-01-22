@@ -1,5 +1,5 @@
 package Mason::Plugin::AdvancedPageResolution::Component;
-use Mason::Moose::Role;
+use Mason::PluginRole;
 
 sub accept_path_info { 0 }
 

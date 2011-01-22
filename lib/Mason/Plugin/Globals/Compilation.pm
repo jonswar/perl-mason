@@ -1,7 +1,5 @@
 package Mason::Plugin::Globals::Compilation;
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 around '_output_class_header' => sub {
     my $orig = shift;

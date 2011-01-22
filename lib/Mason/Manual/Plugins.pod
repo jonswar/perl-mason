@@ -102,14 +102,14 @@ The real action is in the role classes, which live underneath, and each modify
 a single Mason class:
 
     package Mason::Plugin::MyPlugin::Interp;
-    use Moose::Role;
+    use Mason::PluginRole;
 
     # Modify Mason::Interp
 
     ...
 
     package Mason::Plugin::MyPlugin::Compiler;
-    use Moose::Role;
+    use Mason::PluginRole;
 
     # Modify Mason::Compiler
 

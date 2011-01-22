@@ -1,7 +1,5 @@
 package Mason::Plugin::HTMLFilters::Filters;
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 my %html_escape = ( '&' => '&amp;', '>' => '&gt;', '<' => '&lt;', '"' => '&quot;' );
 my $html_escape = qr/([&<>"])/;

@@ -1,8 +1,6 @@
 package Mason::Plugin::PSGIHandler::Interp;
 use Mason::Plugin::PSGIHandler::PlackRequest;
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 method handle_psgi ($env) {
     my $req = Mason::Plugin::PSGIHandler::PlackRequest->new($env);

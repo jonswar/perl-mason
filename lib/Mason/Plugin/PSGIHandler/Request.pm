@@ -1,8 +1,6 @@
 package Mason::Plugin::PSGIHandler::Request;
 use Mason::Plugin::PSGIHandler::PlackResponse;
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 has 'req' => (required => 1, isa => 'Object');
 has 'res' => (lazy_build => 1);

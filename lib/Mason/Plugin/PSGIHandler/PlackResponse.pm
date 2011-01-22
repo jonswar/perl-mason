@@ -1,5 +1,5 @@
 package Mason::Plugin::PSGIHandler::PlackResponse;
-use Moose;
+use Mason::Moose;
 extends 'Plack::Response';
 
 1;

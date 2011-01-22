@@ -32,8 +32,8 @@ __END__
 
 =head1 DESCRIPTION
 
-Sets certain Moose policies for Mason's internal classes. Using this module is
-roughly equivalent to
+Sets certain Moose behaviors for Mason's internal classes. Using this module is
+equivalent to
 
     use Moose;
     use MooseX::HasDefaults::RO;

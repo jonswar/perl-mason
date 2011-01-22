@@ -1,8 +1,6 @@
 package Mason::PluginBundle::Default;
-use Moose::Role;
+use Mason::PluginRole;
 with 'Mason::PluginBundle';
-use strict;
-use warnings;
 
 sub requires_plugins { qw(DollarDot) }
 

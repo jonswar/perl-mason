@@ -1,9 +1,7 @@
 package Mason::Filters::Standard;
 use Mason::DynamicFilter;
 use Mason::Util;
-use Method::Signatures::Simple;
-use Moose::Role;
-use namespace::autoclean;
+use Mason::PluginRole;
 
 method Capture ($outref) {
     sub { $$outref = $_[0]; return '' }
