@@ -1,4 +1,4 @@
-package Mason::Plugin::Lvalue;
+package Mason::Plugin::LvalueAttributes;
 use Moose;
 with 'Mason::Plugin';
 

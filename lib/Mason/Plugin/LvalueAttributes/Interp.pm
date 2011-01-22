@@ -1,4 +1,4 @@
-package Mason::Plugin::Lvalue::Interp;
+package Mason::Plugin::LvalueAttributes::Interp;
 use Mason::PluginRole;
 
 after 'modify_loaded_class' => sub {
