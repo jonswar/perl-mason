@@ -24,7 +24,6 @@ has 'out_method'     => ( isa => 'Mason::Types::OutMethod', default => sub { $de
 has 'buffer_stack'       => ( init_arg => undef );
 has 'count'              => ( init_arg => undef );
 has 'go_result'          => ( init_arg => undef );
-has 'path_info'          => ( init_arg => undef, default => '' );
 has 'output'             => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
 has 'request_args'       => ( init_arg => undef );
@@ -524,13 +523,6 @@ reference to the entire hash of key-value pairs.
 
 Consider storing this kind of data in a read-write attribute of the page
 component.
-
-=item path_info ()
-
-Returns the remainder of the top level path beyond the path of the page
-component, with no leading slash. e.g. If a request for '/foo/bar/baz' resolves
-to "/foo.m", the path_info is "bar/baz". Defaults to the empty string for an
-exact match.
 
 =item print (string)
 
