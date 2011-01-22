@@ -53,18 +53,67 @@ noted.
     /news/sports/hockey.{pm,m}
     /news/sports/hockey/index.{pm,m}
     /news/sports/hockey/dhandler.{pm,m}
-    /news/sports.{pm,m}           # $m->path_info = hockey
+    /news/sports.{pm,m}           # $m->path_info = hockey (but see next section)
     /news/sports/dhandler.{pm,m}  # $m->path_info = hockey
-    /news.{pm,m}                  # $m->path_info = sports/hockey
+    /news.{pm,m}                  # $m->path_info = sports/hockey (but see next section)
     /news/dhandler.{pm,m}         # $m->path_info = sports/hockey
     /dhandler.{pm,m}              # $m->path_info = news/sports/hockey
 
 A component or dhandler that does not want to handle a particular request may
-defer control to the next dhandler by calling L</decline>.
+call L</decline>, in which case Mason continues down the list of possibilities.
 
 Note that the bare request path itself (in this case C<< /news/sports/hockey
 >>) is not one of the components searched for. You can add the empty string
 ("") to L</page_extensions> to change this.
+
+=head2 Accepting or rejecting partial match
+
+When a partial path matches on a non-dhandler component, e.g. these cases from
+above:
+
+    /news/sports.{pm,m}           # $m->path_info = hockey
+    /news.{pm,m}                  # $m->path_info = sports/hockey
+
+the component may not want to accept the match. In many cases you'll only want
+a component to match its exact URL.
+
+Mason checks this by calling the method C<< accept_path_info >> on the
+component with the path_info as a parameter.  If it returns a true value, the
+match is accepted; otherwise it is as if you have called L</decline>, and Mason
+continues down the list of possibilities.
+
+By default C<accept_path_info> returns B<false>, so you will have to explicitly
+indicate that you want to accept a partial match. You can accept any path_info:
+
+    %% method accept_path_info { 1 }
+
+Or you can use this opportunity to parse the path_info into attributes and make
+sure it's acceptable. Here's an example that looks for a path_info of the form
+YYYY/MM (it requires the L<LValueAttribute
+plugin|Mason::Plugin::LValueAttribute>).
+
+    <%shared>
+    $.month
+    $.year
+    </%shared>
+
+    <%class>
+    method accept_path_info ($path_info) {
+        ($.year, $.month) = ($path_info =~ m|^(\d{4})/(\d{2})$|);
+        return $.year && $.month && $.month <= 12;
+    }
+    </%class>
+
+You can put this in a top-level L<Base.pm> if you want to accept path_info by
+default for all components:
+
+    method accept_path_info { 1 }
+
+Even if C<accept_path_info> returns true, the component can still decide to
+L</decline> later.
+
+Mason does not check C<accept_path_info> on dhandlers, since their very reason
+for existing is to match partial paths.
 
 =head1 ADDITIONAL INTERP PARAMETERS
 
@@ -96,7 +145,7 @@ request path itself as a page component candidate.
 
 =over
 
-=item decline
+=item decline ()
 
 Clears the output buffer and issues the current request again, but acting as if
 the previously chosen page component(s) do not exist.
@@ -111,5 +160,12 @@ then a request for path C</news/sports> will initially resolve to
 C</news/sports.m>.  A call to C<< $m->decline >> would restart the request and
 resolve to C</news/dhandler.m>, a second C<< $m->decline >> would resolve to
 C</dhandler.m>, and a third would throw a "not found" error.
+
+=item path_info ()
+
+Returns the remainder of the top level path beyond the path of the page
+component, with no leading slash. e.g. If a request for '/foo/bar/baz' resolves
+to "/foo.m", the path_info is "bar/baz". Defaults to the empty string for an
+exact match.
 
 =back
