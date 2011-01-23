@@ -1,4 +1,4 @@
-package Mason::Plugin::TidyObjectFiles::Compiler;
+package Mason::Plugin::TidyObjectFiles::Interp;
 use Mason::PluginRole;
 use Perl::Tidy;
 

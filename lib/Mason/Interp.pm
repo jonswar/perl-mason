@@ -1,15 +1,15 @@
 package Mason::Interp;
 use Devel::GlobalDestruction;
 use File::Basename;
+use File::Path;
 use File::Temp qw(tempdir);
 use Guard;
 use JSON;
 use List::Util qw(first);
-use Mason::Compiler;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
-use Mason::Util qw(catdir catfile mason_canon_path touch_file);
+use Mason::Util qw(catdir catfile mason_canon_path touch_file write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
@@ -21,21 +21,39 @@ my $interp_count = 0;
 # Passed attributes
 #
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'comp_root'                => ( isa        => 'Mason::Types::CompRoot', coerce => 1 );
-has 'compiler'                 => ( lazy_build => 1 );
+has 'comp_root'                => ( isa => 'Mason::Types::CompRoot', coerce => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
+has 'no_source_line_numbers'   => ( default => 0 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
+has 'pure_perl_extensions'     => ( default => sub { ['.pm'] } );
 has 'static_source'            => ( );
 has 'static_source_touch_file' => ( );
+has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
+
+# Derived attributes
+#
+has 'autobase_regex'           => ( init_arg => undef, lazy_build => 1 );
+has 'code_cache'               => ( init_arg => undef );
+has 'count'                    => ( init_arg => undef );
+has 'distinct_string_count'    => ( init_arg => undef, default => 0 );
+has 'named_block_regex'        => ( init_arg => undef, lazy_build => 1 );
+has 'named_block_types'        => ( init_arg => undef, lazy_build => 1 );
+has 'pure_perl_regex'          => ( lazy_build => 1 );
+has 'request_count'            => ( init_arg => undef, default => 0 );
+has 'request_params'           => ( init_arg => undef );
+has 'top_level_regex'          => ( lazy_build => 1 );
+has 'unnamed_block_regex'      => ( init_arg => undef, lazy_build => 1 );
+has 'unnamed_block_types'      => ( init_arg => undef, lazy_build => 1 );
+has 'valid_flags'              => ( init_arg => undef, lazy_build => 1 );
+has 'valid_flags_hash'         => ( init_arg => undef, lazy_build => 1 );
 
 # Class overrides
 #
 my %class_overrides = (
     compilation_class             => 'Compilation',
-    compiler_class                => 'Compiler',
     component_class               => 'Component',
     component_class_meta_class    => 'Component::ClassMeta',
     component_instance_meta_class => 'Component::InstanceMeta',
@@ -56,16 +74,6 @@ while ( my ( $method_name, $name ) = each(%class_overrides) ) {
     );
 }
 
-# Derived attributes
-#
-has 'autobase_regex'        => ( lazy_build => 1, init_arg => undef );
-has 'code_cache'            => ( init_arg => undef );
-has 'compiler_params'       => ( init_arg => undef );
-has 'count'                 => ( init_arg => undef );
-has 'distinct_string_count' => ( init_arg => undef, default => 0 );
-has 'request_count'         => ( init_arg => undef, default => 0 );
-has 'request_params'        => ( init_arg => undef );
-
 #
 # BUILD
 #
@@ -82,16 +90,8 @@ method BUILD ($params) {
         $self->check_static_source_touch_file();
     }
 
-    # Separate out compiler and request parameters
+    # Separate out request parameters
     #
-    $self->{compiler_params} = {};
-    my %is_compiler_attribute =
-      map { ( $_->init_arg || $_->name, 1 ) } $self->compiler_class->meta->get_all_attributes();
-    foreach my $key ( keys(%$params) ) {
-        if ( $is_compiler_attribute{$key} ) {
-            $self->{compiler_params}->{$key} = delete( $params->{$key} );
-        }
-    }
     $self->{request_params} = {};
     my %is_request_attribute =
       map { ( $_->init_arg || $_->name, 1 ) } $self->request_class->meta->get_all_attributes();
@@ -109,10 +109,6 @@ method _build_autobase_names () {
 method _build_autobase_regex () {
     my $regex = '(' . join( "|", @{ $self->autobase_names } ) . ')$';
     return qr/$regex/;
-}
-
-method _build_compiler () {
-    return $self->compiler_class->new( interp => $self, %{ $self->compiler_params } );
 }
 
 method _build_component_class_prefix () {
@@ -234,7 +230,7 @@ method load ($path) {
         $compile = ( !$object_lastmod || $object_lastmod < $source_lastmod );
     }
 
-    $self->compiler->compile_to_file( $source_file, $path, $object_file ) if $compile;
+    $self->compile_to_file( $source_file, $path, $object_file ) if $compile;
 
     my $compc = $self->comp_class_for_path($path);
 
@@ -453,8 +449,7 @@ method object_create_marker_file () {
 }
 
 method object_file_for_path ($path) {
-    return catfile( $self->object_dir, $self->compiler->compiler_id, ( split /\//, $path ), )
-      . $self->object_file_extension;
+    return catfile( $self->object_dir, ( split /\//, $path ), ) . $self->object_file_extension;
 }
 
 method source_file_for_path ($path) {
@@ -468,6 +463,95 @@ method source_file_for_path ($path) {
 
 method _incr_request_count () {
     return $self->{request_count}++;
+}
+
+method _build_named_block_regex () {
+    my $re = join '|', @{ $self->named_block_types };
+    return qr/$re/i;
+}
+
+method _build_named_block_types () {
+    return [qw(after augment around before filter method)];
+}
+
+method _build_pure_perl_regex () {
+    my $extensions = $self->pure_perl_extensions;
+    if ( !@$extensions ) {
+        return qr/(?!)/;                                # matches nothing
+    }
+    else {
+        my $regex = join( '|', @$extensions ) . '$';
+        return qr/$regex/;
+    }
+}
+
+method _build_top_level_regex () {
+    my $extensions = $self->top_level_extensions;
+    if ( !@$extensions ) {
+        return qr/./;                                   # matches everything
+    }
+    else {
+        my $regex = join( '|', @$extensions ) . '$';
+        return qr/$regex/;
+    }
+}
+
+method _build_unnamed_block_regex () {
+    my $re = join '|', @{ $self->unnamed_block_types };
+    return qr/$re/i;
+}
+
+method _build_unnamed_block_types () {
+    return [qw(args class doc flags init perl shared text)];
+}
+
+method _build_valid_flags () {
+    return [qw(extends)];
+}
+
+method _build_valid_flags_hash () {
+    return { map { ( $_, 1 ) } @{ $self->valid_flags } };
+}
+
+method compile ( $source_file, $path ) {
+    my $compilation = $self->compilation_class->new(
+        source_file => $source_file,
+        path        => $path,
+        interp      => $self
+    );
+    return $compilation->compile();
+}
+
+method compile_to_file ( $source_file, $path, $object_file ) {
+
+    # We attempt to handle several cases in which a file already exists
+    # and we wish to create a directory, or vice versa.  However, not
+    # every case is handled; to be complete, mkpath would have to unlink
+    # any existing file in its way.
+    #
+    if ( defined $object_file && !-f $object_file ) {
+        my ($dirname) = dirname($object_file);
+        if ( !-d $dirname ) {
+            unlink($dirname) if ( -e _ );
+            mkpath( $dirname, 0, 0775 );
+        }
+        rmtree($object_file) if ( -d $object_file );
+    }
+    my $object_contents = $self->compile( $source_file, $path );
+
+    $self->write_object_file( $object_file, $object_contents );
+}
+
+method write_object_file ($object_file, $object_contents) {
+    write_file( $object_file, $object_contents );
+}
+
+method is_top_level_comp_path ($path) {
+    return ( $path =~ $self->top_level_regex ) ? 1 : 0;
+}
+
+method is_pure_perl_comp_path ($path) {
+    return ( $path =~ $self->pure_perl_regex ) ? 1 : 0;
 }
 
 __PACKAGE__->meta->make_immutable();
@@ -498,8 +582,8 @@ loaded components.
 =item autobase_names
 
 Array reference of L<autobase|Mason::Manual/Autobase components> filenames to
-check in order when determining a component's superclass. Default is
-["Base.pm", "Base.m"].
+check in order when determining a component's superclass. Default is C<<
+["Base.pm", "Base.m"] >>.
 
 =item comp_root
 
@@ -512,12 +596,6 @@ F</usr/local/httpd/docs/products/sales.m>.
 This parameter may be either a single path or an array reference of paths. If
 it is an array reference, the paths will be searched in the provided order
 whenever a component path is resolved, much like Perl's C<< @INC >>.
-
-=item compiler
-
-The Compiler object to associate with this Interpreter.  By default a new
-object of class L</compiler_class> will be created, including any appropriate
-parameters that were passed to this constructor.
 
 =item component_class_prefix
 
@@ -534,6 +612,12 @@ Mason will create the directory on startup if necessary.
 Defaults to a temporary directory that will be cleaned up at process end. This
 will hurt performance as Mason will have to recompile components on each run.
 
+=item no_source_line_numbers
+
+Do not put in source line number comments when generating code.  Setting this
+to true will cause error line numbers to reflect the real object file, rather
+than the source component.
+
 =item object_file_extension
 
 Extension to add to the end of object files. Default is ".mobj".
@@ -547,9 +631,16 @@ A list of plugins and/or plugin bundles:
       'AnotherPlugin',
       '+My::Mason::Plugin::AThirdPlugin',
       '@APluginBundle',
+      '-DontLikeThisPlugin',
     ]);
 
 See L<Mason::Manual::Plugins>.
+
+=item pure_perl_extensions
+
+A listref of file extensions of components to be considered as pure perl (see
+L<Mason::Manual::Syntax/Pure_Perl_Components>). Default is C<< ['.pm' >>. If an
+empty list is specified, then no components will be considered pure perl.
 
 =item static_source
 
@@ -574,14 +665,20 @@ request when in L</static_source> mode. When the file timestamp changes
 (indicating that a component has changed), Mason will clear its in-memory
 component cache and recheck existing object files.
 
+=item top_level_extensions
+
+A listref of file extensions of components to be considered "top level",
+accessible directly from C<< $interp->run >> or a web request. Default is C<<
+['.pm', '.m'] >>. If an empty list is specified, then there will be I<no>
+restriction; that is, I<all> components will be considered top level.
+
 =back
 
-=head1 REQUEST AND COMPILER PARAMETERS
+=head1 REQUEST PARAMETERS
 
-Constructor parameters for Compiler and Request objects (L<Mason::Compiler> and
-L<Mason::Request>, plus any applied plugins) may be passed to the Interp
-constructor, and they will be passed along whenever a compiler or request is
-created.
+Constructor parameters for Request objects (L<Mason::Request>, plus any applied
+plugins) may be passed to the Interp constructor, and they will be passed along
+whenever a request is created.
 
 =head1 CUSTOM MASON CLASSES
 
@@ -589,24 +686,20 @@ The Interp is responsible, directly or indirectly, for creating all other core
 Mason objects. You can specify alternate classes to use instead of the default
 Mason:: classes.
 
-For example, to specify your own Compiler base class:
+For example, to specify your own Compilation base class:
 
-    my $interp = Mason->new(base_compiler_class => 'MyApp::Mason::Compiler', ...);
+    my $interp = Mason->new(base_compilation_class => 'MyApp::Mason::Compilation', ...);
 
 L<Relevant plugins|Mason::Manual::Plugins>, if any, will applied to this class
 to create a final class, which you can get with
 
-    $interp->compiler_class
+    $interp->compilation_class
 
 =over
 
 =item base_compilation_class
 
-Specify alternate to L<Mason::Compiler|Mason::Compilation>
-
-=item base_compiler_class
-
-Specify alternate to L<Mason::Compiler|Mason::Compiler>
+Specify alternate to L<Mason::Compilation|Mason::Compilation>
 
 =item base_component_class
 

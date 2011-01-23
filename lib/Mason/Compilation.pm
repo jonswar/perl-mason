@@ -12,8 +12,8 @@ use Mason::Moose;
 use Mason::Util qw(trim);
 
 # Passed attributes
-has 'compiler' => ( required => 1, weak_ref => 1 );
-has 'path'     => ( required => 1 );
+has 'interp'    => ( required => 1, weak_ref => 1 );
+has 'path'        => ( required => 1 );
 has 'source_file' => ( required => 1 );
 
 # Derived attributes
@@ -32,7 +32,7 @@ method BUILD () {
     $self->{line_number}    = 1;
     $self->{methods}        = { main => $self->_new_method_hash( name => 'main' ) };
     $self->{current_method} = $self->{methods}->{main};
-    $self->{is_pure_perl}   = $self->compiler->is_pure_perl_comp_path( $self->path );
+    $self->{is_pure_perl}   = $self->interp->is_pure_perl_comp_path( $self->path );
 }
 
 method _build_dir_path () {
@@ -78,11 +78,11 @@ method process_perl_code ($coderef) {
 }
 
 method _match_unnamed_block () {
-    $self->_match_block( $self->compiler->unnamed_block_regex, 0 );
+    $self->_match_block( $self->interp->unnamed_block_regex, 0 );
 }
 
 method _match_named_block () {
-    $self->_match_block( $self->compiler->named_block_regex, 1 );
+    $self->_match_block( $self->interp->named_block_regex, 1 );
 }
 
 method _match_unknown_block () {
@@ -344,10 +344,10 @@ method _output_class_header () {
 
 method _output_cmeta () {
     my %cmeta_info = (
-        dir_path    => $self->dir_path,
-        is_external => $self->compiler->is_external_comp_path( $self->path ),
-        path        => $self->path,
-        source_file => $self->source_file,
+        dir_path     => $self->dir_path,
+        is_top_level => $self->interp->is_top_level_comp_path( $self->path ),
+        path         => $self->path,
+        source_file  => $self->source_file,
     );
     return join( "\n",
         "my \$_class_cmeta;",
@@ -411,7 +411,7 @@ method _output_method ($method) {
 }
 
 method _output_line_number_comment ($line_number) {
-    if ( !$self->compiler->no_source_line_numbers ) {
+    if ( !$self->interp->no_source_line_numbers ) {
         $line_number ||= $self->{line_number};
         if ($line_number) {
             my $comment = sprintf( qq{#line %s "%s"\n}, $line_number, $self->source_file );
@@ -609,7 +609,7 @@ method _handle_flags_block ($contents) {
     {
         my ( $flag, $value ) = ( $1, $2 );
         if ( defined $flag && defined $value && length $flag && length $value ) {
-            if ( $self->compiler->valid_flags_hash->{$flag} ) {
+            if ( $self->interp->valid_flags_hash->{$flag} ) {
                 $self->{blocks}->{flags}->{$flag} = eval($value);
                 die $@ if $@;
             }

@@ -70,7 +70,7 @@ method add_comp (%params) {
     $self->mkpath_and_write_file( $source_file, $source );
     if ($verbose) {
         print STDERR "*** $path ***\n";
-        my $output = $self->interp->compiler->compile( $source_file, $path );
+        my $output = $self->interp->compile( $source_file, $path );
         print STDERR "$output\n";
     }
 }
@@ -138,11 +138,11 @@ method test_parse (%params) {
 
     if ($expect_error) {
         $desc ||= $expect_error;
-        throws_ok( sub { $self->interp->compiler->compile( $file, $path ) }, $expect_error, $desc );
+        throws_ok( sub { $self->interp->compile( $file, $path ) }, $expect_error, $desc );
     }
     else {
         $desc ||= $caller;
-        my $output = $self->interp->compiler->compile( $file, $path );
+        my $output = $self->interp->compile( $file, $path );
         foreach my $expect (@$expect_list) {
             if ( ref($expect) eq 'Regexp' ) {
                 like_string( $output, $expect, "$desc - $expect" );

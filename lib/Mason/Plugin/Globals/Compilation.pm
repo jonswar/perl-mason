@@ -8,14 +8,13 @@ around '_output_class_header' => sub {
 };
 
 method global_declarations () {
-    return join( "\n",
-        map { $self->global_declaration($_) } @{ $self->compiler->interp->allow_globals } );
+    return join( "\n", map { $self->global_declaration($_) } @{ $self->interp->allow_globals } );
 }
 
 method global_declaration ($spec) {
-    my ( $sigil, $name ) = $self->compiler->interp->_parse_global_spec($spec);
+    my ( $sigil, $name ) = $self->interp->_parse_global_spec($spec);
     return sprintf( 'our %s%s; *%s = \%s%s::%s;' . "\n",
-        $sigil, $name, $name, $sigil, $self->compiler->interp->globals_package, $name );
+        $sigil, $name, $name, $sigil, $self->interp->globals_package, $name );
 }
 
 1;

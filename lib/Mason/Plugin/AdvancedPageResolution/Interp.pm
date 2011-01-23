@@ -59,7 +59,7 @@ method _build_resolve_page_component_method ($interp:) {
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
                 my $compc = $interp->load($candidate_path);
-                if ( defined($compc) && $compc->cmeta->is_external ) {
+                if ( defined($compc) && $compc->cmeta->is_top_level ) {
                     $request->{path_info} = $path_info;
                     return $compc
                       unless ( $path_info

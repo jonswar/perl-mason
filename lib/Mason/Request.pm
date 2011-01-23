@@ -178,7 +178,7 @@ method rel_to_abs ($path) {
 
 method resolve_page_component ($request_path) {
     my $compc = $self->interp->load($request_path);
-    return ( defined($compc) && $compc->cmeta->is_external ) ? $compc : undef;
+    return ( defined($compc) && $compc->cmeta->is_top_level ) ? $compc : undef;
 }
 
 method run () {

@@ -6,7 +6,7 @@ use Log::Any;
 has 'class'       => ( required => 1 );
 has 'dir_path'    => ( required => 1 );
 has 'interp'      => ( required => 1, weak_ref => 1 );
-has 'is_external' => ( required => 1 );
+has 'is_top_level' => ( required => 1 );
 has 'object_file' => ( required => 1 );
 has 'path'        => ( required => 1 );
 has 'source_file' => ( required => 1 );
@@ -57,10 +57,19 @@ arguments the instance was created with.
 
 =over
 
+=item class
+
+The component class that this meta object is associated with.
+
 =item dir_path
 
 The directory of the component path, relative to the component root - e.g. for
 a component '/foo/bar', the dir_path is '/foo'.
+
+=item is_top_level
+
+Whether the component is considered "top level", accessible directly from C<<
+$interp->run >> or a web request. See L<Interp/top_level_extensions>.
 
 =item object_file
 

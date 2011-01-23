@@ -108,24 +108,23 @@ a single Mason class:
 
     ...
 
-    package Mason::Plugin::MyPlugin::Compiler;
+    package Mason::Plugin::MyPlugin::Compilation;
     use Mason::PluginRole;
 
-    # Modify Mason::Compiler
+    # Modify Mason::Compilation
 
     ...
 
 When a plugin is applied, each of its roles will be automatically applied to
 the appropriate Mason class. For example, in the example above
-C<Mason::Plugin::MyPlugin::Interp> and C<Mason::Plugin::MyPlugin::Compiler>
-will be applied to Mason::Interp and Mason::Compiler respectively.
+C<Mason::Plugin::MyPlugin::Interp> and C<Mason::Plugin::MyPlugin::Compilation>
+will be applied to Mason::Interp and Mason::Compilation respectively.
 
 =head2 Pluggable Mason classes
 
 As of this writing the following Mason classes can be modified with plugins:
 
     Mason::Compilation
-    Mason::Compiler
     Mason::Component
     Mason::Component::ClassMeta
     Mason::Component::InstanceMeta

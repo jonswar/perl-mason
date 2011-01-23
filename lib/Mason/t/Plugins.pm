@@ -8,7 +8,7 @@ sub test_plugins : Test(6) {
 
     $self->setup_interp(
         plugins                => ['+Mason::Test::Plugins::Notify'],
-        no_source_line_numbers => 1,                                   # test a compiler param
+        no_source_line_numbers => 1,
     );
     $self->add_comp( path => '/test_plugin_support.mi', src => 'hi' );
     my $output = capture_merged {
@@ -23,7 +23,7 @@ sub test_plugins : Test(6) {
     $like->(qr/starting interp run/);
     $like->(qr/starting request run - \/test_plugin/);
     $like->(qr/starting request comp - test_plugin_support.mi/);
-    $like->(qr/starting compiler compile - \/test_plugin.m/);
+    $like->(qr/starting interp compile - \/test_plugin.m/);
     $like->(qr/starting compilation compile - \/test_plugin.m/);
 }
 
