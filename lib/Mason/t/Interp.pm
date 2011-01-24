@@ -12,7 +12,7 @@ sub test_base_interp_class : Test(1) {
     is( ref($interp), 'MyInterp' );
 }
 
-sub test_find_paths : Test(6) {
+sub test_find_paths : Test(7) {
     my $self   = shift;
     my $r1     = $self->temp_dir . "/r1";
     my $r2     = $self->temp_dir . "/r2";
@@ -24,6 +24,11 @@ sub test_find_paths : Test(6) {
     }
     cmp_set(
         [ $interp->all_paths("/") ],
+        [qw(/foo.m /foo/bar.m /foo/baz.m /foo/blarg.m)],
+        "all_paths(/)"
+    );
+    cmp_set(
+        [ $interp->all_paths() ],
         [qw(/foo.m /foo/bar.m /foo/baz.m /foo/blarg.m)],
         "all_paths(/)"
     );

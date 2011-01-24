@@ -156,6 +156,7 @@ method _build_valid_flags_hash () {
 #
 
 method all_paths ($dir_path) {
+    $dir_path ||= '/';
     $self->_assert_absolute_path($dir_path);
     return $self->_collect_paths_for_all_comp_roots(
         sub {
@@ -426,6 +427,7 @@ method _add_default_wrap_method ($compc) {
 }
 
 method _assert_absolute_path ($path) {
+    $path ||= '';
     croak "'$path' is not an absolute path" unless is_absolute($path);
 }
 
