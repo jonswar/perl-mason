@@ -219,10 +219,13 @@ method run () {
     #
     my $compc = $self->resolve_page_component($path);
     if ( !defined($compc) ) {
-        croak sprintf( "could not find top-level component for path '%s' - component root is [%s]",
-            $path, join( ", ", @{ $self->interp->comp_root } ) );
+        Mason::Exception::TopLevelNotFound->throw(
+            error => sprintf(
+                "could not find top-level component for path '%s' - component root is [%s]",
+                $path, join( ", ", @{ $self->interp->comp_root } )
+            )
+        );
     }
-    $self->_comp_not_found($path) if !defined($compc);
 
     # Construct page component.
     #

@@ -117,9 +117,10 @@ response body; any value explicitly set in C<< $m->res->body >> is ignored and
 overwritten.  C<< $m->res->status >> is set to 200 if it hasn't already been
 set.
 
-If the Mason request dies with error, the error will be handled by Plack, i.e.
-with L<Plack::Middleware::StackTrace|Plack::Middleware::StackTrace> in
-development mode or a 500 error response in deployment mode.
+If the top-level component path cannot be found, C<< $m->res->status >> is set
+to 404. All other runtime errors fall through to be handled by Plack, i.e. with
+L<Plack::Middleware::StackTrace|Plack::Middleware::StackTrace> in development
+mode or a 500 error response in deployment mode.
 
 =head1 INTERP METHODS
 

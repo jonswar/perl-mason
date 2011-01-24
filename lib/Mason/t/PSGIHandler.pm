@@ -58,6 +58,20 @@ sub test_error : Tests(2) {
     );
 }
 
+sub test_not_found : Tests(2) {
+    my $self = shift;
+    my $app = sub { my $env = shift; $self->interp->handle_psgi($env) };
+    test_psgi(
+        $app,
+        sub {
+            my $cb  = shift;
+            my $res = $cb->( GET("/does/not/exist") );
+            is( $res->code,    404, "status 404" );
+            is( $res->content, '',  "blank content" );
+        }
+    );
+}
+
 sub test_args : Tests(2) {
     my $self = shift;
     $self->test_psgi_comp(

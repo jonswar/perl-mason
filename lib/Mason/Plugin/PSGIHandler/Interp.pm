@@ -1,13 +1,22 @@
 package Mason::Plugin::PSGIHandler::Interp;
 use Mason::Plugin::PSGIHandler::PlackRequest;
 use Mason::PluginRole;
+use Try::Tiny;
 
 method handle_psgi ($env) {
-    my $req = Mason::Plugin::PSGIHandler::PlackRequest->new($env);
-    my $result =
-      $self->run( { req => $req }, $self->psgi_comp_path($req), $self->psgi_parameters($req) );
-    my $response = $result->plack_response;
-    $response->content( $result->output );
+    my $req      = Mason::Plugin::PSGIHandler::PlackRequest->new($env);
+    my $response = try {
+        $self->run( { req => $req }, $self->psgi_comp_path($req), $self->psgi_parameters($req) )
+          ->plack_response;
+    }
+    catch {
+        if ( blessed($_) && $_->isa('Mason::Exception::TopLevelNotFound') ) {
+            Mason::Plugin::PSGIHandler::PlackResponse->new(404);
+        }
+        else {
+            die $_;
+        }
+    };
     return $response->finalize;
 }
 

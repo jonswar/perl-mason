@@ -15,6 +15,7 @@ around 'run' => sub {
 
     my $result = $self->$orig(@_);
     $self->res->status(200) if !$self->res->status;
+    $self->res->content( $result->output );
     $result->plack_response( $self->res );
     return $result;
 };
