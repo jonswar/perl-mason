@@ -43,7 +43,7 @@ method setup_dirs () {
     $self->{comp_root} = $self->{temp_dir} . "/comps";
     $self->{data_dir}  = $self->{temp_dir} . "/data";
     mkpath( [ $self->{comp_root}, $self->{data_dir} ], 0, 0775 );
-    $self->setup_interp();
+    $self->setup_interp(@_);
 }
 
 method setup_interp () {

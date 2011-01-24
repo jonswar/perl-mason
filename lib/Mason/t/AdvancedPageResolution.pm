@@ -3,14 +3,15 @@ use Test::Class::Most parent => 'Mason::Test::Class';
 
 __PACKAGE__->default_plugins( [ '@Default', 'AdvancedPageResolution' ] );
 
-sub test_resolve : Tests(22) {
+sub test_resolve : Tests(32) {
     my $self = shift;
 
-    my $try = sub {
+    my @interp_params = ();
+    my $try           = sub {
         my ( $run_path, $existing_paths, $resolve_path, $path_info ) = @_;
         $path_info ||= '';
 
-        $self->setup_dirs;
+        $self->setup_dirs(@interp_params);
         foreach my $existing_path (@$existing_paths) {
             my $accept_path_info = 0;
             if ( $existing_path =~ /=1$/ ) {
@@ -60,9 +61,28 @@ sub test_resolve : Tests(22) {
     $try->( $run_path, ['/foo/blarg.m'],                  undef );
     $try->( $run_path, ['/foo/blarg/dhandler.m'],         undef );
 
-    # Can't access autobase or dhandler directly. Not sure about index?
-    $try->( '/foo/Base', ['/foo/Base.m'], undef );
+    # Can't access autobase, dhandler or index directly.
+    $try->( '/foo/Base',     ['/foo/Base.m'],     undef );
     $try->( '/foo/dhandler', ['/foo/dhandler.m'], '/foo/dhandler.m', 'dhandler' );
+    $try->( '/foo/index',    ['/foo/index.m'],    undef );
+
+    # no_autoextend_run_path
+    @interp_params = ( no_autoextend_run_path => 1, top_level_extensions => ['.html'] );
+    $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
+    $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html.m'], undef );
+
+    # dhandler_names
+    @interp_params = ( dhandler_names => ['dhandler'] );
+    $try->( $run_path, ['/foo/bar/baz/dhandler.m'], undef );
+    $try->( $run_path, ['/foo/bar/baz/dhandler'],   '/foo/bar/baz/dhandler', '' );
+    $try->( $run_path, ['/foo/bar/dhandler'],       '/foo/bar/dhandler', 'baz' );
+
+    # index_names
+    @interp_params = ( index_names => [ 'index', 'index2' ] );
+    $try->( $run_path, ['/foo/bar/baz/index.m'], undef );
+    $try->( $run_path, ['/foo/bar/baz/index'],   '/foo/bar/baz/index', '' );
+    $try->( $run_path, ['/foo/bar/baz/index2'],  '/foo/bar/baz/index2', '' );
+    $try->( $run_path, [ '/foo/bar/baz/index2', '/foo/bar/baz/index' ], '/foo/bar/baz/index', '' );
 }
 
 sub test_decline : Tests(7) {

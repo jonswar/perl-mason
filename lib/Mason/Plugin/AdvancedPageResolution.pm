@@ -15,7 +15,8 @@ provides various ways to handle entire path hierarchies with a single
 component.
 
 It is intended for those using Mason as the main controller in a web
-application, rather than as just a view layer.
+application. Those using Mason as just a view layer of an MVC framework, or
+outside a web environment, will probably not need this.
 
 =head1 DETERMINING THE PAGE COMPONENT
 
@@ -26,7 +27,8 @@ paths, searching in order until one is found:
 
 =item *
 
-The requested path itself, suffixed with ".pm" or ".m"
+The requested path itself suffixed with ".pm" or ".m" (or just the requested
+path itself if L</no_autoextend_run_path> is on)
 
 =item *
 
@@ -40,8 +42,8 @@ The requested path itself, suffixed with ".pm" or ".m"
 
 If it cannot find any of these, then Mason scans backwards through the path,
 checking each directory upwards for the same set of files B<except> for
-"index.*". In this case it sets $m->path_info to the unmatched latter part of
-the path.
+"index.*". In this case it sets C<< $m->path_info >> to the unmatched latter
+part of the path.
 
 For example, given the path
 
@@ -131,13 +133,10 @@ Array reference of index file names to check in order when resolving a
 top-level path (only in the bottom-most directory). Default is C<< ["index.pm",
 "index.m"] >>. See L<Mason::Manual/Determining the page component>.
 
-=item page_extensions
+=item no_autoextend_run_path
 
-Array reference of filename extensions to try when generating page component
-paths. Default is C<< [".pm", ".m"] >>.
-
-You can add the empty string ("") to this list if you want Mason to use the
-request path itself as a page component candidate.
+Do not automatically extend the run path with ".pm" and ".m" at the start of
+the search. Does not affect dhandler or index names.
 
 =back
 

@@ -4,17 +4,20 @@ use Mason::PluginRole;
 
 # Passed attributes
 #
-has 'dhandler_names'  => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'index_names'     => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'page_extensions' => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
+has 'dhandler_names'         => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'index_names'            => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'no_autoextend_run_path' => ( isa => 'Bool',          default => 0 );
+has 'page_extensions'        => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
 #
-has 'autobase_or_dhandler_regex'    => ( lazy_build => 1, init_arg => undef );
+has 'ignore_file_regex'             => ( lazy_build => 1, init_arg => undef );
 has 'resolve_page_component_method' => ( lazy_build => 1, init_arg => undef );
 
-method _build_autobase_or_dhandler_regex () {
-    my $regex = '(/' . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names } ) . ')$';
+method _build_ignore_file_regex () {
+    my $regex = '(/'
+      . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names }, @{ $self->index_names } )
+      . ')$';
     return qr/$regex/;
 }
 
@@ -26,8 +29,8 @@ method _build_index_names () {
     return [ map { "index" . $_ } @{ $self->page_extensions } ];
 }
 
-# Given /foo/bar, look for (by default):
-#   /foo/bar.{pm,m},
+# Given /foo/bar.html, look for (by default):
+#   /foo/bar.html.{pm,m},
 #   /foo/bar/index.{pm,m},
 #   /foo/bar/dhandler.{pm,m},
 #   /foo.{pm,m}
@@ -37,11 +40,12 @@ method _build_resolve_page_component_method ($interp:) {
 
     # Create a closure for efficiency - all this data is immutable for an interp.
     #
-    my @dhandler_subpaths = map { "/$_" } @{ $interp->dhandler_names };
-    my @index_subpaths    = map { "/$_" } @{ $interp->index_names };
-    my @page_extensions   = @{ $interp->page_extensions };
-    my $autobase_or_dhandler = $interp->autobase_or_dhandler_regex;
-    my %is_dhandler_name = map { ( $_, 1 ) } @{ $interp->dhandler_names };
+    my @dhandler_subpaths      = map { "/$_" } @{ $interp->dhandler_names };
+    my $ignore_file_regex      = $interp->ignore_file_regex;
+    my @index_subpaths         = map { "/$_" } @{ $interp->index_names };
+    my %is_dhandler_name       = map { ( $_, 1 ) } @{ $interp->dhandler_names };
+    my $no_autoextend_run_path = $interp->no_autoextend_run_path;
+    my @page_extensions        = @{ $interp->page_extensions };
 
     return sub {
         my ( $request, $path ) = @_;
@@ -50,16 +54,18 @@ method _build_resolve_page_component_method ($interp:) {
 
         while (1) {
             my @candidate_paths =
-                ( $path eq '/' )
-              ? ( @index_subpaths, @dhandler_subpaths )
+                ( $path_info eq '' && $no_autoextend_run_path ) ? ($path)
+              : ( $path eq '/' ) ? ( @index_subpaths, @dhandler_subpaths )
               : (
-                ( grep { !/$autobase_or_dhandler/ } map { $path . $_ } @page_extensions ),
+                ( grep { !/$ignore_file_regex/ } map { $path . $_ } @page_extensions ),
                 ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
               );
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
                 my $compc = $interp->load($candidate_path);
-                if ( defined($compc) && $compc->cmeta->is_top_level ) {
+                if ( defined($compc)
+                    && ( $candidate_path =~ /$ignore_file_regex/ || $compc->cmeta->is_top_level ) )
+                {
                     $request->{path_info} = $path_info;
                     return $compc
                       unless ( $path_info
