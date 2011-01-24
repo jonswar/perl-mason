@@ -287,7 +287,7 @@ method load ($path) {
         $compile = ( !$object_lastmod || $object_lastmod < $source_lastmod );
     }
 
-    $self->compile_to_file( $source_file, $path, $object_file ) if $compile;
+    $self->_compile_to_file( $source_file, $path, $object_file ) if $compile;
 
     my $compc = $self->_comp_class_for_path($path);
 
@@ -338,7 +338,7 @@ method DEMOLISH () {
     $self->flush_code_cache();
 }
 
-method compile ( $source_file, $path ) {
+method _compile ( $source_file, $path ) {
     my $compilation = $self->compilation_class->new(
         source_file => $source_file,
         path        => $path,
@@ -347,7 +347,7 @@ method compile ( $source_file, $path ) {
     return $compilation->compile();
 }
 
-method compile_to_file ( $source_file, $path, $object_file ) {
+method _compile_to_file ( $source_file, $path, $object_file ) {
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not
@@ -362,7 +362,7 @@ method compile_to_file ( $source_file, $path, $object_file ) {
         }
         rmtree($object_file) if ( -d $object_file );
     }
-    my $object_contents = $self->compile( $source_file, $path );
+    my $object_contents = $self->_compile( $source_file, $path );
 
     $self->write_object_file( $object_file, $object_contents );
 }
@@ -826,20 +826,11 @@ to standard output:
 
 =head1 MODIFIABLE METHODS
 
-These methods are not intended to be called from the outside, but may be useful
-to modify with method modifiers in plugins and subclasses. We will attempt to
-keep their APIs stable.
+These methods are not intended to be called externally, but may be useful to
+modify with method modifiers in plugins and subclasses. We will attempt to keep
+their APIs stable.
 
 =over
-
-=item compile ( $source_file, $path )
-
-Compiles component I<$path> in file I<$source_file> to a class; returns the
-class source code.
-
-=item compile_to_file ( $source_file, $path, $object_file )
-
-Compiles component I<$path> in file I<$source_file> to I<$object_file>.
 
 =item is_pure_perl_comp_path ($path)
 
@@ -858,7 +849,9 @@ methods or apply roles) before it is made immutable.
 
 =item write_object_file ($object_file, $object_contents)
 
-Write I<$object_contents> to I<$object_file>.
+Write compiled component I<$object_contents> to I<$object_file>. This is an
+opportunity to modify I<$object_contents> before it is written, or
+I<$object_file> after it is written.
 
 =back
 
