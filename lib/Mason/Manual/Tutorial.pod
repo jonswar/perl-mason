@@ -412,6 +412,11 @@ assuming that no components have C<extends> flags,
 
 =back
 
+If C<Base.pm> and C<Base.m> appear in the same directory, they will both be
+recognized; everything below will inherit from C<Base.m>, and C<Base.m> will
+inherit from C<Base.pm>. This might be useful for separating L<Content
+wrapping> from shared method definitions, for example.
+
 =head1 THE PAGE COMPONENT
 
 The first component invoked in a Mason request is called the I<page> component.

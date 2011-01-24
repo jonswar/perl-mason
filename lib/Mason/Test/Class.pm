@@ -62,9 +62,10 @@ method create_interp () {
 }
 
 method add_comp (%params) {
-    my $path    = $params{path} || die "must pass path";
-    my $source  = $params{src}  || die "must pass src";
-    my $verbose = $params{v}    || $params{verbose};
+    my $path = $params{path} || die "must pass path";
+    my $source = $params{src};
+    die "must pass src" unless defined($source);
+    my $verbose = $params{v} || $params{verbose};
     die "'$path' is not absolute" unless substr( $path, 0, 1 ) eq '/';
     my $source_file = $self->comp_root . $path;
     $self->mkpath_and_write_file( $source_file, $source );

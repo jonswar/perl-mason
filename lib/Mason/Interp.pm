@@ -5,7 +5,8 @@ use File::Path;
 use File::Temp qw(tempdir);
 use Guard;
 use JSON;
-use List::Util qw(first);
+use List::MoreUtils qw(first_index);
+use Mason::CodeCache;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
@@ -36,8 +37,8 @@ has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
 # Derived attributes
 #
 has 'autobase_regex'           => ( init_arg => undef, lazy_build => 1 );
-has 'code_cache'               => ( init_arg => undef );
-has 'count'                    => ( init_arg => undef );
+has 'code_cache'               => ( init_arg => undef, lazy_build => 1 );
+has 'count'                    => ( init_arg => undef, default => sub { $interp_count++ } );
 has 'distinct_string_count'    => ( init_arg => undef, default => 0 );
 has 'named_block_regex'        => ( init_arg => undef, lazy_build => 1 );
 has 'named_block_types'        => ( init_arg => undef, lazy_build => 1 );
@@ -52,35 +53,13 @@ has 'valid_flags_hash'         => ( init_arg => undef, lazy_build => 1 );
 
 # Class overrides
 #
-my %class_overrides = (
-    compilation_class             => 'Compilation',
-    component_class               => 'Component',
-    component_class_meta_class    => 'Component::ClassMeta',
-    component_instance_meta_class => 'Component::InstanceMeta',
-    request_class                 => 'Request',
-    result_class                  => 'Result',
-);
-while ( my ( $method_name, $name ) = each(%class_overrides) ) {
-    my $base_method_name   = "base_$method_name";
-    my $default_base_class = "Mason::$name";
-    has $method_name      => ( init_arg => undef, lazy_build => 1 );
-    has $base_method_name => ( isa      => 'Str', default    => $default_base_class );
-    __PACKAGE__->meta->add_method(
-        "_build_$method_name" => sub {
-            my $self = shift;
-            return Mason::PluginManager->apply_plugins_to_class( $self->$base_method_name, $name,
-                $self->plugins );
-        }
-    );
-}
+__PACKAGE__->define_class_override_methods();
 
 #
 # BUILD
 #
 
 method BUILD ($params) {
-    $self->{code_cache} = {};
-    $self->{count}      = $interp_count++;
 
     # Initialize static source mode
     #
@@ -103,12 +82,16 @@ method BUILD ($params) {
 }
 
 method _build_autobase_names () {
-    return [ "Base.pm", "Base.m" ];
+    return [ "Base.m", "Base.pm" ];
 }
 
 method _build_autobase_regex () {
     my $regex = '(' . join( "|", @{ $self->autobase_names } ) . ')$';
     return qr/$regex/;
+}
+
+method _build_code_cache () {
+    return Mason::CodeCache->new();
 }
 
 method _build_component_class_prefix () {
@@ -133,6 +116,7 @@ method load ($path) {
 
     # Canonicalize path
     #
+    croak "path required" if !defined($path);
     $path = Mason::Util::mason_canon_path($path);
 
     my $compile = 0;
@@ -164,7 +148,7 @@ method load ($path) {
 
         # Check memory cache
         #
-        if ( my $entry = $code_cache->{$path} ) {
+        if ( my $entry = $code_cache->get($path) ) {
             return $entry->{compc};
         }
 
@@ -208,7 +192,7 @@ method load ($path) {
 
         # Check memory cache
         #
-        if ( my $entry = $code_cache->{$path} ) {
+        if ( my $entry = $code_cache->get($path) ) {
             if (   $entry->{source_lastmod} >= $source_lastmod
                 && $entry->{source_file} eq $source_file
                 && $entry->{default_parent_compc} eq $default_parent_compc )
@@ -216,11 +200,7 @@ method load ($path) {
                 return $entry->{compc};
             }
             else {
-
-                # Delete old package (by freeing guard) and delete cache entry
-                #
-                undef $entry->{guard};
-                delete $code_cache->{$source_file};
+                $code_cache->remove($path);
             }
         }
 
@@ -236,24 +216,17 @@ method load ($path) {
 
     $self->load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
 
-    # When cache entry is destroyed, delete the package.
-    #
-    my $guard = guard {
-        if ( !in_global_destruction ) {
-            $compc->meta->make_mutable();
-            Mason::Util::delete_package($compc);
-        }
-    };
-
     # Save component class in the cache.
     #
-    $code_cache->{$path} = {
-        source_file          => $source_file,
-        source_lastmod       => $source_lastmod,
-        default_parent_compc => $default_parent_compc,
-        compc                => $compc,
-        guard                => $guard
-    };
+    $code_cache->set(
+        $path,
+        {
+            source_file          => $source_file,
+            source_lastmod       => $source_lastmod,
+            default_parent_compc => $default_parent_compc,
+            compc                => $compc,
+        }
+    );
 
     return $compc;
 }
@@ -305,13 +278,9 @@ method check_static_source_touch_file () {
 method flush_code_cache () {
     my $code_cache = $self->code_cache;
 
-    # Try to dismantle code cache in a slightly orderly way before deleting
-    # the cache. Packages will be deleted as each guard is removed.
-    #
-    foreach my $entry ( values %$code_cache ) {
-        undef $entry->{guard};
+    foreach my $key ( $code_cache->get_keys() ) {
+        $code_cache->remove($key);
     }
-    $self->{code_cache} = {};
 }
 
 method comp_class_for_path ($path) {
@@ -322,7 +291,7 @@ method comp_class_for_path ($path) {
     return $classname;
 }
 
-method default_parent_compc ($path) {
+method default_parent_compc ($orig_path) {
 
     # Given /foo/bar.m, look for (by default):
     #   /foo/Base.pm, /foo/Base.m,
@@ -331,25 +300,22 @@ method default_parent_compc ($path) {
     # Split path into dir_path and base_name - validate that it has a
     # starting slash and ends with at least one non-slash character
     #
-    my ( $dir_path, $base_name ) = ( $path =~ m{^(/.*?)/?([^/]+)$} )
-      or die "not a valid absolute component path - '$path'";
-    $path = $dir_path;
+    my ( $dir_path, $base_name ) = ( $orig_path =~ m{^(/.*?)/?([^/]+)$} )
+      or die "not a valid absolute component path - '$orig_path'";
+    my $path = $dir_path;
 
     my @autobase_subpaths = map { "/$_" } @{ $self->autobase_names };
-    my $skip = ( grep { $_ eq $base_name } @{ $self->autobase_names } ) ? 1 : 0;
     while (1) {
-        if ($skip) {
-            $skip--;
+        my @candidate_paths =
+          ( $path eq '/' )
+          ? @autobase_subpaths
+          : ( map { $path . $_ } @autobase_subpaths );
+        if ( ( my $index = first_index { $_ eq $orig_path } @candidate_paths ) != -1 ) {
+            splice( @candidate_paths, 0, $index + 1 );
         }
-        else {
-            my @candidates =
-              ( $path eq '/' )
-              ? @autobase_subpaths
-              : ( map { $path . $_ } @autobase_subpaths );
-            foreach my $candidate (@candidates) {
-                if ( my $compc = $self->load($candidate) ) {
-                    return $compc;
-                }
+        foreach my $candidate_path (@candidate_paths) {
+            if ( my $compc = $self->load($candidate_path) ) {
+                return $compc;
             }
         }
         if ( $path eq '/' ) {
@@ -552,6 +518,39 @@ method is_top_level_comp_path ($path) {
 
 method is_pure_perl_comp_path ($path) {
     return ( $path =~ $self->pure_perl_regex ) ? 1 : 0;
+}
+
+method DEMOLISH () {
+    $self->flush_code_cache();
+}
+
+#
+# Class overrides. Put here at the bottom because it strangely messes up
+# Perl line numbering if at the top.
+#
+sub define_class_override_methods {
+    my %class_overrides = (
+        compilation_class             => 'Compilation',
+        component_class               => 'Component',
+        component_class_meta_class    => 'Component::ClassMeta',
+        component_instance_meta_class => 'Component::InstanceMeta',
+        request_class                 => 'Request',
+        result_class                  => 'Result',
+    );
+
+    while ( my ( $method_name, $name ) = each(%class_overrides) ) {
+        my $base_method_name   = "base_$method_name";
+        my $default_base_class = "Mason::$name";
+        has $method_name      => ( init_arg => undef, lazy_build => 1 );
+        has $base_method_name => ( isa      => 'Str', default    => $default_base_class );
+        __PACKAGE__->meta->add_method(
+            "_build_$method_name" => sub {
+                my $self = shift;
+                return Mason::PluginManager->apply_plugins_to_class( $self->$base_method_name,
+                    $name, $self->plugins );
+            }
+        );
+    }
 }
 
 __PACKAGE__->meta->make_immutable();
