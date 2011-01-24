@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+use lib qw(/Users/swartz/git/mason.git/lib);
+use File::Basename;
+use File::Path qw(make_path);
+use Getopt::Long;
+use Mason;
+use Mason::Util qw(write_file);
+use strict;
+use warnings;
+
+GetOptions();
+
+my $dir = shift(@ARGV) or die "usage: $0 root_dir";
+die "$dir already exists; will not overwrite" if -e $dir;
+
+my $comp_root = "/Users/swartz/git/mason.git/bin/mason_psgi_setup.skel";
+my $interp    = Mason->new( comp_root => $comp_root, top_level_regex => qr/./ );
+my @paths     = $interp->all_paths()
+  or die "could not find template components";
+foreach my $path (@paths) {
+    my $output = $interp->run($path)->output;
+    my $dest   = $dir . $path;
+    make_path( dirname($dest), { mode => 0775 } );
+    write_file( $dest, $output );
+}
+make_path("$dir/data");
+print "Run\n\n    cd $dir; plackup -r\n\nto start your server.\n";
+
+__END__
+
+=head1 NAME
+
+mason_psgi_setup - create a skeleton Mason/PSGI site
+
+=head1 SYNOPSIS
+
+   % mason_psgi_setup /path/to/server
+   % cd /path/to/server
+   % plackup -r
+
+=head1 DESCRIPTION
+
+Creates a directory with a small, but fully functioning, Mason/PSGI site.
+
+=cut

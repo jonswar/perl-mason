@@ -2,7 +2,7 @@ package Mason::PluginBundle::Default;
 use Mason::PluginRole;
 with 'Mason::PluginBundle';
 
-sub requires_plugins { qw(DollarDot) }
+sub requires_plugins { qw(Defer DollarDot) }
 
 1;
 
@@ -12,6 +12,8 @@ __END__
 =head1 INCLUDED PLUGINS
 
 =over
+
+=item L<Defer|Mason::Plugin::Defer>
 
 =item L<DollarDot|Mason::Plugin::DollarDot>
 
