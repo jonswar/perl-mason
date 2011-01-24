@@ -627,6 +627,7 @@ method _handle_perl_block ($contents) {
 }
 
 method _handle_text_block ($contents) {
+    $contents =~ s/^\n//;
     $contents =~ s,([\'\\]),\\$1,g;
 
     $self->_add_to_current_method("\$\$_buffer .= '$contents';\n");
