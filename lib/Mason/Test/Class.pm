@@ -62,10 +62,9 @@ method create_interp () {
 }
 
 method add_comp (%params) {
-    my $path = $params{path} || die "must pass path";
-    my $source = $params{src};
-    die "must pass src" unless defined($source);
-    my $verbose = $params{v} || $params{verbose};
+    my $path    = $params{path} || die "must pass path";
+    my $source  = $params{src}  || " ";
+    my $verbose = $params{v}    || $params{verbose};
     die "'$path' is not absolute" unless substr( $path, 0, 1 ) eq '/';
     my $source_file = $self->comp_root . $path;
     $self->mkpath_and_write_file( $source_file, $source );
@@ -88,7 +87,7 @@ method test_comp (%params) {
     my $path   = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
     my $args   = $params{args} || {};
     my $desc   = $params{desc} || $path;
-    my $source = $params{src}  || croak "must pass src";
+    my $source = $params{src}  || " ";
     my $expect = trim( $params{expect} );
     my $expect_error = $params{expect_error};
     my $verbose = $params{v} || $params{verbose};

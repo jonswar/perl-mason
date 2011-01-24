@@ -1,16 +1,17 @@
 package Mason::Interp;
 use Devel::GlobalDestruction;
 use File::Basename;
+use File::Find::Wanted;
 use File::Path;
 use File::Temp qw(tempdir);
 use Guard;
 use JSON;
-use List::MoreUtils qw(first_index);
+use List::MoreUtils qw(first_index uniq);
 use Mason::CodeCache;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
-use Mason::Util qw(catdir catfile mason_canon_path touch_file write_file);
+use Mason::Util qw(catdir catfile is_absolute mason_canon_path touch_file write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
@@ -53,7 +54,7 @@ has 'valid_flags_hash'         => ( init_arg => undef, lazy_build => 1 );
 
 # Class overrides
 #
-__PACKAGE__->define_class_override_methods();
+__PACKAGE__->_define_class_override_methods();
 
 #
 # BUILD
@@ -102,12 +103,80 @@ method _build_data_dir () {
     return tempdir( 'mason-data-XXXX', TMPDIR => 1, CLEANUP => 1 );
 }
 
+method _build_named_block_regex () {
+    my $re = join '|', @{ $self->named_block_types };
+    return qr/$re/i;
+}
+
+method _build_named_block_types () {
+    return [qw(after augment around before filter method)];
+}
+
+method _build_pure_perl_regex () {
+    my $extensions = $self->pure_perl_extensions;
+    if ( !@$extensions ) {
+        return qr/(?!)/;                  # matches nothing
+    }
+    else {
+        my $regex = join( '|', @$extensions ) . '$';
+        return qr/$regex/;
+    }
+}
+
+method _build_top_level_regex () {
+    my $extensions = $self->top_level_extensions;
+    if ( !@$extensions ) {
+        return qr/./;                     # matches everything
+    }
+    else {
+        my $regex = join( '|', @$extensions ) . '$';
+        return qr/$regex/;
+    }
+}
+
+method _build_unnamed_block_regex () {
+    my $re = join '|', @{ $self->unnamed_block_types };
+    return qr/$re/i;
+}
+
+method _build_unnamed_block_types () {
+    return [qw(args class doc flags init perl shared text)];
+}
+
+method _build_valid_flags () {
+    return [qw(extends)];
+}
+
+method _build_valid_flags_hash () {
+    return { map { ( $_, 1 ) } @{ $self->valid_flags } };
+}
+
 #
 # PUBLIC METHODS
 #
 
+method all_paths ($dir_path) {
+    $self->_assert_absolute_path($dir_path);
+    return $self->_collect_paths_for_all_comp_roots(
+        sub {
+            my $root_path = shift;
+            my $dir       = $root_path . $dir_path;
+            return ( -d $dir ) ? find_wanted( sub { -f }, $dir ) : ();
+        }
+    );
+}
+
 method comp_exists ($path) {
     return $self->source_file_for_path( Mason::Util::mason_canon_path($path) );
+}
+
+method glob_paths ($glob_pattern) {
+    return $self->_collect_paths_for_all_comp_roots(
+        sub {
+            my $root_path = shift;
+            return glob( $root_path . $glob_pattern );
+        }
+    );
 }
 
 method load ($path) {
@@ -255,6 +324,20 @@ method run () {
 #
 # PRIVATE METHODS
 #
+
+method _assert_absolute_path ($path) {
+    croak "'$path' is not an absolute path" unless is_absolute($path);
+}
+
+method _collect_paths_for_all_comp_roots ($code) {
+    my @paths;
+    foreach my $root_path ( @{ $self->comp_root } ) {
+        my $root_path_length = length($root_path);
+        my @files            = $code->($root_path);
+        push( @paths, map { substr( $_, $root_path_length ) } @files );
+    }
+    return uniq(@paths);
+}
 
 method make_request () {
     return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
@@ -419,7 +502,7 @@ method object_file_for_path ($path) {
 }
 
 method source_file_for_path ($path) {
-    die "'$path' is not an absolute path" unless substr( $path, 0, 1 ) eq '/';
+    $self->_assert_absolute_path($path);
     foreach my $root_path ( @{ $self->comp_root } ) {
         my $source_file = $root_path . $path;
         return $source_file if -f $source_file;
@@ -429,54 +512,6 @@ method source_file_for_path ($path) {
 
 method _incr_request_count () {
     return $self->{request_count}++;
-}
-
-method _build_named_block_regex () {
-    my $re = join '|', @{ $self->named_block_types };
-    return qr/$re/i;
-}
-
-method _build_named_block_types () {
-    return [qw(after augment around before filter method)];
-}
-
-method _build_pure_perl_regex () {
-    my $extensions = $self->pure_perl_extensions;
-    if ( !@$extensions ) {
-        return qr/(?!)/;                                # matches nothing
-    }
-    else {
-        my $regex = join( '|', @$extensions ) . '$';
-        return qr/$regex/;
-    }
-}
-
-method _build_top_level_regex () {
-    my $extensions = $self->top_level_extensions;
-    if ( !@$extensions ) {
-        return qr/./;                                   # matches everything
-    }
-    else {
-        my $regex = join( '|', @$extensions ) . '$';
-        return qr/$regex/;
-    }
-}
-
-method _build_unnamed_block_regex () {
-    my $re = join '|', @{ $self->unnamed_block_types };
-    return qr/$re/i;
-}
-
-method _build_unnamed_block_types () {
-    return [qw(args class doc flags init perl shared text)];
-}
-
-method _build_valid_flags () {
-    return [qw(extends)];
-}
-
-method _build_valid_flags_hash () {
-    return { map { ( $_, 1 ) } @{ $self->valid_flags } };
 }
 
 method compile ( $source_file, $path ) {
@@ -528,7 +563,7 @@ method DEMOLISH () {
 # Class overrides. Put here at the bottom because it strangely messes up
 # Perl line numbering if at the top.
 #
-sub define_class_override_methods {
+sub _define_class_override_methods {
     my %class_overrides = (
         compilation_class             => 'Compilation',
         component_class               => 'Component',
@@ -552,8 +587,6 @@ sub define_class_override_methods {
         );
     }
 }
-
-__PACKAGE__->meta->make_immutable();
 
 1;
 
@@ -752,6 +785,17 @@ same name.
 
 =over
 
+=item all_paths ([dir_path])
+
+Returns a list of distinct component paths under I<dir_path>, which defaults to
+'/' if not provided.  For example,
+
+   $interp->all_paths('/foo/bar')
+      => ('/foo/bar/baz.m', '/foo/bar/blargh.m')
+
+Note that these are all component paths, not filenames, and all component roots
+are searched if there are multiple ones.
+
 =item comp_exists (path)
 
 Returns a boolean indicating whether a component exists for the absolute
@@ -766,11 +810,25 @@ the process starting at 0.
 
 Empties the component cache and removes all component classes.
 
+=item glob_paths (pattern)
+
+Returns a list of all component paths matching the glob I<pattern>. e.g.
+
+   $interp->glob_paths('/foo/b*.m')
+      => ('/foo/bar.m', '/foo/baz.m')
+
+Note that these are all component paths, not filenames, and all component roots
+are searched if there are multiple ones.
+
 =item load (path)
 
 Returns the component object corresponding to an absolute component I<path>, or
 undef if none exists. Dies with an error if the component fails to load because
 of a syntax error.
+
+=item object_dir
+
+Returns the directory containing component object files.
 
 =back
 

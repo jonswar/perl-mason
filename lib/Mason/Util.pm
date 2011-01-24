@@ -11,7 +11,7 @@ use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(can_load catdir catfile checksum dump_one_line mason_canon_path read_file touch_file trim unique_id write_file);
+  qw(can_load catdir catfile checksum dump_one_line is_absolute mason_canon_path read_file touch_file trim unique_id write_file);
 
 my $Fetch_Flags          = O_RDONLY | O_BINARY;
 my $Store_Flags          = O_WRONLY | O_CREAT | O_BINARY;
@@ -70,6 +70,12 @@ sub dump_one_line {
     my ($value) = @_;
 
     return Data::Dumper->new( [$value] )->Indent(0)->Sortkeys(1)->Quotekeys(0)->Terse(1)->Dump();
+}
+
+sub is_absolute {
+    my ($path) = @_;
+
+    return substr( $path, 0, 1 ) eq '/';
 }
 
 sub mason_canon_path {
