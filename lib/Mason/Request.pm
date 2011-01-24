@@ -196,7 +196,7 @@ method run () {
 
     # Flush interp load cache
     #
-    $self->interp->flush_load_cache();
+    $self->interp->_flush_load_cache();
 
     # Make this the current request until end of scope. Use a guard
     # because 'local' doesn't work with the $m alias inside components.
@@ -213,7 +213,7 @@ method run () {
     # Check the static_source touch file, if it exists, before the
     # first component is loaded.
     #
-    $self->interp->check_static_source_touch_file();
+    $self->interp->_check_static_source_touch_file();
 
     # Find request component class.
     #
@@ -233,7 +233,7 @@ method run () {
 
     # Flush interp load cache after request
     #
-    scope_guard { $self->interp->flush_load_cache() };
+    scope_guard { $self->interp->_flush_load_cache() };
 
     my ( $retval, $err );
     {
@@ -388,7 +388,7 @@ L<Mason::Result|Mason::Result> object returned from C<< $interp->run >>.
 
 =back
 
-=head1 METHODS
+=head1 PUBLIC METHODS
 
 =over
 

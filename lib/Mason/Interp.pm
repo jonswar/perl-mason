@@ -67,7 +67,7 @@ method BUILD ($params) {
     if ( $self->{static_source} ) {
         $self->{static_source_touch_file} ||= catfile( $self->data_dir, 'purge.dat' );
         $self->{static_source_touch_lastmod} = 0;
-        $self->check_static_source_touch_file();
+        $self->_check_static_source_touch_file();
     }
 
     # Separate out request parameters
@@ -167,7 +167,15 @@ method all_paths ($dir_path) {
 }
 
 method comp_exists ($path) {
-    return $self->source_file_for_path( Mason::Util::mason_canon_path($path) );
+    return $self->_source_file_for_path( Mason::Util::mason_canon_path($path) );
+}
+
+method flush_code_cache () {
+    my $code_cache = $self->code_cache;
+
+    foreach my $key ( $code_cache->get_keys() ) {
+        $code_cache->remove($key);
+    }
 }
 
 method glob_paths ($glob_pattern) {
@@ -195,7 +203,7 @@ method load ($path) {
     );
 
     my $stat_source_file = sub {
-        if ( $source_file = $self->source_file_for_path($path) ) {
+        if ( $source_file = $self->_source_file_for_path($path) ) {
             @source_stat = stat $source_file;
             if ( @source_stat && !-f _ ) {
                 die "source file '$source_file' exists but it is not a file";
@@ -205,7 +213,7 @@ method load ($path) {
     };
 
     my $stat_object_file = sub {
-        $object_file = $self->object_file_for_path($path);
+        $object_file = $self->_object_file_for_path($path);
         @object_stat = stat $object_file;
         if ( @object_stat && !-f _ ) {
             die "object file '$object_file' exists but it is not a file";
@@ -247,7 +255,7 @@ method load ($path) {
 
         # Determine default parent comp
         #
-        $default_parent_compc = $self->default_parent_compc($path);
+        $default_parent_compc = $self->_default_parent_compc($path);
     }
     else {
 
@@ -257,7 +265,7 @@ method load ($path) {
 
         # Determine default parent comp
         #
-        $default_parent_compc = $self->default_parent_compc($path);
+        $default_parent_compc = $self->_default_parent_compc($path);
 
         # Check memory cache
         #
@@ -281,9 +289,10 @@ method load ($path) {
 
     $self->compile_to_file( $source_file, $path, $object_file ) if $compile;
 
-    my $compc = $self->comp_class_for_path($path);
+    my $compc = $self->_comp_class_for_path($path);
 
-    $self->load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
+    $self->_load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
+    $compc->meta->make_immutable();
 
     # Save component class in the cache.
     #
@@ -317,33 +326,110 @@ method run () {
         %request_params = ( %request_params, %{ shift(@_) } );
     }
     my $path    = shift;
-    my $request = $self->make_request(%request_params);
+    my $request = $self->_make_request(%request_params);
     $request->run( $path, @_ );
+}
+
+#
+# MODIFIABLE METHODS
+#
+
+method DEMOLISH () {
+    $self->flush_code_cache();
+}
+
+method compile ( $source_file, $path ) {
+    my $compilation = $self->compilation_class->new(
+        source_file => $source_file,
+        path        => $path,
+        interp      => $self
+    );
+    return $compilation->compile();
+}
+
+method compile_to_file ( $source_file, $path, $object_file ) {
+
+    # We attempt to handle several cases in which a file already exists
+    # and we wish to create a directory, or vice versa.  However, not
+    # every case is handled; to be complete, mkpath would have to unlink
+    # any existing file in its way.
+    #
+    if ( defined $object_file && !-f $object_file ) {
+        my ($dirname) = dirname($object_file);
+        if ( !-d $dirname ) {
+            unlink($dirname) if ( -e _ );
+            mkpath( $dirname, 0, 0775 );
+        }
+        rmtree($object_file) if ( -d $object_file );
+    }
+    my $object_contents = $self->compile( $source_file, $path );
+
+    $self->write_object_file( $object_file, $object_contents );
+}
+
+method is_pure_perl_comp_path ($path) {
+    return ( $path =~ $self->pure_perl_regex ) ? 1 : 0;
+}
+
+method is_top_level_comp_path ($path) {
+    return ( $path =~ $self->top_level_regex ) ? 1 : 0;
+}
+
+method _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
+    my $flags = $self->_extract_flags_from_object_file($object_file);
+    my $parent_compc = $self->_determine_parent_compc( $path, $flags )
+      || $default_parent_compc;
+
+    eval(
+        sprintf(
+            'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
+            $compc, $parent_compc, $object_file
+        )
+    );
+    die $@ if $@;
+
+    $compc->_set_class_cmeta($self);
+    $self->modify_loaded_class($compc);
+}
+
+method modify_loaded_class ($compc) {
+    $self->_add_default_wrap_method($compc);
+}
+
+method write_object_file ($object_file, $object_contents) {
+    write_file( $object_file, $object_contents );
 }
 
 #
 # PRIVATE METHODS
 #
 
+method _add_default_wrap_method ($compc) {
+
+    # Default wrap method for any component that doesn't define one.
+    # Call inner() until we're back down at the page component ($self),
+    # then call main().
+    #
+    unless ( $compc->meta->has_method('wrap') ) {
+        my $path = $compc->cmeta->path;
+        my $code = sub {
+            my $self = shift;
+            if ( $self->cmeta->path eq $path ) {
+                $self->main(@_);
+            }
+            else {
+                $compc->_inner();
+            }
+        };
+        $compc->meta->add_augment_method_modifier( wrap => $code );
+    }
+}
+
 method _assert_absolute_path ($path) {
     croak "'$path' is not an absolute path" unless is_absolute($path);
 }
 
-method _collect_paths_for_all_comp_roots ($code) {
-    my @paths;
-    foreach my $root_path ( @{ $self->comp_root } ) {
-        my $root_path_length = length($root_path);
-        my @files            = $code->($root_path);
-        push( @paths, map { substr( $_, $root_path_length ) } @files );
-    }
-    return uniq(@paths);
-}
-
-method make_request () {
-    return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
-}
-
-method check_static_source_touch_file () {
+method _check_static_source_touch_file () {
 
     # Check the static_source_touch_file, if one exists, to see if it has
     # changed since we last checked. If it has, clear the code cache.
@@ -358,15 +444,17 @@ method check_static_source_touch_file () {
     }
 }
 
-method flush_code_cache () {
-    my $code_cache = $self->code_cache;
-
-    foreach my $key ( $code_cache->get_keys() ) {
-        $code_cache->remove($key);
+method _collect_paths_for_all_comp_roots ($code) {
+    my @paths;
+    foreach my $root_path ( @{ $self->comp_root } ) {
+        my $root_path_length = length($root_path);
+        my @files            = $code->($root_path);
+        push( @paths, map { substr( $_, $root_path_length ) } @files );
     }
+    return uniq(@paths);
 }
 
-method comp_class_for_path ($path) {
+method _comp_class_for_path ($path) {
     my $classname = substr( $path, 1 );
     $classname =~ s/[^\w]/_/g;
     $classname =~ s/\//::/g;
@@ -374,7 +462,18 @@ method comp_class_for_path ($path) {
     return $classname;
 }
 
-method default_parent_compc ($orig_path) {
+method _construct_distinct_string () {
+    my $number = ++$self->{distinct_string_count};
+    my $str    = $self->_construct_distinct_string_for_number($number);
+    return $str;
+}
+
+method _construct_distinct_string_for_number ($number) {
+    my $distinct_delimeter = "__MASON__";
+    return sprintf( "%s%d%s", $distinct_delimeter, $number, $distinct_delimeter );
+}
+
+method _default_parent_compc ($orig_path) {
 
     # Given /foo/bar.m, look for (by default):
     #   /foo/Base.pm, /foo/Base.m,
@@ -408,7 +507,7 @@ method default_parent_compc ($orig_path) {
     }
 }
 
-method determine_parent_compc ($path, $flags) {
+method _determine_parent_compc ($path, $flags) {
     my $parent_compc;
     if ( exists( $flags->{extends} ) ) {
         my $extends = $flags->{extends};
@@ -425,7 +524,7 @@ method determine_parent_compc ($path, $flags) {
     return $parent_compc;
 }
 
-method extract_flags_from_object_file ($object_file) {
+method _extract_flags_from_object_file ($object_file) {
     my $flags = {};
     open( my $fh, "<", $object_file );
     my $line = <$fh>;
@@ -435,73 +534,23 @@ method extract_flags_from_object_file ($object_file) {
     return $flags;
 }
 
-method flush_load_cache () {
+method _flush_load_cache () {
     Memoize::flush_cache('load');
 }
 
-method load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
-    my $flags = $self->extract_flags_from_object_file($object_file);
-    my $parent_compc = $self->determine_parent_compc( $path, $flags )
-      || $default_parent_compc;
-
-    eval(
-        sprintf(
-            'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
-            $compc, $parent_compc, $object_file
-        )
-    );
-    die $@ if $@;
-
-    $compc->_set_class_cmeta($self);
-    $self->modify_loaded_class($compc);
-    $compc->meta->make_immutable();
+method _incr_request_count () {
+    return $self->{request_count}++;
 }
 
-method modify_loaded_class ( $compc, $flags ) {
-    $self->add_default_wrap_method($compc);
+method _make_request () {
+    return $self->request_class->new( interp => $self, %{ $self->request_params }, @_ );
 }
 
-method add_default_wrap_method ($compc) {
-
-    # Default wrap method for any component that doesn't define one.
-    # Call inner() until we're back down at the page component ($self),
-    # then call main().
-    #
-    unless ( $compc->meta->has_method('wrap') ) {
-        my $path = $compc->cmeta->path;
-        my $code = sub {
-            my $self = shift;
-            if ( $self->cmeta->path eq $path ) {
-                $self->main(@_);
-            }
-            else {
-                $compc->_inner();
-            }
-        };
-        $compc->meta->add_augment_method_modifier( wrap => $code );
-    }
+method _object_file_for_path ($path) {
+    return catfile( $self->object_dir, ( split /\//, $path ) ) . $self->object_file_extension;
 }
 
-method construct_distinct_string () {
-    my $number = ++$self->{distinct_string_count};
-    my $str    = $self->construct_distinct_string_for_number($number);
-    return $str;
-}
-
-method construct_distinct_string_for_number ($number) {
-    my $distinct_delimeter = "__MASON__";
-    return sprintf( "%s%d%s", $distinct_delimeter, $number, $distinct_delimeter );
-}
-
-method object_create_marker_file () {
-    return catfile( $self->object_dir, '.__obj_create_marker' );
-}
-
-method object_file_for_path ($path) {
-    return catfile( $self->object_dir, ( split /\//, $path ), ) . $self->object_file_extension;
-}
-
-method source_file_for_path ($path) {
+method _source_file_for_path ($path) {
     $self->_assert_absolute_path($path);
     foreach my $root_path ( @{ $self->comp_root } ) {
         my $source_file = $root_path . $path;
@@ -510,61 +559,13 @@ method source_file_for_path ($path) {
     return undef;
 }
 
-method _incr_request_count () {
-    return $self->{request_count}++;
-}
-
-method compile ( $source_file, $path ) {
-    my $compilation = $self->compilation_class->new(
-        source_file => $source_file,
-        path        => $path,
-        interp      => $self
-    );
-    return $compilation->compile();
-}
-
-method compile_to_file ( $source_file, $path, $object_file ) {
-
-    # We attempt to handle several cases in which a file already exists
-    # and we wish to create a directory, or vice versa.  However, not
-    # every case is handled; to be complete, mkpath would have to unlink
-    # any existing file in its way.
-    #
-    if ( defined $object_file && !-f $object_file ) {
-        my ($dirname) = dirname($object_file);
-        if ( !-d $dirname ) {
-            unlink($dirname) if ( -e _ );
-            mkpath( $dirname, 0, 0775 );
-        }
-        rmtree($object_file) if ( -d $object_file );
-    }
-    my $object_contents = $self->compile( $source_file, $path );
-
-    $self->write_object_file( $object_file, $object_contents );
-}
-
-method write_object_file ($object_file, $object_contents) {
-    write_file( $object_file, $object_contents );
-}
-
-method is_top_level_comp_path ($path) {
-    return ( $path =~ $self->top_level_regex ) ? 1 : 0;
-}
-
-method is_pure_perl_comp_path ($path) {
-    return ( $path =~ $self->pure_perl_regex ) ? 1 : 0;
-}
-
-method DEMOLISH () {
-    $self->flush_code_cache();
-}
-
 #
 # Class overrides. Put here at the bottom because it strangely messes up
 # Perl line numbering if at the top.
 #
 sub _define_class_override_methods {
     my %class_overrides = (
+        code_cache_class              => 'CodeCache',
         compilation_class             => 'Compilation',
         component_class               => 'Component',
         component_class_meta_class    => 'Component::ClassMeta',
@@ -668,6 +669,10 @@ A list of plugins and/or plugin bundles:
 
 See L<Mason::Manual::Plugins>.
 
+=item out_method
+
+Default L<Request/out_method> passed to each new request.
+
 =item pure_perl_extensions
 
 A listref of file extensions of components to be considered as pure perl (see
@@ -706,12 +711,6 @@ restriction; that is, I<all> components will be considered top level.
 
 =back
 
-=head1 REQUEST PARAMETERS
-
-Constructor parameters for Request objects (L<Mason::Request>, plus any applied
-plugins) may be passed to the Interp constructor, and they will be passed along
-whenever a request is created.
-
 =head1 CUSTOM MASON CLASSES
 
 The Interp is responsible, directly or indirectly, for creating all other core
@@ -728,6 +727,10 @@ to create a final class, which you can get with
     $interp->compilation_class
 
 =over
+
+=item base_code_cache_class
+
+Specify alternate to L<Mason::CodeCache|Mason::CodeCache>
 
 =item base_compilation_class
 
@@ -756,32 +759,7 @@ Specify alternate to L<Mason::Result|Mason::Result>
 
 =back
 
-=head1 THE RUN METHOD
-
-=over
-
-=item run ([request params], path, args...)
-
-Creates a new L<Mason::Request|Mason::Request> object for the given I<path> and
-I<args>, and executes it. Returns a L<Mason::Result|Mason::Result> object,
-which is generally accessed to get the output. e.g.
-
-    my $output = $interp->run('/foo/bar', baz => 5)->output;
-
-The first argument may optionally be a hashref of request parameters, which are
-passed to the Mason::Request constructor. e.g. this tells the request to output
-to standard output:
-
-    $interp->run({out_method => sub { print $_[0] }}, '/foo/bar', baz => 5);
-
-=back
-
-=head1 ACCESSOR METHODS
-
-All of the above properties have standard read-only accessor methods of the
-same name.
-
-=head1 OTHER METHODS
+=head1 PUBLIC METHODS
 
 =over
 
@@ -829,6 +807,58 @@ of a syntax error.
 =item object_dir
 
 Returns the directory containing component object files.
+
+=item run ([request params], path, args...)
+
+Creates a new L<Mason::Request|Mason::Request> object for the given I<path> and
+I<args>, and executes it. Returns a L<Mason::Result|Mason::Result> object,
+which is generally accessed to get the output. e.g.
+
+    my $output = $interp->run('/foo/bar', baz => 5)->output;
+
+The first argument may optionally be a hashref of request parameters, which are
+passed to the Mason::Request constructor. e.g. this tells the request to output
+to standard output:
+
+    $interp->run({out_method => sub { print $_[0] }}, '/foo/bar', baz => 5);
+
+=back
+
+=head1 MODIFIABLE METHODS
+
+These methods are not intended to be called from the outside, but may be useful
+to modify with method modifiers in plugins and subclasses. We will attempt to
+keep their APIs stable.
+
+=over
+
+=item compile ( $source_file, $path )
+
+Compiles component I<$path> in file I<$source_file> to a class; returns the
+class source code.
+
+=item compile_to_file ( $source_file, $path, $object_file )
+
+Compiles component I<$path> in file I<$source_file> to I<$object_file>.
+
+=item is_pure_perl_comp_path ($path)
+
+Determines whether I<$path> is a pure Perl component - by default, uses
+L</pure_perl_extensions>.
+
+=item is_top_level_comp_path ($path)
+
+Determines whether I<$path> is a valid top-level component - by default, uses
+L</top_level_extensions>.
+
+=item modify_loaded_class ( $compc )
+
+An opportunity to modify loaded component class I<$compc> (e.g. add additional
+methods or apply roles) before it is made immutable.
+
+=item write_object_file ($object_file, $object_contents)
+
+Write I<$object_contents> to I<$object_file>.
 
 =back
 

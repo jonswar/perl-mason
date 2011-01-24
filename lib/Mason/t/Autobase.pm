@@ -48,7 +48,7 @@ sub test_autobase : Test(8) {
     $add->('/Base.m');
     $add->('/foo/Base.m');
     $add->('/foo/bar/baz/Base.m');
-    $self->interp->flush_load_cache();
+    $self->interp->_flush_load_cache();
 
     $check_parent->( '/Base.m',             'Mason::Component' );
     $check_parent->( '/foo/Base.m',         '/Base.m' );
@@ -71,7 +71,7 @@ sub test_autobase : Test(8) {
     # Multiple autobases same directory
     $add->('/Base.pm');
     $add->('/foo/Base.pm');
-    $self->interp->flush_load_cache();
+    $self->interp->_flush_load_cache();
     $check_parent->( '/Base.pm',     'Mason::Component' );
     $check_parent->( '/Base.m',      '/Base.pm' );
     $check_parent->( '/foo/Base.pm', '/Base.m' );
@@ -84,7 +84,7 @@ sub test_autobase : Test(8) {
     $remove->('/Base.m');
     $remove->('/foo/Base.pm');
     $remove->('/foo/Base.m');
-    $self->interp->flush_load_cache();
+    $self->interp->_flush_load_cache();
 
     $check_parent->( '/comp.m',             'Mason::Component' );
     $check_parent->( '/foo/comp.m',         'Mason::Component' );
@@ -180,7 +180,7 @@ sub test_recompute_inherit : Test(1) {
     $self->add_comp( path => '/comp.m', src => ' ' );
     $self->interp->load('/comp.m');
     $self->add_comp( path => '/Base.m', src => ' ' );
-    $self->interp->flush_load_cache();
+    $self->interp->_flush_load_cache();
     $self->interp->load('/comp.m');
     ok(1);
 

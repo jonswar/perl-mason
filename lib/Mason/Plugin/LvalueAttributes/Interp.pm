@@ -2,8 +2,8 @@ package Mason::Plugin::LvalueAttributes::Interp;
 use Mason::PluginRole;
 
 after 'modify_loaded_class' => sub {
-    my ( $self, $class ) = @_;
-    $self->_add_lvalue_attribute_methods($class);
+    my ( $self, $compc ) = @_;
+    $self->_add_lvalue_attribute_methods($compc);
 };
 
 sub _add_lvalue_attribute_methods {

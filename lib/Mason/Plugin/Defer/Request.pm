@@ -9,7 +9,7 @@ before 'flush_buffer' => sub {
 };
 
 method defer ($code) {
-    my $marker = $self->interp->construct_distinct_string();
+    my $marker = $self->interp->_construct_distinct_string();
     push( @{ $self->{defers} }, { marker => $marker, code => $code } );
     return $marker;
 }
