@@ -3,7 +3,7 @@ use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture_merged);
 use Mason::Util qw(dump_one_line);
 
-sub test_plugins : Test(6) {
+sub test_plugins : Test(5) {
     my $self = shift;
 
     $self->setup_interp(
@@ -23,8 +23,7 @@ sub test_plugins : Test(6) {
     $like->(qr/starting interp run/);
     $like->(qr/starting request run - \/test_plugin/);
     $like->(qr/starting request comp - test_plugin_support.mi/);
-    $like->(qr/starting interp compile - \/test_plugin.m/);
-    $like->(qr/starting compilation compile - \/test_plugin.m/);
+    $like->(qr/starting compilation parse - \/test_plugin.m/);
 }
 
 { package Mason::Test::Plugins::A; use Moose; with 'Mason::Plugin'; }
@@ -73,13 +72,19 @@ sub test_plugins : Test(6) {
 sub test_plugin_specs : Test(9) {
     my $self = shift;
 
+    require Mason::PluginBundle::Default;
+    my @default_plugins = Mason::PluginBundle::Default->requires_plugins
+      or die "no default plugins";
     my $test = sub {
         my ( $plugin_list, $expected_plugins ) = @_;
         my $interp = Mason->new( plugins => $plugin_list );
         my $got_plugins =
           [ map { /Mason::Plugin::/ ? substr( $_, 15 ) : $_ } @{ $interp->plugins } ];
-        cmp_deeply( $got_plugins, [ @$expected_plugins, 'DollarDot' ],
-            dump_one_line($plugin_list) );
+        cmp_deeply(
+            $got_plugins,
+            [ @$expected_plugins, @default_plugins ],
+            dump_one_line($plugin_list)
+        );
     };
     $test->( [], [] );
     $test->( ['E'], ['E'] );

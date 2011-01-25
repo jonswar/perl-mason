@@ -1,7 +1,7 @@
 package Mason::t::Autobase;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_autobase : Test(8) {
+sub test_autobase : Test(24) {
     my $self   = shift;
     my $interp = $self->interp;
 
@@ -38,10 +38,12 @@ sub test_autobase : Test(8) {
     $add->('/foo/bar/comp.m');
     $add->('/foo/bar/baz/comp.m');
 
-    $check_parent->( '/comp.m',             'Mason::Component' );
-    $check_parent->( '/foo/comp.m',         'Mason::Component' );
-    $check_parent->( '/foo/bar/comp.m',     'Mason::Component' );
-    $check_parent->( '/foo/bar/baz/comp.m', 'Mason::Component' );
+    my $base_class = $self->interp->component_class;
+
+    $check_parent->( '/comp.m',             $base_class );
+    $check_parent->( '/foo/comp.m',         $base_class );
+    $check_parent->( '/foo/bar/comp.m',     $base_class );
+    $check_parent->( '/foo/bar/baz/comp.m', $base_class );
 
     # Add autobases, test the parents of the components and autobases
     #
@@ -50,17 +52,17 @@ sub test_autobase : Test(8) {
     $add->('/foo/bar/baz/Base.m');
     $self->interp->_flush_load_cache();
 
-    $check_parent->( '/Base.m',             'Mason::Component' );
+    $check_parent->( '/Base.m',             $base_class );
     $check_parent->( '/foo/Base.m',         '/Base.m' );
     $check_parent->( '/foo/bar/baz/Base.m', '/foo/Base.m' );
     $check_parent->( '/comp.m',             '/Base.m' );
-    return;
+
     $check_parent->( '/foo/comp.m',         '/foo/Base.m' );
     $check_parent->( '/foo/bar/comp.m',     '/foo/Base.m' );
     $check_parent->( '/foo/bar/baz/comp.m', '/foo/bar/baz/Base.m' );
 
     $add->( '/foo/bar/baz/none.m', "undef" );
-    $check_parent->( '/foo/bar/baz/none.m', 'Mason::Component' );
+    $check_parent->( '/foo/bar/baz/none.m', $base_class );
 
     $add->( '/foo/bar/baz/top.m', "'/Base.m'" );
     $check_parent->( '/foo/bar/baz/top.m', '/Base.m' );
@@ -72,7 +74,7 @@ sub test_autobase : Test(8) {
     $add->('/Base.pm');
     $add->('/foo/Base.pm');
     $self->interp->_flush_load_cache();
-    $check_parent->( '/Base.pm',     'Mason::Component' );
+    $check_parent->( '/Base.pm',     $base_class );
     $check_parent->( '/Base.m',      '/Base.pm' );
     $check_parent->( '/foo/Base.pm', '/Base.m' );
     $check_parent->( '/foo/Base.m',  '/foo/Base.pm' );
@@ -86,11 +88,11 @@ sub test_autobase : Test(8) {
     $remove->('/foo/Base.m');
     $self->interp->_flush_load_cache();
 
-    $check_parent->( '/comp.m',             'Mason::Component' );
-    $check_parent->( '/foo/comp.m',         'Mason::Component' );
-    $check_parent->( '/foo/bar/comp.m',     'Mason::Component' );
+    $check_parent->( '/comp.m',             $base_class );
+    $check_parent->( '/foo/comp.m',         $base_class );
+    $check_parent->( '/foo/bar/comp.m',     $base_class );
     $check_parent->( '/foo/bar/baz/comp.m', '/foo/bar/baz/Base.m' );
-    $check_parent->( '/foo/bar/baz/Base.m', 'Mason::Component' );
+    $check_parent->( '/foo/bar/baz/Base.m', $base_class );
 
 }
 

@@ -1,9 +1,9 @@
 package Mason::Test::Plugins::Notify::Compilation;
 use Mason::PluginRole;
 
-before 'compile' => sub {
+before 'parse' => sub {
     my ($self) = @_;
-    print STDERR "starting compilation compile - " . $self->path . "\n";
+    print STDERR "starting compilation parse - " . $self->path . "\n";
 };
 
 1;
