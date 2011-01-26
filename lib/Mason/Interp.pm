@@ -579,6 +579,7 @@ sub _define_class_override_methods {
     while ( my ( $method_name, $name ) = each(%class_overrides) ) {
         my $base_method_name   = "base_$method_name";
         my $default_base_class = "Mason::$name";
+        Class::MOP::load_class($default_base_class);
         has $method_name      => ( init_arg => undef, lazy_build => 1 );
         has $base_method_name => ( isa      => 'Str', default    => $default_base_class );
         __PACKAGE__->meta->add_method(
