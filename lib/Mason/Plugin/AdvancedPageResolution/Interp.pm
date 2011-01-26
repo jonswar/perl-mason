@@ -42,7 +42,6 @@ method _build_resolve_page_component_method ($interp:) {
     #
     my @dhandler_subpaths      = map { "/$_" } @{ $interp->dhandler_names };
     my $ignore_file_regex      = $interp->ignore_file_regex;
-    my @index_subpaths         = map { "/$_" } @{ $interp->index_names };
     my %is_dhandler_name       = map { ( $_, 1 ) } @{ $interp->dhandler_names };
     my $no_autoextend_run_path = $interp->no_autoextend_run_path;
     my @page_extensions        = @{ $interp->page_extensions };
@@ -51,6 +50,7 @@ method _build_resolve_page_component_method ($interp:) {
         my ( $request, $path ) = @_;
         my $path_info      = '';
         my $declined_paths = $request->declined_paths;
+        my @index_subpaths = map { "/$_" } @{ $interp->index_names };
 
         while (1) {
             my @candidate_paths =

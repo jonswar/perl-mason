@@ -25,8 +25,6 @@ around 'construct_page_component' => sub {
     my $self = shift;
     my ( $compc, $args ) = @_;
 
-    use d;
-
     if ( blessed($args) && $args->can('get_all') ) {
         my $orig_args = $args;
         $args = $orig_args->as_hashref;
@@ -42,6 +40,30 @@ around 'construct_page_component' => sub {
     }
 
     $self->$orig( $compc, $args );
+};
+
+override 'dispatch_to_page_component' => sub {
+    my ( $self, $page ) = @_;
+    my $retval;
+    try {
+        $retval = $page->dispatch();
+    }
+    catch {
+        my $err = $_;
+        if ( $self->aborted($err) ) {
+            $retval = $err->aborted_value;
+        }
+        elsif ( blessed($err) && $err->isa('Mason::Exception::TopLevelNotFound') ) {
+            $self->res->status(404);
+            $self->res->body("");
+            $retval = 404;
+        }
+        else {
+            local $SIG{__DIE__} = undef;
+            die $err;
+        }
+    };
+    return $retval;
 };
 
 before 'abort' => sub {
