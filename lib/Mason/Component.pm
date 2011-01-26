@@ -48,13 +48,9 @@ method render () {
     $self->wrap(@_);
 }
 
-# Default dispatch - reject path_info, otherwise call render
+# Default dispatch - call render
 #
 method dispatch () {
-    my $m = $self->m;
-
-    # Not sure about this.
-    # $m->decline if length( $m->path_info );
     $self->render(@_);
 }
 
@@ -91,24 +87,23 @@ In many cases only C<main> will actually do anything.
 =item dispatch
 
 This method is invoked on the page component at the beginning of the request.
+By default, it simply calls L</render>.
 
-By default, it calls L</render> if C<< $m->path_info >> is empty, and calls C<<
-$m->decline >> otherwise.
-
-This is the place to process C<< $m->path_info >> or other arguments and take
-appropriate action before rendering starts.
+This is the place to validate arguments, redirect to other components, and take
+other non-rendering actions before rendering starts.
 
 =item render
 
-This method is invoked from dispatch on the page component. By default, it
+This method is invoked from L</dispatch> on the page component. By default, it
 calls L</wrap>.
 
 =item wrap
 
-By convention, C<wrap> operates in an inverted direction: the superclass method
-gets to act before and after the subclass method. See "Content wrapping" for
-more information. By default, C<wrap> just calls C<< $m->call_next >> to go to
-the next subclass, and then L</main> at the final subclass.
+This method is invoked from L</render> on the page component.  By convention,
+C<wrap> operates in an inverted direction: the superclass method gets to act
+before and after the subclass method. See "Content wrapping" for more
+information. By default, C<wrap> just calls C<< inner() >> to go to the next
+subclass, and then L</main> at the final subclass.
 
 =item main
 

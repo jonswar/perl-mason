@@ -37,12 +37,6 @@ The C<< $m->abort >> method was called.
 
 Exceptions in this class contain the field C<aborted_value>.
 
-=item Mason::Exception::Decline
-
-The C<< $m->decline >> method was called.
-
-Exceptions in this class contain the field C<declined_value>.
-
 =item Mason::Exception::TopLevelNotFound
 
 The requested top level component passed to exec() could not be found. In a web

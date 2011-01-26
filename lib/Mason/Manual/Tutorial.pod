@@ -431,20 +431,16 @@ determined by the first argument to C<run>:
 In a web environment, the page component will be determined by the URL and
 perhaps controller logic in your web framework.
 
-=head2 The dispatch and render methods
+=head2 The dispatch, render and wrap methods
 
 Once the page component has been determined, Mason creates an instance of that
 component and calls C<dispatch> on it. C<dispatch> is a good place to do
 processing before content rendering starts: analyze the path_info, implement
 security restrictions, forward control to another page, etc.
 
-The default C<dispatch> calls C<render> if path_info is empty, and otherwise
-declines the request. That is, by default, components will only handle their
-exact path with nothing extra on it. If you want to accept and parse the
-path_info, you'll have to implement a C<dispatch>.
-
-The default C<render> method just calls C<main>, which executes the main body
-of the component.
+The default C<dispatch> calls C<render>, the default C<render> method calls
+C<wrap>, and the default C<wrap> calls C<main>, which executes the main body of
+the component.
 
 =head2 Content wrapping
 

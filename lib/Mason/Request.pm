@@ -15,7 +15,6 @@ my $default_out = sub { my ( $text, $self ) = @_; $self->{output} .= $text };
 
 # Passed attributes
 #
-has 'declined_paths' => ( default => sub { {} } );
 has 'interp'         => ( required => 1, weak_ref => 1 );
 has 'out_method'     => ( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 
@@ -27,7 +26,7 @@ has 'go_result'          => ( init_arg => undef );
 has 'output'             => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
 has 'request_args'       => ( init_arg => undef );
-has 'request_code_cache' => ( init_arg => undef );
+has 'request_code_cache' => ( init_arg => undef, default => sub { {} } );
 has 'request_path'       => ( init_arg => undef );
 has 'run_params'         => ( init_arg => undef );
 
@@ -42,7 +41,6 @@ method current_request () { $current_request }
 
 method BUILD ($params) {
     $self->_push_buffer();
-    $self->{request_code_cache}  = {};
     $self->{orig_request_params} = $params;
     $self->{count}               = $self->{interp}->_incr_request_count;
 }
@@ -107,20 +105,11 @@ method comp_exists ($path) {
     return $self->interp->comp_exists( $self->rel_to_abs($path) );
 }
 
-method decline () {
-    $self->go( { declined_paths => { %{ $self->declined_paths }, $self->page->cmeta->path => 1 } },
-        $self->request_path, %{ $self->request_args } );
-}
-
 method construct () {
     my $path  = shift;
     my $compc = $self->load($path)
       or $self->_comp_not_found($path);
     return $compc->new( @_, 'm' => $self );
-}
-
-method construct_page_component ($compc, $args) {
-    return $compc->new( %$args, 'm' => $self );
 }
 
 method create_result_object () {
@@ -176,6 +165,51 @@ method rel_to_abs ($path) {
     return $path;
 }
 
+method scomp () {
+    my $buf = $self->capture( sub { $self->comp(@_) } );
+    return $buf;
+}
+
+method visit () {
+    my @extra_request_params;
+    while ( ref( $_[0] ) eq 'HASH' ) {
+        push( @extra_request_params, shift(@_) );
+    }
+    my $path = $self->rel_to_abs( shift(@_) );
+    my $retval = $self->interp->run( { out_method => \my $buf }, @extra_request_params, $path, @_ );
+    $self->print($buf);
+    return $retval;
+}
+
+#
+# MODIFIABLE METHODS
+#
+
+method cleanup_request () {
+    $self->interp->_flush_load_cache();
+}
+
+method construct_page_component ($compc, $args) {
+    return $compc->new( %$args, 'm' => $self );
+}
+
+method dispatch_to_page_component ($page) {
+    my $retval;
+    try {
+        $retval = $page->dispatch();
+    }
+    catch {
+        my $err = $_;
+        if ( $self->aborted($err) ) {
+            $retval = $err->aborted_value;
+        }
+        else {
+            die $err;
+        }
+    };
+    return $retval;
+}
+
 method resolve_page_component ($request_path) {
     my $compc = $self->interp->load($request_path);
     return ( defined($compc) && $compc->cmeta->is_top_level ) ? $compc : undef;
@@ -205,7 +239,7 @@ method run () {
     scope_guard { $current_request = $save_current_request };
     $current_request = $self;
 
-    # Save off the requested path and args, e.g. for decline.
+    # Save off the requested path and args
     #
     $self->{request_path} = $path;
     $self->{request_args} = $args;
@@ -234,29 +268,18 @@ method run () {
     $log->debugf( "starting request with component '%s'", $page->cmeta->path )
       if $log->is_debug;
 
-    # Flush interp load cache after request
+    # Clean up after request
     #
-    scope_guard { $self->interp->_flush_load_cache() };
+    scope_guard { $self->cleanup_request() };
 
-    my ( $retval, $err );
-    {
-        local *TH;
-        tie *TH, 'Mason::TieHandle';
-        my $old = select TH;
-        scope_guard { select $old };
-
-        try {
-            $retval = $page->dispatch();
-        }
-        catch {
-            $err = $_;
-            die $err if !$self->aborted($err);
-        };
-    }
+    # Dispatch to page component, with 'print' tied to component output.
+    # Will catch aborts but throw other fatal errors.
+    #
+    my $retval = $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
 
     # If go() was called in this request, return the result of the subrequest
     #
-    return $self->{go_result} if defined( $self->{go_result} );
+    return $self->go_result if defined( $self->go_result );
 
     # Send output to its final destination
     #
@@ -264,24 +287,15 @@ method run () {
 
     # Create and return result object
     #
-    $retval = $self->aborted($err) ? $err->aborted_value : $retval;
     return $self->create_result_object( output => $self->output, retval => $retval );
 }
 
-method scomp () {
-    my $buf = $self->capture( sub { $self->comp(@_) } );
-    return $buf;
-}
-
-method visit () {
-    my @extra_request_params;
-    while ( ref( $_[0] ) eq 'HASH' ) {
-        push( @extra_request_params, shift(@_) );
-    }
-    my $path = $self->rel_to_abs( shift(@_) );
-    my $retval = $self->interp->run( { out_method => \my $buf }, @extra_request_params, $path, @_ );
-    $self->print($buf);
-    return $retval;
+method with_tied_print ($code) {
+    local *TH;
+    tie *TH, 'Mason::TieHandle';
+    my $old = select TH;
+    scope_guard { select $old };
+    return $code->();
 }
 
 #
@@ -567,6 +581,49 @@ subrequest:
     $m->visit({out_method => \my $buffer}, ...);
 
 See also L</go>.
+
+=back
+
+=head1 MODIFIABLE METHODS
+
+These methods are not intended to be called externally, but may be useful to
+modify with method modifiers in plugins and subclasses. Their APIs will be kept
+as stable as possible.
+
+=over
+
+=item cleanup_request ()
+
+A place to perform cleanup duties when the request finishes or dies with an
+error, even if the request object is not immediately destroyed.
+
+=item construct_page_component ($compc, $args)
+
+Constructs the page component of class I<$compc>, with hashref of constructor
+arguments I<$args>.
+
+=item dispatch_to_page_component ($page)
+
+Call dispatch on component object I<$page> within a try/catch block. C<< abort
+>> calls are caught while other errors are repropagated.
+
+=item resolve_page_component ($request_path)
+
+Given a top level I<$request_path>, return a corresponding component class or
+undef if none was found. By default this simply tries to load the path, but the
+L<AdvancedPageResolution|Mason::Plugin::AdvancedPageResolution> plugin adds
+much to this.
+
+=item run (request_path, args)
+
+Runs the request with I<request_path> and I<args>, where the latter can be
+either a hashref or a hash. This is generally called via << $interp->run >>.
+
+=item with_tied_print ($code)
+
+Execute the given I<$code> with the current selected filehandle ('print') tied
+to the Mason output stream. You could disable the filehandle selection by
+overriding this to just call I<$code>.
 
 =back
 
