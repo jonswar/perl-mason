@@ -70,7 +70,7 @@ method _build_resolve_page_component_method ($interp:) {
                     return $compc
                       unless ( $path_info
                         && !$is_dhandler_name{ basename($candidate_path) }
-                        && !$compc->accept_path_info );
+                        && !$compc->allow_path_info );
                 }
             }
             return undef if $path eq '/';

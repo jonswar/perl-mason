@@ -79,42 +79,25 @@ above:
 the component may not want to accept the match. In many cases you'll only want
 a component to match its exact URL.
 
-Mason checks this by calling the method C<< accept_path_info >> on the
-component with the path_info as a parameter.  If it returns a true value, the
-match is accepted; otherwise it is as if you have called L</decline>, and Mason
+Mason checks this by calling the method C<< allow_path_info >> on the component
+with the path_info as a parameter.  If it returns a true value, the match is
+accepted; otherwise it is as if you have called L</decline>, and Mason
 continues down the list of possibilities.
 
-By default C<accept_path_info> returns B<false>, so you will have to explicitly
-indicate that you want to accept a partial match. You can accept any path_info:
+By default C<allow_path_info> returns B<false>, so you will have to explicitly
+indicate that you want to accept a partial match.
 
-    %% method accept_path_info { 1 }
+    %% method allow_path_info { 1 }
 
-Or you can use this opportunity to parse the path_info into attributes and make
-sure it's acceptable. Here's an example that looks for a path_info of the form
-YYYY/MM (it requires the L<LValueAttribute
-plugin|Mason::Plugin::LValueAttribute>).
-
-    <%shared>
-    $.month
-    $.year
-    </%shared>
-
-    <%class>
-    method accept_path_info ($path_info) {
-        ($.year, $.month) = ($path_info =~ m|^(\d{4})/(\d{2})$|);
-        return $.year && $.month && $.month <= 12;
-    }
-    </%class>
-
-You can put this in a top-level L<Base.pm> if you want to accept path_info by
+You can put this in a top-level C<Base.pm> if you want to allow path_info by
 default for all components:
 
-    method accept_path_info { 1 }
+    method allow_path_info { 1 }
 
-Even if C<accept_path_info> returns true, the component can still decide to
+Even if C<allow_path_info> returns true, the component can still decide to
 L</decline> later.
 
-Mason does not check C<accept_path_info> on dhandlers, since their very reason
+Mason does not check C<allow_path_info> on dhandlers, since their very reason
 for existing is to match partial paths.
 
 =head1 ADDITIONAL INTERP PARAMETERS

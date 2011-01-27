@@ -13,15 +13,15 @@ sub test_resolve : Tests(32) {
 
         $self->setup_dirs(@interp_params);
         foreach my $existing_path (@$existing_paths) {
-            my $accept_path_info = 0;
+            my $allow_path_info = 0;
             if ( $existing_path =~ /=1$/ ) {
                 substr( $existing_path, -2, 2 ) = '';
-                $accept_path_info = 1;
+                $allow_path_info = 1;
             }
             $self->add_comp(
                 path => $existing_path,
                 src  => join( "",
-                    ( $accept_path_info ? "%% sub accept_path_info { $accept_path_info }\n" : "" ),
+                    ( $allow_path_info ? "%% sub allow_path_info { $allow_path_info }\n" : "" ),
                     "path: <% \$self->cmeta->path %>; path_info: <% \$m->path_info %>" )
             );
         }
@@ -107,7 +107,7 @@ sub test_decline : Tests(7) {
                 path => $existing_path,
                 src  => $component,
             );
-            $self->add_comp( path => '/Base.pm', src => 'sub accept_path_info { 1 }' );
+            $self->add_comp( path => '/Base.pm', src => 'sub allow_path_info { 1 }' );
         }
         my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) );
         if ( defined($resolve_path) ) {
