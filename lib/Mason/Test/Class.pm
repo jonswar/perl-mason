@@ -84,18 +84,25 @@ method remove_comp (%params) {
 method test_comp (%params) {
     my $caller = ( caller(1) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
-    my $path   = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
-    my $args   = $params{args} || {};
-    my $desc   = $params{desc} || $path;
-    my $source = $params{src}  || " ";
-    my $expect = trim( $params{expect} );
-    my $expect_error = $params{expect_error};
-    my $verbose = $params{v} || $params{verbose};
+    my $path    = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
+    my $source  = $params{src}  || " ";
+    my $verbose = $params{v}    || $params{verbose};
 
     $self->add_comp( path => $path, src => $source, verbose => $verbose );
-    my $run_path = $path;
 
-    my @run_params = ( $run_path, %$args );
+    $self->test_existing_comp( %params, path => $path );
+}
+
+method test_existing_comp (%params) {
+    my $path         = $params{path} or die "must pass path";
+    my $caller       = ( caller(1) )[3];
+    my $desc         = $params{desc} || $path;
+    my $expect       = trim( $params{expect} );
+    my $expect_error = $params{expect_error};
+    my $verbose      = $params{v} || $params{verbose};
+    my $args         = $params{args} || {};
+
+    my @run_params = ( $path, %$args );
     local $current_test_object = $self;
 
     if ( defined($expect_error) ) {
