@@ -1,6 +1,7 @@
 package Mason::Plugin::PSGIHandler::Request;
 use Mason::Plugin::PSGIHandler::PlackResponse;
 use Mason::PluginRole;
+use Try::Tiny;
 
 has 'req' => (required => 1, isa => 'Object');
 has 'res' => (lazy_build => 1);
@@ -52,11 +53,6 @@ override 'dispatch_to_page_component' => sub {
         my $err = $_;
         if ( $self->aborted($err) ) {
             $retval = $err->aborted_value;
-        }
-        elsif ( blessed($err) && $err->isa('Mason::Exception::TopLevelNotFound') ) {
-            $self->res->status(404);
-            $self->res->body("");
-            $retval = 404;
         }
         else {
             local $SIG{__DIE__} = undef;
