@@ -43,4 +43,34 @@ EOF
     ok( $class->can('baz'),  "can call baz after reload" );
 }
 
+sub test_reload_parent : Test(4) {
+    my $self   = shift;
+    my $interp = $self->interp;
+
+    $self->add_comp( path => '/foo/bar/baz.m', src => '<% $.num1 %> <% $.num2 %>' );
+    $self->add_comp( path => '/foo/Base.m',    src => '%% method num1 { 5 }' );
+    $self->add_comp( path => '/Base.m',        src => '%% method num2 { 6 }' );
+    $self->test_existing_comp( path => '/foo/bar/baz.m', expect => '5 6' );
+
+    $self->interp->_flush_load_cache();
+    sleep(1);
+
+    $self->add_comp( path => '/foo/Base.m', src => "%% method num1 { 7 }" );
+    $self->add_comp( path => '/Base.m',     src => "%% method num2 { 8 }" );
+    $self->test_existing_comp( path => '/foo/bar/baz.m', expect => '7 8' );
+
+    $self->interp->_flush_load_cache();
+    sleep(1);
+
+    $self->add_comp( path => '/Base.m', src => "%% method num1 { 10 } \n%% method num2 { 11 }\n" );
+    $self->test_existing_comp( path => '/foo/bar/baz.m', expect => '7 11' );
+
+    $self->interp->_flush_load_cache();
+    sleep(1);
+
+    $DB::single = 1;
+    $self->remove_comp( path => '/foo/Base.m' );
+    $self->test_existing_comp( path => '/foo/bar/baz.m', expect => '10 11' );
+}
+
 1;
