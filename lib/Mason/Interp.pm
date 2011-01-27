@@ -197,6 +197,14 @@ method load ($path) {
     croak "path required" if !defined($path);
     $path = Mason::Util::mason_canon_path($path);
 
+    # Quick check memory cache in static source mode
+    #
+    if ( $self->static_source ) {
+        if ( my $entry = $code_cache->get($path) ) {
+            return $entry->{compc};
+        }
+    }
+
     my $compile = 0;
     my (
         $default_parent_compc, $source_file, $source_lastmod, $object_file,
@@ -222,17 +230,16 @@ method load ($path) {
         $object_lastmod = @object_stat ? $object_stat[9] : 0;
     };
 
+    # Determine source and object files and their modified times
+    #
+    $stat_source_file->() or return;
+
+    # Determine default parent comp
+    #
+    $default_parent_compc = $self->_default_parent_compc($path);
+
     if ( $self->static_source ) {
 
-        # Check memory cache
-        #
-        if ( my $entry = $code_cache->get($path) ) {
-            return $entry->{compc};
-        }
-
-        # Determine source and object files and their modified times
-        #
-        $stat_source_file->() or return;
         if ( $stat_object_file->() ) {
 
             # If touch file is more recent than object file, we can't trust object file.
@@ -254,19 +261,8 @@ method load ($path) {
             $compile = 1;
         }
 
-        # Determine default parent comp
-        #
-        $default_parent_compc = $self->_default_parent_compc($path);
     }
     else {
-
-        # Determine source file and its last modified time
-        #
-        $stat_source_file->() or return;
-
-        # Determine default parent comp
-        #
-        $default_parent_compc = $self->_default_parent_compc($path);
 
         # Check memory cache
         #
@@ -275,6 +271,7 @@ method load ($path) {
                 && $entry->{source_file} eq $source_file
                 && $entry->{default_parent_compc} eq $default_parent_compc )
             {
+                $self->_load_superclasses( $entry->{compc} );
                 return $entry->{compc};
             }
             else {
@@ -294,6 +291,7 @@ method load ($path) {
 
     $self->_load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
     $compc->meta->make_immutable();
+    $self->_load_superclasses($compc);
 
     # Save component class in the cache.
     #
@@ -308,6 +306,19 @@ method load ($path) {
     );
 
     return $compc;
+}
+
+method _load_superclasses ($compc) {
+
+    # Recursively load the superclasses for an existing component class in
+    # case they have changed.
+    #
+    foreach my $superclass ( $compc->meta->superclasses ) {
+        if ( my $cmeta = $superclass->cmeta ) {
+            my $path = $cmeta->path;
+            $self->load( $cmeta->path );
+        }
+    }
 }
 
 # Memoize load() - this helps both with components used multiple times in a
