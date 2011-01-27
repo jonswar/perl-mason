@@ -32,7 +32,7 @@ method cmeta () {
         return $self->{cmeta};
     }
     else {
-        return $self->_class_cmeta;
+        return $self->can('_class_cmeta') ? $self->_class_cmeta : undef;
     }
 }
 
