@@ -607,11 +607,6 @@ that is ignored by the parser.
 
 =head2 <%doc>
 
-Text in this section is treated as a comment and ignored. Most useful for a
-component's main documentation.  One can easily write a program to sift through
-a set of components and pull out their C<< <%doc> >> blocks to form a reference
-page.
-
 =head2 <% # comment... %>
 
 A C<< <% %> >> tag is considered a comment if all of its lines are either

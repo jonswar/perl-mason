@@ -1,11 +1,157 @@
 
 =head1 NAME
 
-Mason::Manual::Syntax - Mason syntax reference
+Mason::Manual::Syntax - Mason component syntax reference
 
 =head1 DESCRIPTION
 
-=head1 BLOCKS
+=head1 SUBSTITUTION TAGS
+
+=head2 <% I<expr> %>
+
+Blocks of the form <% xxx %> are replaced with the result of evaluating xxx as
+a Perl expression in scalar context.
+
+    Hello, <% $name %>! The current time is <% scalar(localtime) %>.
+
+Whitespace after '<%' and before '%>' is required. This gives us a little
+leeway in implementing variations on this tag in the future - it also just
+looks better.
+
+=head2 <% I<expr> | I<filter>, I<filter>... %>
+
+A filter list may appear after a << | >> character in a substitution. It must
+contain one or more comma-separated names, which are treated as filter methods
+on the current component class and applied to the result before it is output.
+
+    <% $content | NoBlankLines,Trim %>
+
+See L<Mason::Manual::Filters> for more information on filters.
+
+=head1 PERL LINES
+
+=head2 %-lines
+
+Lines beginning with a single '%' are treated as Perl. The '%' must be followed
+by at least one whitespace character.
+
+    <ul>
+    % foreach my $item (@items) {
+    <li><% $item %></li>
+    % }
+    </ul>
+
+    % if ($.logged_in) {
+    <div class="welcome">
+       Welcome, <% $.username %>.
+    </div>
+    % }
+    % else {
+    <a href="/login">Click here to log in</a>
+    % }
+
+=head2 %%-lines
+
+Lines beginning with a double '%%' are treated as Perl and included in the main
+class body, as if they had been placed in a C<< <%class> >> section.
+
+    %% use Data::UUID;
+
+    %% has 'attr' => ( ... );
+
+    %% method multiply ($x, $y) { $x * $y }
+
+Warning: this syntax cannot be used for conditional or loop statements as
+%-lines can be, because Mason will treat the intervening lines as part of the
+current method (e.g. 'main').
+
+    <% # WRONG!!! The inner body will end up in the current method. %>
+
+    %% after 'bottom_nav' => sub {
+    Copyright 2011 McHuffy Inc.
+    %% }    
+
+=head1 UNNAMED BLOCKS
+
+=head2 <%args>
+
+Contains one or more attribute declarations, one per line. Each line starts
+with the attribute name, followed optionally by a comma operator (=>) and
+either a scalar value (which becomes the default) or a list (which becomes the
+Moose attribute properties). e.g. this block
+
+    <%args>
+    a
+    b => 'default value'
+    c => (isa => 'Str', default => 'something')
+    </%args>
+
+is equivalent to
+
+    <%class>
+    has 'a' => ();
+    has 'b' => (default => 'default value');
+    has 'c' => (isa => 'Str', default => 'something');
+    </%class>
+
+If the L<DollarDot|Mason::Plugin::DollarDot> plugin is in use, each argument
+declaration can optionally and harmlessly be prefixed with C<< $. >>:
+
+    <%args>
+    $.a
+    $.b => 'default value'
+    $.c => (isa => 'Str', default => 'something')
+    </%args>
+
+=head2 <%class>
+
+Contains Perl code code that executes once when the component is loaded, in the
+main body of the class outside of any methods. This is the place to use
+modules, declare attributes, and do other things on a class level.
+
+   <%class>
+   </%class>
+
+=head2 <%doc>
+
+Text in this section is treated as a comment and ignored.
+
+    <%doc>
+    Name: foo.m
+    Purpose: ...
+    </%doc>
+
+=head2 <%flags>
+
+Specifies flags that affect the compilation of the component. Each flag is
+listed one per line in C<< key => value >> form.
+
+    <%flags>
+    extends => '/foo/bar'
+    </%flags>
+
+The built-in flags are:
+
+=over
+
+=item extends
+
+Declares the component's superclass (another component). The path may be
+absolute as shown above, or relative to the component's path.
+
+The C<< <%flags> >> block is extracted in a special first pass through the
+component, so that it can affect the remainder of the compilation.
+
+=back
+
+Plugins may implement additional flags.
+
+=head2 <%init>
+
+Contains Perl code that is placed at the beginning of the current method.
+
+   <%init>
+   </%init>
 
 =head2 <%perl>
 
@@ -16,22 +162,117 @@ any number of times.
    <%perl>
    </%perl>
 
-=head2 <%init>
+=head2 <%shared>
 
-Contains Perl code that is placed at the beginning of the current method.
+Contains one or more attribute declarations, one per line. Has the same syntax
+as << <%args> >>, but the resulting attributes are declared with C<< init_arg
+=> undef >>. e.g. this block
 
-   <%init>
-   </%init>
+    <%args>
+    a
+    b => 'default value'
+    c => (isa => 'Str', default => 'something')
+    </%args>
 
-=head2 <%class>
+is equivalent to
 
-Contains Perl code code that executes once when the component is loaded, in the
-main body of the class outside of any methods. This is the place to use
-modules, declare attributes, and do other things on a class level.
+    <%class>
+    has 'a' => (init_arg => undef);
+    has 'b' => (init_arg => undef, default => 'default value');
+    has 'c' => (init_arg => undef, isa => 'Str', default => 'something');
+    </%class>
 
-=head2 <%method I<name>>
+=head2 <%text>
 
-Each instance of this block creates a new method with the specified name.
+Text in this section is printed as-is with all Mason syntax ignored.
+
+    <%text>
+    % This is an example of a Perl line.
+    <% This is an example of an expression block. %>
+    </%text>
+
+This works for almost everything, but doesn't let you output C<< </%text> >>
+itself! When all else fails, use L<< Mason::Request/print >>:
+
+    % $m->print('The tags are <%text> and </%text>.');
+
+=head1 NAMED BLOCKS
+
+=head2 <%after I<name>>
+
+=head2 <%augment I<name>>
+
+=head2 <%around I<name>>
+
+=head2 <%before I<name>>
+
+Modifies a method with the specified I<name>. See
+L<Moose::Manual::MethodModifiers|Moose::Manual::MethodModifiers> for a
+description of each modifier.
+
+C<$self> is automatically shifted off for the body of C<< <%after> >>, C<<
+<%augment> >>, and C<< <%before> >>. C<$orig> and C<$self> are automatically
+shifted off for the body of C<< <%around> >>.
+
+    <%after render>
+       <% # Add analytics line after everything has rendered %>
+       <& /shared/google_analytics_line.mi &>
+    </%after>
+
+    <%augment wrap>
+      <html>
+        <body>
+          <% inner() %>
+        </body>
+      </html>
+    </%augment>
+
+    <%around navbar>
+      <div class="navbar_special">
+        <% $self->$orig() %>
+      </div>
+    </%around>
+
+=head2 <%filter I<name> I<params>>
+
+Creates a filter method with the specified I<name> and I<params>. Works just
+like a C<< <%method> >> block, except that you can call C<< $yield->() >> to
+generate the original content. e.g.
+
+    <%filter Row ($class)>
+    <tr class="<% $class %>">
+    % foreach my $item (split(/\s/, $yield->()) {
+       <td><% $item %></td>
+    % }
+    </tr>
+    </%filter>
+
+    <% $.Row('std') %> First Second Third </%>
+
+generates
+
+    <tr class="std">
+      <td>First</td>
+      <td>Second</td>
+      <td>Third</td>
+    </tr>
+
+See L<Mason::Manual::Filters> for more information on filters.
+
+=head2 <%method I<name> I<params>>
+
+Creates a new method with the specified I<name> and I<params>.  Uses
+L<Method::Signatures::Simple|Method::Signatures::Simple> underneath, so
+C<$self> and any other declared parameters are automatically shifted off of
+C<@_>.
+
+   <%method greet ($name, $color)>
+   <div style="color: <% $color %>">
+      Hello, <% $name %>!
+   </div>
+   </%method>
+
+=head1 COMMENTS
 
 =head2 <% # comment... %>
 
@@ -87,90 +328,25 @@ use them to comment out code!
 
 =back
 
-=head1 OTHER SYNTAX
+=head1 WHITESPACE AND NEWLINES
 
-=head2 <%text>
+=head1 Newlines between blocks
 
-Text in this section is printed as-is with all Mason syntax ignored. This is
-useful, for example, when documenting Mason itself from a component:
+Mason will ignore a single newline between blocks, so that you can space them
+nicely.  Additional newlines beyond that will be displayed.
 
-    <%text>
-    % This is an example of a Perl line.
-    <% This is an example of an expression block. %>
-    </%text>
-
-This works for almost everything, but doesn't let you output C<< </%text> >>
-itself! When all else fails, use C<< $m->print >>:
-
-    % $m->print('The tags are <%text> and </%text>.');
-
-=head2 Escaping expressions
-
-Mason has facilities for I<escaping> the output from C<< <% %> >> tags, on
-either a site-wide or a per-expression basis.
-
-Any C<< <% %> >> expression may be terminated by a '|' and one or more escape
-flags (plus arbitrary whitespace), separated by commas:
-
-    <% $file_data |h %>
-
-The current valid flags are:
-
-=over
-
-=item * h
-
-Escape HTML ('<' => '&lt;', etc.) using C<HTML::Entities::encode()>. Before
-Perl 5.8.0 this module assumes that text is in the ISO-8859-1 character set;
-see the next section for how to override this escaping. After 5.8.0, the
-encoding assumes that text is in Unicode.
-
-=item * u
-
-Escape a URL query string (':' => '%3A', etc.) - all but [a-zA-Z0-9_.-]
-
-=item * n
-
-This is a special flag indicating that the default escape flags should I<not>
-be used for this substitution.
-
-=back
-
-The administrator may specify a set of default escape flags via the
-L<Mason::Params/default_escape_flags> parameter. For example, if the
-administrator sets L<Mason::Params/default_escape_flags> to C<['h']>, then all
-<% %> expressions will automatically be HTML-escaped.  In this case you would
-use the C<n> flag to turn off HTML-escaping for a specific expression:
-
-    <% $html_block |n %>
-
-Multiple escapes can be specified as a comma-separated list:
-
-    <% $uri | u, n %>
-
-=head3 User-defined Escapes
-
-Besides the default escapes mentioned above, it is possible for the user to
-define their own escapes or to override the built-in 'h' and 'u' escapes.
-
-This is done via the Interp object's L<Mason::Params/escape_flags> parameter or
-L<set_escape()|HTML::Mason::Interp/item_set_escape> method.  Escape names may
-be any number of characters as long as it matches the regex C</^[\w-]+$/>.  The
-one exception is that you cannot override the 'n' flag.
-
-Each escape flag is associated with a subroutine reference.  The subroutine
-should expect to receive a scalar reference, which should be manipulated in
-place.  Any return value from this subroutine is ignored.
-
-Escapes can be defined at any time but using an escape that is not defined will
-cause an error when executing that component.
-
-=head3 Manually applying escapes
-
-You can manually apply one or more escapes to text using the L<Interp object's
-C<apply_escapes()> method|HTML::Mason::Interp/item_apply_escapes>. e.g.
-
-    $m->interp->apply_escapes( 'some html content', 'h' );
+   <%class>
+   ...
+   </%class>
+                     <-- ignored
+   <%method foo>
+   ...
+   </%method>
+                     <-- ignored
+                     <-- displayed
+   <%method bar>
+   ...
+   </%method>
 
 =head2 Backslash at end of line
 
