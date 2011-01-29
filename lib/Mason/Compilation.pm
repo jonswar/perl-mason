@@ -223,6 +223,11 @@ method _match_perl_line () {
         if ( length($line) && $line !~ /^\s/ ) {
             $self->throw_syntax_error("$percents must be followed by whitespace or EOL");
         }
+        if ( $percents eq '%%' ) {
+            if ( $line =~ /\{\s*$/ && $self->{source} =~ /\G(?!%%)/gcm ) {
+                $self->throw_syntax_error("%%-lines cannot be used to surround content");
+            }
+        }
         $self->_handle_perl_line( ( $percents eq '%' ? 'perl' : 'class' ), $line );
         $self->{line_number}++;
 
