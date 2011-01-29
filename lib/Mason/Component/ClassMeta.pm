@@ -1,4 +1,5 @@
 package Mason::Component::ClassMeta;
+use File::Basename;
 use Mason::Moose;
 use Log::Any;
 
@@ -13,6 +14,7 @@ has 'source_file' => ( required => 1 );
 
 # Derived attributes
 has 'log' => ( init_arg => undef, lazy_build => 1 );
+has 'name' => ( init_arg => undef, lazy_build => 1 );
 
 # These only exist in InstanceMeta
 foreach my $method (qw(args)) {
@@ -28,6 +30,10 @@ method _build_log () {
     my $log_category = "Mason::Component" . $self->path;
     $log_category =~ s/\//::/g;
     return Log::Any->get_logger( category => $log_category );
+}
+
+method _build_name () {
+    return basename( $self->path );
 }
 
 __PACKAGE__->meta->make_immutable();
@@ -70,6 +76,10 @@ a component '/foo/bar', the dir_path is '/foo'.
 
 Whether the component is considered "top level", accessible directly from C<<
 $interp->run >> or a web request. See L<Interp/top_level_extensions>.
+
+=item name
+
+The component base name, e.g. 'bar' for component '/foo/bar'.
 
 =item object_file
 

@@ -68,37 +68,35 @@ Note that the bare request path itself (in this case C<< /news/sports/hockey
 >>) is not one of the components searched for. You can add the empty string
 ("") to L</page_extensions> to change this.
 
-=head2 Accepting or rejecting partial match
+=head1 ACCEPT METHOD
 
-When a partial path matches on a non-dhandler component, e.g. these cases from
-above:
+Once the page component has been determined, Mason will call the C<< accept >>
+method on it. The purpose of C<< accept >> is to
 
-    /news/sports.{pm,m}           # $m->path_info = hockey
-    /news.{pm,m}                  # $m->path_info = sports/hockey
+=over
 
-the component may not want to accept the match. In many cases you'll only want
-a component to match its exact URL.
+=item *
 
-Mason checks this by calling the method C<< allow_path_info >> on the component
-with the path_info as a parameter.  If it returns a true value, the match is
-accepted; otherwise it is as if you have called L</decline>, and Mason
-continues down the list of possibilities.
+parse the path_info and place into attributes (if appropriate)
 
-By default C<allow_path_info> returns B<false>, so you will have to explicitly
-indicate that you want to accept a partial match.
+=item *
 
-    %% method allow_path_info { 1 }
+validate incoming attributes
 
-You can put this in a top-level C<Base.pm> if you want to allow path_info by
-default for all components:
+=item *
 
-    method allow_path_info { 1 }
+possibly do an internal redirect (C<< $m->go >>) to another path
 
-Even if C<allow_path_info> returns true, the component can still decide to
-L</decline> later.
+=item *
 
-Mason does not check C<allow_path_info> on dhandlers, since their very reason
-for existing is to match partial paths.
+possibly decline or abort the request
+
+=back
+
+Assuming C<< accept >> returns without aborting or declining, Mason will then
+call C<< render >> on the page component.
+
+*** explain accepting path_info ***
 
 =head1 ADDITIONAL INTERP PARAMETERS
 

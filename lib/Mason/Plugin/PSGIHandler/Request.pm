@@ -43,11 +43,11 @@ around 'construct_page_component' => sub {
     $self->$orig( $compc, $args );
 };
 
-override 'dispatch_to_page_component' => sub {
-    my ( $self, $page ) = @_;
+override 'catch_abort' => sub {
+    my ( $self, $code ) = @_;
     my $retval;
     try {
-        $retval = $page->dispatch();
+        $retval = $code->();
     }
     catch {
         my $err = $_;
@@ -62,7 +62,7 @@ override 'dispatch_to_page_component' => sub {
     return $retval;
 };
 
-before 'abort' => sub {
+override 'abort' => sub {
     my ( $self, $retval ) = @_;
     $self->res->status($retval) if defined($retval);
 };

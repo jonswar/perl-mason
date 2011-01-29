@@ -3,7 +3,7 @@ use Mason::Moose;
 
 # Passed attributes
 has 'args'        => ( required => 1 );
-has 'class_cmeta' => ( handles => [qw(cache dir_path interp is_top_level log object_file path source_file)] );
+has 'class_cmeta' => ( handles => [qw(cache dir_path interp is_top_level log name object_file path source_file)] );
 has 'instance'    => ( required => 1, weak_ref => 1 );
 
 __PACKAGE__->meta->make_immutable();

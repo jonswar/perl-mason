@@ -194,9 +194,13 @@ method construct_page_component ($compc, $args) {
 }
 
 method dispatch_to_page_component ($page) {
+    $self->catch_abort( sub { $page->render() } );
+}
+
+method catch_abort ($code) {
     my $retval;
     try {
-        $retval = $page->dispatch();
+        $retval = $code->();
     }
     catch {
         my $err = $_;
@@ -249,6 +253,29 @@ method run () {
     #
     $self->interp->_check_static_source_touch_file();
 
+    # Clean up after request
+    #
+    scope_guard { $self->cleanup_request() };
+
+    # Resolve the path to a page component and render it
+    #
+    my $retval = $self->resolve_and_render_path( $path, $args );
+
+    # If go() was called in this request, return the result of the subrequest
+    #
+    return $self->go_result if defined( $self->go_result );
+
+    # Send output to its final destination
+    #
+    $self->flush_buffer;
+
+    # Create and return result object
+    #
+    return $self->create_result_object( output => $self->output, retval => $retval );
+}
+
+method resolve_and_render_path ($path, $args) {
+
     # Find request component class.
     #
     my $compc = $self->resolve_page_component($path);
@@ -268,26 +295,10 @@ method run () {
     $log->debugf( "starting request with component '%s'", $page->cmeta->path )
       if $log->is_debug;
 
-    # Clean up after request
-    #
-    scope_guard { $self->cleanup_request() };
-
     # Dispatch to page component, with 'print' tied to component output.
     # Will catch aborts but throw other fatal errors.
     #
     my $retval = $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
-
-    # If go() was called in this request, return the result of the subrequest
-    #
-    return $self->go_result if defined( $self->go_result );
-
-    # Send output to its final destination
-    #
-    $self->flush_buffer;
-
-    # Create and return result object
-    #
-    return $self->create_result_object( output => $self->output, retval => $retval );
 }
 
 method with_tied_print ($code) {

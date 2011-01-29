@@ -67,10 +67,7 @@ method _build_resolve_page_component_method ($interp:) {
                     && ( $candidate_path =~ /$ignore_file_regex/ || $compc->cmeta->is_top_level ) )
                 {
                     $request->{path_info} = $path_info;
-                    return $compc
-                      unless ( $path_info
-                        && !$is_dhandler_name{ basename($candidate_path) }
-                        && !$compc->allow_path_info );
+                    return $compc;
                 }
             }
             return undef if $path eq '/';

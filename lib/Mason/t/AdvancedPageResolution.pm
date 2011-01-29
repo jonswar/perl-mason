@@ -21,7 +21,7 @@ sub test_resolve : Tests(32) {
             $self->add_comp(
                 path => $existing_path,
                 src  => join( "",
-                    ( $allow_path_info ? "%% sub allow_path_info { $allow_path_info }\n" : "" ),
+                    ( $allow_path_info ? "%% sub accept { \$m->path_info }\n" : "" ),
                     "path: <% \$self->cmeta->path %>; path_info: <% \$m->path_info %>" )
             );
         }
@@ -107,7 +107,7 @@ sub test_decline : Tests(7) {
                 path => $existing_path,
                 src  => $component,
             );
-            $self->add_comp( path => '/Base.pm', src => 'sub allow_path_info { 1 }' );
+            $self->add_comp( path => '/Base.pm', src => 'sub accept { $m->path_info }' );
         }
         my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) );
         if ( defined($resolve_path) ) {

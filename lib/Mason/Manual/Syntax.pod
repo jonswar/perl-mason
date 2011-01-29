@@ -9,6 +9,8 @@ Mason::Manual::Syntax - Mason component syntax reference
 
 =head2 <% I<expr> %>
 
+=head2 <% I<expr> | I<filter>,I<filter>... %>
+
 Blocks of the form <% xxx %> are replaced with the result of evaluating xxx as
 a Perl expression in scalar context.
 
@@ -18,11 +20,10 @@ Whitespace after '<%' and before '%>' is required. This gives us a little
 leeway in implementing variations on this tag in the future - it also just
 looks better.
 
-=head2 <% I<expr> | I<filter>, I<filter>... %>
-
-A filter list may appear after a << | >> character in a substitution. It must
-contain one or more comma-separated names, which are treated as filter methods
-on the current component class and applied to the result before it is output.
+A filter list may appear after a << | >> character in a substitution,
+containing one or more names separated by commas. The names are as filter
+methods on the current component class. The filters are applied to the result
+before it is output.
 
     <% $content | NoBlankLines,Trim %>
 
@@ -59,17 +60,18 @@ class body, as if they had been placed in a C<< <%class> >> section.
 
     %% has 'attr' => ( ... );
 
-    %% method multiply ($x, $y) { $x * $y }
+    %% method multiply ($x, $y) {
+    %%   return $x * $y;
+    %% }
 
-Warning: this syntax cannot be used for conditional or loop statements as
-%-lines can be, because Mason will treat the intervening lines as part of the
-current method (e.g. 'main').
+Warning: this syntax cannot be used to surround content with conditionals or
+loops as can %-lines, because Mason will still treat the intervening lines as
+part of the current method (e.g. 'main').
 
-    <% # WRONG!!! The inner body will end up in the current method. %>
-
+    <% # WRONG!!! The Copyright notice will be part of the current method. %>
     %% after 'bottom_nav' => sub {
     Copyright 2011 McHuffy Inc.
-    %% }    
+    %% };
 
 =head1 UNNAMED BLOCKS
 
@@ -148,18 +150,22 @@ Plugins may implement additional flags.
 
 =head2 <%init>
 
-Contains Perl code that is placed at the beginning of the current method.
+Contains Perl code that is executed at the beginning of the current method.
+Equivalent to a C<< <%perl> >> section at the top of the method.
 
    <%init>
+   my $article = MyApp::Article->find($.article_id);
+   my $title = $article->title;
    </%init>
 
 =head2 <%perl>
 
-Contains multi-line block of Perl code. The enclosed text is executed as Perl
-and the return value, if any, is discarded. May appear anywhere in the text and
-any number of times.
+Contains Perl code that is executed in place. The return value, if any, is
+discarded.  May appear anywhere in the text and any number of times.
 
    <%perl>
+   my $article = MyApp::Article->find($.article_id);
+   my $title = $article->title;
    </%perl>
 
 =head2 <%shared>
