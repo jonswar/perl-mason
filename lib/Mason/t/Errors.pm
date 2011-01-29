@@ -1,7 +1,7 @@
 package Mason::t::Errors;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_errors : Test(21) {
+sub test_errors : Test(22) {
     my $self = shift;
     my $try  = sub {
         my ( $src, $expect_error ) = @_;
@@ -21,6 +21,7 @@ sub test_errors : Test(21) {
     $try->( '<& foo',                     qr/'<&' without matching '&>'/ );
     $try->( '%my $i = 1;',                qr/% must be followed by whitespace/ );
     $try->( '%%my $i = 1;',               qr/%% must be followed by whitespace/ );
+    $try->( "%% if (1) {\nhi\n%% }",      qr/%%-lines cannot be used to surround content/ );
     $try->( "<%5\n\n%>",                  qr/whitespace required after '<%' at .* line 1/ );
     $try->( "<%\n\n5%>",                  qr/whitespace required before '%>' at .* line 3/ );
     $try->( "<%args>\n123\n</%args>",     qr/Invalid attribute line '123'/ );

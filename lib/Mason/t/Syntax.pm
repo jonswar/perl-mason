@@ -79,7 +79,10 @@ sub test_double_percent : Test(1) {
 my $i = 5;
 </%class>
 
-%% my $j = $i+1;
+%% my $j = 0;
+%% if ($i == 5) {
+%%   $j = $i+1;
+%% }
 <% $.bar %>
 
 <%method bar>
