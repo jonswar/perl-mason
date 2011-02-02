@@ -170,11 +170,11 @@ If not provided, defaults C<< $c->path_to('data') >>.
 
 =item allow_globals
 
-Automatically includes C<$c>, the Catalyst context.
+Automatically includes C<$c>.
 
 =item plugins
 
-Automatically includes L<Global|Mason::Plugin::Global>, for setting C<$c>.
+Automatically includes L<Globals|Mason::Plugin::Globals>.
 
 =back
 
@@ -182,7 +182,7 @@ All other defaults are standard Mason.
 
 =head1 GLOBALS
 
-All components have access to C<$c>, the Catalyst context.
+All components have access to C<$c>, the current Catalyst context.
 
 =head1 METHODS
 
