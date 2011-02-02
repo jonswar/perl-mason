@@ -2,7 +2,7 @@ package Mason::PluginBundle::PSGI;
 use Mason::PluginRole;
 with 'Mason::PluginBundle';
 
-sub requires_plugins { qw(AdvancedPageResolution HTMLFilters PSGIHandler) }
+sub requires_plugins { qw(HTMLFilters PSGIHandler) }
 
 1;
 
@@ -12,8 +12,6 @@ __END__
 =head1 INCLUDED PLUGINS
 
 =over
-
-=item L<AdvancedPageResolution|Mason::Plugin::AdvancedPageResolution>
 
 =item L<HTMLFilters|Mason::Plugin::HTMLFilters>
 

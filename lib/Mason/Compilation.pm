@@ -335,6 +335,7 @@ method _output_class_footer () {
 method _output_class_header () {
     return join(
         "\n",
+        "use CLASS;",
         "use Method::Signatures::Simple;",
         "use MooseX::HasDefaults::RW;",
         "use strict;",
@@ -360,7 +361,7 @@ method _output_cmeta () {
         "\$_class_cmeta = \$interp->component_class_meta_class->new(",
         ( map { sprintf( "'%s' => '%s',", $_, $cmeta_info{$_} ) } sort( keys(%cmeta_info) ) ),
         "'object_file' => __FILE__,",
-        "'class' => __PACKAGE__,",
+        "'class' => CLASS,",
         "'interp' => \$interp",
         ');',
         '}',

@@ -48,12 +48,6 @@ method render () {
     $self->wrap(@_);
 }
 
-# Default dispatch - call render
-#
-method dispatch () {
-    $self->render(@_);
-}
-
 __PACKAGE__->meta->make_immutable();
 
 1;
@@ -78,24 +72,15 @@ create methods in your own components without worrying about name clashes.
 This is the standard call chain for the page component (the initial component
 of a request).
 
-    dispatch -> render -> wrap -> main
+    render -> wrap -> main
 
 In many cases only C<main> will actually do anything.
 
 =over
 
-=item dispatch
-
-This method is invoked on the page component at the beginning of the request.
-By default, it simply calls L</render>.
-
-This is the place to validate arguments, redirect to other components, and take
-other non-rendering actions before rendering starts.
-
 =item render
 
-This method is invoked from L</dispatch> on the page component. By default, it
-calls L</wrap>.
+This method is called on the page component. By default, it calls L</wrap>.
 
 =item wrap
 

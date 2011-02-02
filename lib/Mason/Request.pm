@@ -22,9 +22,12 @@ has 'out_method'     => ( isa => 'Mason::Types::OutMethod', default => sub { $de
 #
 has 'buffer_stack'       => ( init_arg => undef );
 has 'count'              => ( init_arg => undef );
+has 'declined_paths'     => ( default => sub { {} } );
 has 'go_result'          => ( init_arg => undef );
 has 'output'             => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
+has 'path_info'          => ( reader => 'peek_path_info', init_arg => undef, default => '' );
+has 'path_info_accessed' => ( is => 'rw', init_arg => undef, default => 0 );
 has 'request_args'       => ( init_arg => undef );
 has 'request_code_cache' => ( init_arg => undef, default => sub { {} } );
 has 'request_path'       => ( init_arg => undef );
@@ -136,6 +139,10 @@ method go () {
     $self->abort();
 }
 
+method has_path_info () {
+    return length( $self->peek_path_info ) > 0;
+}
+
 method load ($path) {
     my $compc = $self->interp->load( $self->rel_to_abs($path) );
 }
@@ -150,6 +157,11 @@ method notes () {
     my $key = shift;
     return $self->{notes}->{$key} unless @_;
     return $self->{notes}->{$key} = shift;
+}
+
+method path_info () {
+    $self->path_info_accessed(1);
+    return $self->peek_path_info;
 }
 
 method print () {
@@ -194,7 +206,11 @@ method construct_page_component ($compc, $args) {
 }
 
 method dispatch_to_page_component ($page) {
-    $self->catch_abort( sub { $page->render() } );
+    $self->catch_abort(
+        sub {
+            $page->render();
+        }
+    );
 }
 
 method catch_abort ($code) {
@@ -212,11 +228,6 @@ method catch_abort ($code) {
         }
     };
     return $retval;
-}
-
-method resolve_page_component ($request_path) {
-    my $compc = $self->interp->load($request_path);
-    return ( defined($compc) && $compc->cmeta->is_top_level ) ? $compc : undef;
 }
 
 method run () {
@@ -257,9 +268,24 @@ method run () {
     #
     scope_guard { $self->cleanup_request() };
 
-    # Resolve the path to a page component and render it
+    # Find request component class.
     #
-    my $retval = $self->resolve_and_render_path( $path, $args );
+    my $compc = $self->interp->load($path);
+    if ( !defined($compc) ) {
+        $self->request_path_not_found($path);
+    }
+
+    # Construct page component.
+    #
+    my $page = $self->construct_page_component( $compc, $args );
+    $self->{page} = $page;
+    $log->debugf( "starting request with component '%s'", $page->cmeta->path )
+      if $log->is_debug;
+
+    # Dispatch to page component, with 'print' tied to component output.
+    # Will catch aborts but throw other fatal errors.
+    #
+    my $retval = $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
 
     # If go() was called in this request, return the result of the subrequest
     #
@@ -274,31 +300,13 @@ method run () {
     return $self->create_result_object( output => $self->output, retval => $retval );
 }
 
-method resolve_and_render_path ($path, $args) {
-
-    # Find request component class.
-    #
-    my $compc = $self->resolve_page_component($path);
-    if ( !defined($compc) ) {
-        Mason::Exception::TopLevelNotFound->throw(
-            error => sprintf(
-                "could not find top-level component for path '%s' - component root is [%s]",
-                $path, join( ", ", @{ $self->interp->comp_root } )
-            )
-        );
-    }
-
-    # Construct page component.
-    #
-    my $page = $self->construct_page_component( $compc, $args );
-    $self->{page} = $page;
-    $log->debugf( "starting request with component '%s'", $page->cmeta->path )
-      if $log->is_debug;
-
-    # Dispatch to page component, with 'print' tied to component output.
-    # Will catch aborts but throw other fatal errors.
-    #
-    my $retval = $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
+method request_path_not_found ($path) {
+    Mason::Exception::TopLevelNotFound->throw(
+        error => sprintf(
+            "could not find top-level component for path '%s' - component root is [%s]",
+            $path, join( ", ", @{ $self->interp->comp_root } )
+        )
+    );
 }
 
 method with_tied_print ($code) {
@@ -621,9 +629,8 @@ Call dispatch on component object I<$page> within a try/catch block. C<< abort
 =item resolve_page_component ($request_path)
 
 Given a top level I<$request_path>, return a corresponding component class or
-undef if none was found. By default this simply tries to load the path, but the
-L<AdvancedPageResolution|Mason::Plugin::AdvancedPageResolution> plugin adds
-much to this.
+undef if none was found. Search includes dhandlers and index files. See
+L<Mason::Manual::PageResolution>.
 
 =item run (request_path, args)
 

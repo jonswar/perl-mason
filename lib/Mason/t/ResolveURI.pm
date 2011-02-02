@@ -1,7 +1,7 @@
-package Mason::t::AdvancedPageResolution;
+package Mason::t::ResolveURI;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-__PACKAGE__->default_plugins( [ '@Default', 'AdvancedPageResolution' ] );
+__PACKAGE__->default_plugins( [ '@Default', 'ResolveURI' ] );
 
 sub test_resolve : Tests(32) {
     my $self = shift;
@@ -21,7 +21,7 @@ sub test_resolve : Tests(32) {
             $self->add_comp(
                 path => $existing_path,
                 src  => join( "",
-                    ( $allow_path_info ? "%% sub accept { \$m->path_info }\n" : "" ),
+                    ( $allow_path_info ? "%% method allow_path_info { 1 }\n" : "" ),
                     "path: <% \$self->cmeta->path %>; path_info: <% \$m->path_info %>" )
             );
         }
@@ -38,6 +38,7 @@ sub test_resolve : Tests(32) {
     };
 
     my $run_path = '/foo/bar/baz';
+
     $try->( $run_path, ['/foo/bar/baz.m'],          '/foo/bar/baz.m',          '' );
     $try->( $run_path, ['/foo/bar/baz/dhandler.m'], '/foo/bar/baz/dhandler.m', '' );
     $try->( $run_path, ['/foo/bar/baz/index.m'],    '/foo/bar/baz/index.m',    '' );
@@ -66,8 +67,8 @@ sub test_resolve : Tests(32) {
     $try->( '/foo/dhandler', ['/foo/dhandler.m'], '/foo/dhandler.m', 'dhandler' );
     $try->( '/foo/index',    ['/foo/index.m'],    undef );
 
-    # no_autoextend_run_path
-    @interp_params = ( no_autoextend_run_path => 1, top_level_extensions => ['.html'] );
+    # no autoextend_run_path
+    @interp_params = ( no_autoextend_uri => 1, top_level_extensions => ['.html'] );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html.m'], undef );
 
@@ -97,7 +98,7 @@ sub test_decline : Tests(7) {
         my ( $resolve_path, $path_info ) = @_;
         my %paths_to_decline_hash = map { ( $_, 1 ) } @paths_to_decline;
 
-        $self->setup_dirs;
+        $self->setup_dirs();
         foreach my $existing_path (@existing_paths) {
             my $component =
               $paths_to_decline_hash{$existing_path}
@@ -107,9 +108,9 @@ sub test_decline : Tests(7) {
                 path => $existing_path,
                 src  => $component,
             );
-            $self->add_comp( path => '/Base.pm', src => 'sub accept { $m->path_info }' );
+            $self->add_comp( path => '/Base.pm', src => 'method allow_path_info { 1 }' );
         }
-        my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) );
+        my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) || '<nothing>' );
         if ( defined($resolve_path) ) {
             is( $self->interp->run($run_path)->output,
                 "path: $resolve_path; path_info: $path_info", $desc );

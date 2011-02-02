@@ -7,6 +7,7 @@ use Log::Any;
 has 'class'       => ( required => 1 );
 has 'dir_path'    => ( required => 1 );
 has 'interp'      => ( required => 1, weak_ref => 1 );
+has 'is_dhandler' => ( init_arg => undef, lazy_build => 1 );
 has 'is_top_level' => ( required => 1 );
 has 'object_file' => ( required => 1 );
 has 'path'        => ( required => 1 );
@@ -16,14 +17,10 @@ has 'source_file' => ( required => 1 );
 has 'log' => ( init_arg => undef, lazy_build => 1 );
 has 'name' => ( init_arg => undef, lazy_build => 1 );
 
-# These only exist in InstanceMeta
-foreach my $method (qw(args)) {
-    __PACKAGE__->meta->add_method(
-        $method => sub {
-            my $self = shift;
-            die sprintf( "cannot call %s() from %s->cmeta", $method, $self->class );
-        }
-    );
+__PACKAGE__->_define_instance_meta_stubs;
+
+method _build_is_dhandler () {
+    return grep { $self->name eq $_ } @{ $self->interp->dhandler_names };
 }
 
 method _build_log () {
@@ -34,6 +31,19 @@ method _build_log () {
 
 method _build_name () {
     return basename( $self->path );
+}
+
+# These only exist in InstanceMeta.
+#
+sub _define_instance_meta_stubs {
+    foreach my $method (qw(args)) {
+        __PACKAGE__->meta->add_method(
+            $method => sub {
+                my $self = shift;
+                die sprintf( "cannot call %s() from %s->cmeta", $method, $self->class );
+            }
+        );
+    }
 }
 
 __PACKAGE__->meta->make_immutable();

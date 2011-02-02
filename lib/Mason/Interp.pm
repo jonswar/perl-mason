@@ -29,6 +29,7 @@ has 'data_dir'                 => ( lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
 has 'no_source_line_numbers'   => ( default => 0 );
 has 'object_file_extension'    => ( default => '.mobj' );
+has 'page_extensions'          => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 has 'plugins'                  => ( default => sub { [] } );
 has 'pure_perl_extensions'     => ( default => sub { ['.pm'] } );
 has 'static_source'            => ( );
@@ -37,24 +38,24 @@ has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
 
 # Derived attributes
 #
-has 'autobase_regex'           => ( init_arg => undef, lazy_build => 1 );
-has 'code_cache'               => ( init_arg => undef, lazy_build => 1 );
-has 'count'                    => ( init_arg => undef, default => sub { $interp_count++ } );
-has 'distinct_string_count'    => ( init_arg => undef, default => 0 );
-has 'named_block_regex'        => ( init_arg => undef, lazy_build => 1 );
-has 'named_block_types'        => ( init_arg => undef, lazy_build => 1 );
-has 'pure_perl_regex'          => ( lazy_build => 1 );
-has 'request_count'            => ( init_arg => undef, default => 0 );
-has 'request_params'           => ( init_arg => undef );
-has 'top_level_regex'          => ( lazy_build => 1 );
-has 'unnamed_block_regex'      => ( init_arg => undef, lazy_build => 1 );
-has 'unnamed_block_types'      => ( init_arg => undef, lazy_build => 1 );
-has 'valid_flags'              => ( init_arg => undef, lazy_build => 1 );
-has 'valid_flags_hash'         => ( init_arg => undef, lazy_build => 1 );
+has 'autobase_regex'                => ( init_arg => undef, lazy_build => 1 );
+has 'code_cache'                    => ( init_arg => undef, lazy_build => 1 );
+has 'count'                         => ( init_arg => undef, default => sub { $interp_count++ } );
+has 'distinct_string_count'         => ( init_arg => undef, default => 0 );
+has 'named_block_regex'             => ( init_arg => undef, lazy_build => 1 );
+has 'named_block_types'             => ( init_arg => undef, lazy_build => 1 );
+has 'pure_perl_regex'               => ( lazy_build => 1 );
+has 'request_count'                 => ( init_arg => undef, default => 0 );
+has 'request_params'                => ( init_arg => undef );
+has 'top_level_regex'               => ( lazy_build => 1 );
+has 'unnamed_block_regex'           => ( init_arg => undef, lazy_build => 1 );
+has 'unnamed_block_types'           => ( init_arg => undef, lazy_build => 1 );
+has 'valid_flags'                   => ( init_arg => undef, lazy_build => 1 );
+has 'valid_flags_hash'              => ( init_arg => undef, lazy_build => 1 );
 
 # Class overrides
 #
-__PACKAGE__->_define_class_override_methods();
+CLASS->_define_class_override_methods();
 
 #
 # BUILD
@@ -80,6 +81,13 @@ method BUILD ($params) {
             $self->{request_params}->{$key} = delete( $params->{$key} );
         }
     }
+}
+
+method _build_ignore_file_regex () {
+    my $regex = '(/'
+      . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names }, @{ $self->index_names } )
+      . ')$';
+    return qr/$regex/;
 }
 
 method _build_autobase_names () {
@@ -347,6 +355,7 @@ method run () {
 #
 
 method DEMOLISH () {
+    return if in_global_destruction;
     $self->flush_code_cache();
 }
 

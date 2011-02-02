@@ -1,4 +1,4 @@
-package Mason::Plugin::AdvancedPageResolution::Interp;
+package Mason::Plugin::ResolveURI::Interp;
 use File::Basename;
 use Mason::PluginRole;
 
@@ -6,20 +6,12 @@ use Mason::PluginRole;
 #
 has 'dhandler_names'         => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'index_names'            => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'no_autoextend_run_path' => ( isa => 'Bool',          default => 0 );
+has 'no_autoextend_uri'      => ( isa => 'Bool',          default => 0 );
 has 'page_extensions'        => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 
 # Derived attributes
 #
-has 'ignore_file_regex'             => ( lazy_build => 1, init_arg => undef );
-has 'resolve_page_component_method' => ( lazy_build => 1, init_arg => undef );
-
-method _build_ignore_file_regex () {
-    my $regex = '(/'
-      . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names }, @{ $self->index_names } )
-      . ')$';
-    return qr/$regex/;
-}
+has 'resolve_uri_to_path' => ( lazy_build => 1, init_arg => undef );
 
 method _build_dhandler_names () {
     return [ map { "dhandler" . $_ } @{ $self->page_extensions } ];
@@ -29,32 +21,39 @@ method _build_index_names () {
     return [ map { "index" . $_ } @{ $self->page_extensions } ];
 }
 
-# Given /foo/bar.html, look for (by default):
-#   /foo/bar.html.{pm,m},
+# Given /foo/bar, look for (by default):
 #   /foo/bar/index.{pm,m},
 #   /foo/bar/dhandler.{pm,m},
-#   /foo.{pm,m}
+#   /foo/bar.{pm,m},
 #   /dhandler.{pm,m}
+#   /foo.{pm,m}
 #
-method _build_resolve_page_component_method ($interp:) {
+method _build_resolve_uri_to_path ($interp:) {
 
     # Create a closure for efficiency - all this data is immutable for an interp.
     #
-    my @dhandler_subpaths      = map { "/$_" } @{ $interp->dhandler_names };
-    my $ignore_file_regex      = $interp->ignore_file_regex;
-    my %is_dhandler_name       = map { ( $_, 1 ) } @{ $interp->dhandler_names };
-    my $no_autoextend_run_path = $interp->no_autoextend_run_path;
-    my @page_extensions        = @{ $interp->page_extensions };
+    my @dhandler_subpaths = map { "/$_" } @{ $interp->dhandler_names };
+    my $regex = '(/'
+      . join( "|",
+        @{ $interp->autobase_names },
+        @{ $interp->dhandler_names },
+        @{ $interp->index_names } )
+      . ')$';
+    my $ignore_file_regex = qr/$regex/;
+    my %is_dhandler_name  = map { ( $_, 1 ) } @{ $interp->dhandler_names };
+    my $no_autoextend_uri = $interp->no_autoextend_uri;
+    my @page_extensions   = @{ $interp->page_extensions };
 
     return sub {
-        my ( $request, $path ) = @_;
+        my ( $request, $uri ) = @_;
         my $path_info      = '';
         my $declined_paths = $request->declined_paths;
         my @index_subpaths = map { "/$_" } @{ $interp->index_names };
+        my $path           = $uri;
 
         while (1) {
             my @candidate_paths =
-                ( $path_info eq '' && $no_autoextend_run_path ) ? ($path)
+                ( $path_info eq '' && $no_autoextend_uri ) ? ($path)
               : ( $path eq '/' ) ? ( @index_subpaths, @dhandler_subpaths )
               : (
                 ( grep { !/$ignore_file_regex/ } map { $path . $_ } @page_extensions ),
@@ -62,12 +61,17 @@ method _build_resolve_page_component_method ($interp:) {
               );
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
-                my $compc = $interp->load($candidate_path);
-                if ( defined($compc)
-                    && ( $candidate_path =~ /$ignore_file_regex/ || $compc->cmeta->is_top_level ) )
-                {
-                    $request->{path_info} = $path_info;
-                    return $compc;
+                if ( my $compc = $interp->load($candidate_path) ) {
+                    if (
+                        ( $candidate_path =~ /$ignore_file_regex/ || $compc->cmeta->is_top_level )
+                        && (   $path_info eq ''
+                            || $compc->cmeta->is_dhandler
+                            || $compc->allow_path_info )
+                      )
+                    {
+                        $request->{path_info} = $path_info;
+                        return $compc->cmeta->path;
+                    }
                 }
             }
             return undef if $path eq '/';

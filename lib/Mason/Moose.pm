@@ -16,6 +16,10 @@ sub init_meta {
     Moose->init_meta(@_);
     MooseX::StrictConstructor->init_meta(@_);
     MooseX::HasDefaults::RO->init_meta(@_);
+    {
+        no strict 'refs';
+        *{ $for_class . '::CLASS' } = sub () { $for_class };    # like CLASS.pm
+    }
 }
 
 1;
@@ -35,6 +39,7 @@ __END__
 Sets certain Moose behaviors for Mason's internal classes. Using this module is
 equivalent to
 
+    use CLASS;
     use Moose;
     use MooseX::HasDefaults::RO;
     use MooseX::StrictConstructor;

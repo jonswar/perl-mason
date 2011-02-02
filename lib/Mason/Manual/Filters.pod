@@ -1,4 +1,3 @@
-# PODNAME: Mason::Manual::Filters
 
 =head1 NAME
 
