@@ -1,0 +1,237 @@
+
+=head1 NAME
+
+Mason::Manual::ChangesFromMason1 - Summary of differences between Mason 1 and
+Mason 2
+
+=head1 DESCRIPTION
+
+Mason 2.x is a vastly different beast than its predecessors, coming ten and
+twelve years after Mason 1.0 and the original Mason respectively. It has been
+rearchitected and reimplemented from the ground up. That said, the philosophy
+and core syntax remain similar enough that it will be recognizable to existing
+users.
+
+This manual attempts to summarize the differences between Mason 1 and 2, to
+help existing users decide if they are interested and, if so, migrate their
+projects.
+
+=head1 ARCHITECTURE
+
+* In Mason 1, each component was an instance of a common Component class. In
+Mason 2, each component is its I<own> Moose class, with a class name generated
+from the component path.
+
+* The main component body - the content and the inline Perl sections - are
+placed into a C<main> method.
+
+* Calling a component (via C<< <& &> >> or C<< $m->comp >> ) entails creating a
+new instance of the component class, and calling its C<main> method. Component
+call parameters will be passed to the constructor and placed in attributes.
+
+=head1 MAJOR FEATURES
+
+=over
+
+=item *
+
+B<Plugins> now utilize Moose roles and are much more powerful and flexible than
+in Mason 1. Some features that were (or would have been) in the core of Mason 1
+are now in plugins. See L<Mason::Manual::Plugins|Mason::Manual::Plugins>.
+
+=item *
+
+B<Web integration> in Mason 1 was centered around mod_perl and was part of the
+core. In Mason 2 it is implemented in a few plugins, most notably
+L<PSGIHandler|Mason::Plugin::PSGIHandler>. There is nothing web-specific in the
+Mason core.
+
+=item *
+
+B<Subcomponents> have been eliminated, replaced with class methods.
+
+=item *
+
+B<Error processing/formatting> has been eliminated. Mason now simply throws
+fatal errors to the caller.  In a L<PSGI|Mason::Plugin::PSGIHandler>
+environment, L<Plack::Middleware::StackTrace|Plack::Middleware::StackTrace>
+will catch the error and format it nicely.
+
+=item *
+
+B<Resolvers> and B<Anonymous components> have been eliminated. Components need
+to be in files.  If your components live in another data source, you could use
+L<FUSE|http://fuse.sourceforge.net/> or a custom plugin to keep a file
+hierarchy up to date with the data source.
+
+=item *
+
+B<Caching> support has been simplified. C<< $m->cache >> simply returns a
+L<CHI|CHI> object with an appropriate namespace for the component.
+
+=back
+
+=head1 SYNTAX
+
+=over
+
+=item *
+
+C<< <%once> >> has been replaced with C<< <%class> >>.
+
+=item *
+
+C<< <%cleanup> >> has been eliminated; it was not very useful anyway, since it
+was not guaranteed to run after an exception.
+
+Use a L<guard|Guard> to execute code when the main method or another component
+method exits.
+
+Use a C<< DEMOLISH >> method to execute code after the component instance is
+freed.
+
+=item *
+
+Single blank lines between blocks are now removed, so you can space blocks out
+for readability without generating a ton of newlines.
+
+=item *
+
+Whitespace is required after a %-line and around the expression in a C<< <% %>
+>> tag.  This improves readability and leaves open the possibility of
+additional syntax.
+
+=item *
+
+C<< <%args> >> has changed; it now declares a set of input attributes.
+
+=item *
+
+C<< <%shared> >> has changed; it now declares a set of shared attributes.
+
+=item *
+
+C<< <%method> >> and C<< <%def> >> have been replaced with just C<< <%method>
+>>, which creates a true class method rather than a subcomponent.
+
+=item *
+
+C<< Components with content >> has been eliminated; use
+L<filters|Mason::Manual::Filters> instead.
+
+=item *
+
+C<< Escape flags >> in substitution tags now utilize
+L<filters|Mason::Manual::Filters>.
+
+=back
+
+=head1 MISC PARAMETER CHANGES
+
+=head2 Interp parameters
+
+=over
+
+=item *
+
+C<buffer_preallocate_size>, C<code_cache_max_size> and C<use_object_files> have
+been eliminated out of a perceived lack of utility.
+
+=item *
+
+C<escape_flags> was eliminated; define filters instead.
+
+=item *
+
+C<data_dir> now defaults to a directory created with
+L<tempdir|File::Temp/tempdir>.
+
+=item *
+
+C<preloads> was eliminated; this code does roughly the same:
+
+    $interp->load($_) for (grep { /some_condition/ } $interp->all_paths);
+
+=back
+
+=head2 Request parameters
+
+=over
+
+=item *
+
+C<autoflush> and C<max_recurse> have been eliminated because they are too
+difficult to implement efficiently.
+
+=back
+
+=head2 Compiler parameters
+
+=over
+
+=item *
+
+C<preprocess>, C<postprocess_perl>, and C<postprocess_text> have been
+eliminated; similar effects can be achieved with plugins targeting
+L<Mason::Compilation|Mason::Compilation>.
+
+=back
+
+=head1 MISC METHOD CHANGES
+
+=head2 Interp methods
+
+=over
+
+=item *
+
+C<exec> was renamed to L<run|Mason::Interp/run>.
+
+=back
+
+=head2 Request methods
+
+=over
+
+=item *
+
+C<cache_self> was eliminated; use the L<Cache filter|Mason::Plugin::Cache>
+instead.
+
+=item *
+
+C<callers>, C<caller> and C<caller_args> have been eliminated; now too
+difficult to implement efficiently.
+
+=item *
+
+C<call_next> was replaced with Moose's C<inner>.
+
+=item *
+
+C<call_self> was eliminated; use L<filters|Mason::Manual::Filters> instead.
+
+=item *
+
+C<current_comp> was eliminated. Within a component, use C<< $self >>; outside a
+component you can call L<Mason::Request/current_comp_class>, which will at
+least get you the class.
+
+=item *
+
+C<dhandler_arg> was renamed to L<path_info|Mason::Request/path_info>.
+
+=item *
+
+C<exec> was renamed to L<run|Mason::Request/run>.
+
+=item *
+
+C<fetch_comp> was renamed to L<load|Mason::Request/load>.
+
+=item *
+
+C<subexec> was replaced with L<visit|Mason::Request/visit> and
+L<go|Mason::Request/go>.
+
+=back
