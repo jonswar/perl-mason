@@ -9,8 +9,6 @@ Mason::Manual::Syntax - Mason component syntax reference
 
 =head2 <% I<expr> %>
 
-=head2 <% I<expr> | I<filter>,I<filter>... %>
-
 Blocks of the form <% xxx %> are replaced with the result of evaluating xxx as
 a Perl expression in scalar context.
 
@@ -19,6 +17,8 @@ a Perl expression in scalar context.
 Whitespace after '<%' and before '%>' is required. This gives us a little
 leeway in implementing variations on this tag in the future - it also just
 looks better.
+
+=head2 <% I<expr> | I<filter>,I<filter>... %>
 
 A filter list may appear after a << | >> character in a substitution,
 containing one or more names separated by commas. The names are as filter
@@ -74,6 +74,8 @@ part of the current method (e.g. 'main').
     %% };
 
 =head1 UNNAMED BLOCKS
+
+Blocks that do not take a name argument.
 
 =head2 <%args>
 
@@ -132,6 +134,9 @@ listed one per line in C<< key => value >> form.
     extends => '/foo/bar'
     </%flags>
 
+The C<< <%flags> >> block is extracted in a special first pass through the
+component, so that it can affect the remainder of the compilation.
+
 The built-in flags are:
 
 =over
@@ -139,10 +144,10 @@ The built-in flags are:
 =item extends
 
 Declares the component's superclass (another component). The path may be
-absolute as shown above, or relative to the component's path.
-
-The C<< <%flags> >> block is extracted in a special first pass through the
-component, so that it can affect the remainder of the compilation.
+absolute as shown above, or relative to the component's path. This is the only
+way to declare the component's superclass; using an C<< extends >> keyword
+directly will not work reliably. If not provided, the component's superclass is
+determined automatically via L<Tutorial/Autobase components>.
 
 =back
 
@@ -204,6 +209,21 @@ itself! When all else fails, use L<< Mason::Request/print >>:
 
 =head1 NAMED BLOCKS
 
+Blocks that take a name argument.
+
+=head2 <%method I<name> I<params>>
+
+Creates a new method with the specified I<name> and I<params>.  Uses
+L<Method::Signatures::Simple|Method::Signatures::Simple> underneath, so
+C<$self> and any other declared parameters are automatically shifted off of
+C<@_>.
+
+   <%method greet ($name, $color)>
+   <div style="color: <% $color %>">
+      Hello, <% $name %>!
+   </div>
+   </%method>
+
 =head2 <%after I<name>>
 
 =head2 <%augment I<name>>
@@ -264,19 +284,6 @@ generates
     </tr>
 
 See L<Mason::Manual::Filters> for more information on filters.
-
-=head2 <%method I<name> I<params>>
-
-Creates a new method with the specified I<name> and I<params>.  Uses
-L<Method::Signatures::Simple|Method::Signatures::Simple> underneath, so
-C<$self> and any other declared parameters are automatically shifted off of
-C<@_>.
-
-   <%method greet ($name, $color)>
-   <div style="color: <% $color %>">
-      Hello, <% $name %>!
-   </div>
-   </%method>
 
 =head1 COMMENTS
 

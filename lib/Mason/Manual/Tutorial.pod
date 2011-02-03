@@ -327,7 +327,7 @@ syntax is idental:
     f => (isa => 'Str', default => 'something')
     </%shared>
 
-but the interpretation is slightly different:
+and the translation is nearly identical:
 
     <%class>
     has 'd' => (init_arg => 1);
@@ -337,7 +337,7 @@ but the interpretation is slightly different:
                 default => 'something');
     </%class>
 
-Note that all are declared with C<< init_arg => 1 >> (meaning they can't be
+except that all are declared with C<< init_arg => 1 >> (meaning they can't be
 passed in).
 
 =head2 Comments and blank lines in attribute declarations
