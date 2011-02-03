@@ -119,6 +119,19 @@ method create_result_object () {
     return $self->interp->result_class->new(@_);
 }
 
+method current_comp_class () {
+    my $cnt = 1;
+    while (1) {
+        if ( my $pkg = ( caller($cnt) )[0] ) {
+            return $pkg if $pkg->isa('Mason::Component') && $pkg ne 'Mason::Component';
+        }
+        else {
+            confess("cannot determine current_comp_class from stack");
+        }
+        $cnt++;
+    }
+}
+
 method flush_buffer () {
     my $request_buffer = $self->_request_buffer;
     $self->out_method->( $$request_buffer, $self )
@@ -148,7 +161,7 @@ method load ($path) {
 }
 
 method log () {
-    return $self->_current_comp_class->cmeta->log();
+    return $self->current_comp_class->cmeta->log();
 }
 
 method notes () {
@@ -172,7 +185,7 @@ method print () {
 }
 
 method rel_to_abs ($path) {
-    $path = join( "/", $self->_current_comp_class->cmeta->dir_path, $path )
+    $path = join( "/", $self->current_comp_class->cmeta->dir_path, $path )
       unless substr( $path, 0, 1 ) eq '/';
     return $path;
 }
@@ -347,19 +360,6 @@ method _comp_not_found ($path) {
 
 method _current_buffer () {
     $self->{buffer_stack}->[-1];
-}
-
-method _current_comp_class () {
-    my $cnt = 1;
-    while (1) {
-        if ( my $pkg = ( caller($cnt) )[0] ) {
-            return $pkg if $pkg->isa('Mason::Component') && $pkg ne 'Mason::Component';
-        }
-        else {
-            confess("cannot determine current_comp_class from stack");
-        }
-        $cnt++;
-    }
 }
 
 method _pop_buffer () {
