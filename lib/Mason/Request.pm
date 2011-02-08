@@ -328,7 +328,7 @@ method run () {
 method request_path_not_found ($path) {
     Mason::Exception::TopLevelNotFound->throw(
         error => sprintf(
-            "could not find top-level component for path '%s' - component root is [%s]",
+            "could not find component for request path '%s' - component root is [%s]\n",
             $path, join( ", ", @{ $self->interp->comp_root } )
         )
     );
