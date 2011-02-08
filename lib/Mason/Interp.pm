@@ -23,7 +23,7 @@ my $interp_count = 0;
 # Passed attributes
 #
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'autoextend_request_path'  => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
+has 'autoextend_request_path'  => ( isa => 'Mason::Types::Autoextend', coerce => 1, default => sub { [ '.pm', '.m' ] } );
 has 'comp_root'                => ( isa => 'Mason::Types::CompRoot', coerce => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
@@ -717,7 +717,7 @@ check in order when determining a component's superclass. Default is C<<
 
 Array reference of extensions to automatically add to the request path when
 searching for a matching page component. Defaults to [".pm", ".m"]. An empty
-list means do no autoextending.
+list, or a false value, means do no autoextending.
 
 =item comp_root
 
