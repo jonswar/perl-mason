@@ -1,4 +1,0 @@
-# These parameters will be passed to the Mason constructor.
-
-plugins:
-  - "@PSGI"
