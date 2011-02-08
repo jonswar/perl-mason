@@ -15,19 +15,19 @@ my $default_out = sub { my ( $text, $self ) = @_; $self->{output} .= $text };
 
 # Passed attributes
 #
-has 'interp'         => ( required => 1, weak_ref => 1 );
-has 'out_method'     => ( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
+has 'interp'     => ( required => 1, weak_ref => 1 );
+has 'out_method' => ( isa => 'Mason::Types::OutMethod', default => sub { $default_out }, coerce => 1 );
 
 # Derived attributes
 #
 has 'buffer_stack'       => ( init_arg => undef );
 has 'count'              => ( init_arg => undef );
+has 'declined'           => ( init_arg => undef, is => 'rw' );
 has 'declined_paths'     => ( default => sub { {} } );
 has 'go_result'          => ( init_arg => undef );
 has 'output'             => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
-has 'path_info'          => ( reader => 'peek_path_info', init_arg => undef, default => '' );
-has 'path_info_accessed' => ( is => 'rw', init_arg => undef, default => 0 );
+has 'path_info'          => ( init_arg => undef, default => '' );
 has 'request_args'       => ( init_arg => undef );
 has 'request_code_cache' => ( init_arg => undef, default => sub { {} } );
 has 'request_path'       => ( init_arg => undef );
@@ -132,6 +132,11 @@ method current_comp_class () {
     }
 }
 
+method decline () {
+    $self->declined(1);
+    $self->clear_and_abort;
+}
+
 method flush_buffer () {
     my $request_buffer = $self->_request_buffer;
     $self->out_method->( $$request_buffer, $self )
@@ -153,7 +158,7 @@ method go () {
 }
 
 method has_path_info () {
-    return length( $self->peek_path_info ) > 0;
+    return length( $self->path_info ) > 0;
 }
 
 method load ($path) {
@@ -170,11 +175,6 @@ method notes () {
     my $key = shift;
     return $self->{notes}->{$key} unless @_;
     return $self->{notes}->{$key} = shift;
-}
-
-method path_info () {
-    $self->path_info_accessed(1);
-    return $self->peek_path_info;
 }
 
 method print () {
@@ -243,22 +243,36 @@ method catch_abort ($code) {
     return $retval;
 }
 
+method match_request_path ($request_path) {
+    return $self->interp->match_request_path->( $self, $request_path );
+}
+
 method run () {
 
     # Get path and either hash or hashref of arguments
     #
-    my $path = shift;
-    my $args;
+    my $request_path = shift;
+    my $request_args;
     if ( @_ == 1 && reftype( $_[0] ) eq 'HASH' ) {
-        $args = shift;
+        $request_args = shift;
     }
     else {
-        $args = {@_};
+        $request_args = {@_};
     }
+
+    # Save off the requested path and args
+    #
+    $self->{request_path} = $request_path;
+    $self->{request_args} = $request_args;
 
     # Flush interp load cache
     #
     $self->interp->_flush_load_cache();
+
+    # Check the static_source touch file, if it exists, before the
+    # first component is loaded.
+    #
+    $self->interp->_check_static_source_touch_file();
 
     # Make this the current request until end of scope. Use a guard
     # because 'local' doesn't work with the $m alias inside components.
@@ -267,38 +281,36 @@ method run () {
     scope_guard { $current_request = $save_current_request };
     $current_request = $self;
 
-    # Save off the requested path and args
-    #
-    $self->{request_path} = $path;
-    $self->{request_args} = $args;
-
-    # Check the static_source touch file, if it exists, before the
-    # first component is loaded.
-    #
-    $self->interp->_check_static_source_touch_file();
-
     # Clean up after request
     #
     scope_guard { $self->cleanup_request() };
 
-    # Find request component class.
+    # Turn request path into a page component
     #
-    my $compc = $self->interp->load($path);
-    if ( !defined($compc) ) {
-        $self->request_path_not_found($path);
-    }
-
-    # Construct page component.
-    #
-    my $page = $self->construct_page_component( $compc, $args );
-    $self->{page} = $page;
-    $log->debugf( "starting request with component '%s'", $page->cmeta->path )
+  match_request_path:
+    my $page_path = $self->match_request_path($request_path)
+      or $self->request_path_not_found($request_path);
+    my $page_compc = $self->interp->load($page_path);
+    $log->debugf( "starting request with component '%s'", $page_path )
       if $log->is_debug;
+
+    # Construct page component
+    #
+    my $page = $self->construct_page_component( $page_compc, $request_args );
+    $self->{page} = $page;
 
     # Dispatch to page component, with 'print' tied to component output.
     # Will catch aborts but throw other fatal errors.
     #
     my $retval = $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
+
+    # If declined, retry match
+    #
+    if ( $self->declined ) {
+        $self->declined(0);
+        $self->{declined_paths}->{$page_path} = 1;
+        goto match_request_path;
+    }
 
     # If go() was called in this request, return the result of the subrequest
     #
@@ -513,6 +525,22 @@ Constructs and return a new instance of the component designated by I<path>.
 I<params>, if any, are passed to the constructor. Throws an error if I<path>
 does not exist.
 
+=item decline ()
+
+Clears the output buffer and tries the current request again, but acting as if
+the previously chosen page component(s) do not exist.
+
+For example, if the following components exist:
+
+    /news/sports.m
+    /news/dhandler.m
+    /dhandler.m
+
+then a request for path C</news/sports> will initially resolve to
+C</news/sports.m>.  A call to C<< $m->decline >> would restart the request and
+resolve to C</news/dhandler.m>, a second C<< $m->decline >> would resolve to
+C</dhandler.m>, and a third would throw a "not found" error.
+
 =item flush_buffer ()
 
 Flushes the main output buffer. Anything currently in the buffer is sent to the
@@ -568,6 +596,13 @@ all content placed in the main component body.
 =item page ()
 
 Returns the page component originally called in the request.
+
+=item path_info ()
+
+Returns the remainder of the request path beyond the path of the page
+component, with no leading slash. e.g. If a request for '/foo/bar/baz' resolves
+to "/foo.m", the path_info is "bar/baz". Will contain the empty string for an
+exact match.
 
 =item rel_to_abs (path)
 

@@ -18,7 +18,7 @@ root = <% $m->interp->comp_root->[0] %>
     my $file = "$dir/test.m";
     write_file( $file, $content );
 
-    my ( $out, $err ) = capture { run("$mason $file") };
+    my ( $out, $err ) = capture { run("$mason $dir/test") };
     die $err if $err;
     is( trim($out), "2 + 2 = 4\nroot = $dir" );
 }

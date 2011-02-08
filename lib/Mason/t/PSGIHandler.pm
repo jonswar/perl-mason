@@ -11,13 +11,14 @@ sub test_psgi_comp {
     my $interp = $self->interp;
     my $app    = sub { my $env = shift; $interp->handle_psgi($env) };
     my $path   = $params{path} or die "must pass path";
-    my $qs     = $params{qs} || '';
+    ( my $uri = $path ) =~ s/\.m$//;
+    my $qs = $params{qs} || '';
     $self->add_comp( path => $path, src => $params{src} );
     test_psgi(
         $app,
         sub {
             my $cb  = shift;
-            my $res = $cb->( GET( $path . $qs ) );
+            my $res = $cb->( GET( $uri . $qs ) );
             if ( my $expect_content = $params{expect_content} ) {
                 if ( ref($expect_content) eq 'Regexp' ) {
                     like( trim( $res->content ), $expect_content, "$path - content" );
@@ -43,7 +44,7 @@ sub test_basic : Tests(2) {
     $self->test_psgi_comp(
         path           => '/hi.m',
         src            => 'path = <% $m->req->path %>',
-        expect_content => 'path = /hi.m',
+        expect_content => 'path = /hi',
         expect_code    => 200
     );
 }

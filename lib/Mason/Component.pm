@@ -48,6 +48,12 @@ method render () {
     $self->wrap(@_);
 }
 
+# By default, do not allow path_info
+#
+method allow_path_info () {
+    return 0;
+}
+
 __PACKAGE__->meta->make_immutable();
 
 1;

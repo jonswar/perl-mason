@@ -23,35 +23,38 @@ my $interp_count = 0;
 # Passed attributes
 #
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'autoextend_request_path'  => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 has 'comp_root'                => ( isa => 'Mason::Types::CompRoot', coerce => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
+has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
+has 'index_names'              => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'mason_root_class'         => ( required => 1 );
 has 'no_source_line_numbers'   => ( default => 0 );
 has 'object_file_extension'    => ( default => '.mobj' );
-has 'page_extensions'          => ( isa => 'ArrayRef[Str]', default => sub { [ '.pm', '.m' ] } );
 has 'plugins'                  => ( default => sub { [] } );
 has 'pure_perl_extensions'     => ( default => sub { ['.pm'] } );
-has 'static_source'            => ( );
+has 'static_source' => ( );
 has 'static_source_touch_file' => ( );
 has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
 
 # Derived attributes
 #
-has 'autobase_regex'                => ( init_arg => undef, lazy_build => 1 );
-has 'code_cache'                    => ( init_arg => undef, lazy_build => 1 );
-has 'count'                         => ( init_arg => undef, default => sub { $interp_count++ } );
-has 'distinct_string_count'         => ( init_arg => undef, default => 0 );
-has 'named_block_regex'             => ( init_arg => undef, lazy_build => 1 );
-has 'named_block_types'             => ( init_arg => undef, lazy_build => 1 );
-has 'pure_perl_regex'               => ( lazy_build => 1 );
-has 'request_count'                 => ( init_arg => undef, default => 0 );
-has 'request_params'                => ( init_arg => undef );
-has 'top_level_regex'               => ( lazy_build => 1 );
-has 'unnamed_block_regex'           => ( init_arg => undef, lazy_build => 1 );
-has 'unnamed_block_types'           => ( init_arg => undef, lazy_build => 1 );
-has 'valid_flags'                   => ( init_arg => undef, lazy_build => 1 );
-has 'valid_flags_hash'              => ( init_arg => undef, lazy_build => 1 );
+has 'autobase_regex'        => ( init_arg => undef, lazy_build => 1 );
+has 'code_cache'            => ( init_arg => undef, lazy_build => 1 );
+has 'count'                 => ( init_arg => undef, default => sub { $interp_count++ } );
+has 'distinct_string_count' => ( init_arg => undef, default => 0 );
+has 'match_request_path'    => ( init_arg => undef, lazy_build => 1 );
+has 'named_block_regex'     => ( init_arg => undef, lazy_build => 1 );
+has 'named_block_types'     => ( init_arg => undef, lazy_build => 1 );
+has 'pure_perl_regex'       => ( lazy_build => 1 );
+has 'request_count'         => ( init_arg => undef, default => 0 );
+has 'request_params'        => ( init_arg => undef );
+has 'top_level_regex'       => ( lazy_build => 1 );
+has 'unnamed_block_regex'   => ( init_arg => undef, lazy_build => 1 );
+has 'unnamed_block_types'   => ( init_arg => undef, lazy_build => 1 );
+has 'valid_flags'           => ( init_arg => undef, lazy_build => 1 );
+has 'valid_flags_hash'      => ( init_arg => undef, lazy_build => 1 );
 
 # Class overrides
 #
@@ -109,6 +112,14 @@ method _build_component_class_prefix () {
 
 method _build_data_dir () {
     return tempdir( 'mason-data-XXXX', TMPDIR => 1, CLEANUP => 1 );
+}
+
+method _build_dhandler_names () {
+    return [ map { "dhandler" . $_ } @{ $self->top_level_extensions } ];
+}
+
+method _build_index_names () {
+    return [ map { "index" . $_ } @{ $self->top_level_extensions } ];
 }
 
 method _build_named_block_regex () {
@@ -421,6 +432,67 @@ method write_object_file ($object_file, $object_contents) {
     write_file( $object_file, $object_contents );
 }
 
+# Given /foo/bar, look for (by default):
+#   /foo/bar/index.{pm,m},
+#   /foo/bar/dhandler.{pm,m},
+#   /foo/bar.{pm,m},
+#   /dhandler.{pm,m}
+#   /foo.{pm,m}
+#
+method _build_match_request_path ($interp:) {
+
+    # Create a closure for efficiency - all this data is immutable for an interp.
+    #
+    my @dhandler_subpaths = map { "/$_" } @{ $interp->dhandler_names };
+    my $regex = '(/'
+      . join( "|",
+        @{ $interp->autobase_names },
+        @{ $interp->dhandler_names },
+        @{ $interp->index_names } )
+      . ')$';
+    my $ignore_file_regex = qr/$regex/;
+    my %is_dhandler_name  = map { ( $_, 1 ) } @{ $interp->dhandler_names };
+    my @autoextensions    = @{ $interp->autoextend_request_path };
+
+    return sub {
+        my ( $request, $request_path ) = @_;
+        my $path_info      = '';
+        my $declined_paths = $request->declined_paths;
+        my @index_subpaths = map { "/$_" } @{ $interp->index_names };
+        my $path           = $request_path;
+
+        while (1) {
+            my @candidate_paths =
+                ( $path_info eq '' && !@autoextensions ) ? ($path)
+              : ( $path eq '/' ) ? ( @index_subpaths, @dhandler_subpaths )
+              : (
+                ( grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions ),
+                ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
+              );
+            foreach my $candidate_path (@candidate_paths) {
+                next if $declined_paths->{$candidate_path};
+                if ( my $compc = $interp->load($candidate_path) ) {
+                    if (
+                        ( $candidate_path =~ /$ignore_file_regex/ || $compc->cmeta->is_top_level )
+                        && (   $path_info eq ''
+                            || $compc->cmeta->is_dhandler
+                            || $compc->allow_path_info )
+                      )
+                    {
+                        $request->{path_info} = $path_info;
+                        return $compc->cmeta->path;
+                    }
+                }
+            }
+            return undef if $path eq '/';
+            my $name = basename($path);
+            $path_info = length($path_info) ? "$name/$path_info" : $name;
+            $path = dirname($path);
+            @index_subpaths = ();    # only match index file in same directory
+        }
+    };
+}
+
 #
 # PRIVATE METHODS
 #
@@ -641,6 +713,12 @@ Array reference of L<autobase|Mason::Manual/Autobase components> filenames to
 check in order when determining a component's superclass. Default is C<<
 ["Base.pm", "Base.m"] >>.
 
+=item autoextend_request_path
+
+Array reference of extensions to automatically add to the request path when
+searching for a matching page component. Defaults to [".pm", ".m"]. An empty
+list means do no autoextending.
+
 =item comp_root
 
 The component root marks the top of your component hierarchy and defines how
@@ -667,6 +745,18 @@ Mason will create the directory on startup if necessary.
 
 Defaults to a temporary directory that will be cleaned up at process end. This
 will hurt performance as Mason will have to recompile components on each run.
+
+=item dhandler_names
+
+Array reference of dhandler file names to check in order when resolving a
+top-level path. Default is C<< ["dhandler.pm", "dhandler.m"] >>. An empty list
+disables this feature.
+
+=item index_names
+
+Array reference of index file names to check in order when resolving a
+top-level path. Default is C<< ["index.pm", "index.m"] >>. An empty list
+disables this feature.
 
 =item no_source_line_numbers
 

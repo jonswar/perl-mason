@@ -5,7 +5,7 @@ use Test::Log::Dispatch;
 
 sub _get_current_comp_class {
     my $m = shift;
-    return $m->_current_comp_class;
+    return $m->current_comp_class;
 }
 
 sub test_comp_exists : Test(1) {
@@ -42,9 +42,9 @@ sub test_count : Test(3) {
     my $self = shift;
     $self->setup_dirs;
     $self->add_comp( path => '/count.m', src => 'count=<% $m->count %>' );
-    is( $self->interp->run('/count.m')->output, "count=0" );
-    is( $self->interp->run('/count.m')->output, "count=1" );
-    is( $self->interp->run('/count.m')->output, "count=2" );
+    is( $self->interp->run('/count')->output, "count=0" );
+    is( $self->interp->run('/count')->output, "count=1" );
+    is( $self->interp->run('/count')->output, "count=2" );
 }
 
 sub test_log : Test(2) {
@@ -96,11 +96,11 @@ count=<% $m->count %>
         path => '/subreq/go.m',
         src  => '
 This should not get printed.
-<%perl>$m->go("/subreq/other.m", foo => 5);</%perl>',
+<%perl>$m->go("/subreq/other", foo => 5);</%perl>',
         expect => '
 count=1
 /subreq/other.m
-/subreq/other.m
+/subreq/other
 {foo => 5}
 ',
     );
@@ -110,7 +110,7 @@ count=1
         src  => '
 begin
 count=<% $m->count %>
-<%perl>$m->visit("/subreq/other.m", foo => 5);</%perl>
+<%perl>$m->visit("/subreq/other", foo => 5);</%perl>
 count=<% $m->count %>
 end
 ',
@@ -119,7 +119,7 @@ begin
 count=0
 count=1
 /subreq/other.m
-/subreq/other.m
+/subreq/other
 {foo => 5}
 count=0
 end
@@ -127,13 +127,13 @@ end
     );
     my $buf;
     $self->setup_interp;    # reset request count
-    my $result = $self->interp->run( { out_method => \$buf }, '/subreq/go.m' );
+    my $result = $self->interp->run( { out_method => \$buf }, '/subreq/go' );
     is( $result->output, '', 'no output' );
     is(
         $buf, '
 count=1
 /subreq/other.m
-/subreq/other.m
+/subreq/other
 {foo => 5}
 ', 'output in buf'
     );

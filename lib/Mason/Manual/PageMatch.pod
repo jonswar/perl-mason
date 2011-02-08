@@ -1,0 +1,69 @@
+
+=head1 NAME
+
+Mason::Manual::PageMatch - How request paths get mapped to page components
+
+=head1 DESCRIPTION
+
+=head1 DETERMINING THE PAGE COMPONENT
+
+Given the request path
+
+    /news/sports/hockey
+
+Mason searches for the following components in order, setting $m->path_info as
+noted.
+
+    /news/sports/hockey.{pm,m}
+    /news/sports/hockey/index.{pm,m}
+    /news/sports/hockey/dhandler.{pm,m}
+    /news/sports/dhandler.{pm,m}  # $m->path_info = hockey
+    /news/sports.{pm,m}           # $m->path_info = hockey (but see next section)
+    /news/dhandler.{pm,m}         # $m->path_info = sports/hockey
+    /news.{pm,m}                  # $m->path_info = sports/hockey (but see next section)
+    /dhandler.{pm,m}              # $m->path_info = news/sports/hockey
+
+The following sections describe these elements in more detail.
+
+=head2 Autoextended path
+
+The request path is suffixed with ".m" and ".pm" to translate it to a component
+path.
+
+    /news/sports/hockey.{pm,m}
+
+=head2 Index
+
+An index matches only its exact directory, nothing underneath.
+
+    /news/sports/hockey/index.{pm,m}
+
+=head2 Dhandlers
+
+A dhandler matches its directory as well as anything underneath, setting C<<
+$m->path_info >> to the remainder.
+
+    /news/sports/hockey/dhandler.{pm,m}
+    /news/sports/dhandler.{pm,m}  # $m->path_info = hockey
+    /news/dhandler.{pm,m}         # $m->path_info = sports/hockey
+    /dhandler.{pm,m}              # $m->path_info = news/sports/hockey
+
+=head2 Partial paths
+
+A component can match an initial part of the URL, setting C<< $m->path_info >>
+to the remainder:
+
+    /news/sports.{pm,m}           # $m->path_info = hockey
+    /news.{pm,m}                  # $m->path_info = sports/hockey
+
+Since this isn't always desirable behavior, it must be explicitly enabled for
+the component. Mason will call method C<allow_path_info> on the component
+class, and will only allow the match if it returns true:
+
+    %% method allow_path_info { 1 }
+
+The default C<allow_path_info> returns false.
+
+C<allow_path_info> is not checked on dhandlers, since the whole point of
+dhandlers is to match partial paths.
+

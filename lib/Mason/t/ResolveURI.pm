@@ -1,8 +1,6 @@
 package Mason::t::ResolveURI;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-__PACKAGE__->default_plugins( [ '@Default', 'ResolveURI' ] );
-
 sub test_resolve : Tests(32) {
     my $self = shift;
 
@@ -68,7 +66,7 @@ sub test_resolve : Tests(32) {
     $try->( '/foo/index',    ['/foo/index.m'],    undef );
 
     # no autoextend_run_path
-    @interp_params = ( no_autoextend_uri => 1, top_level_extensions => ['.html'] );
+    @interp_params = ( autoextend_request_path => [], top_level_extensions => ['.html'] );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html.m'], undef );
 

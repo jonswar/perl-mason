@@ -101,8 +101,9 @@ method test_existing_comp (%params) {
     my $expect_error = $params{expect_error};
     my $verbose      = $params{v} || $params{verbose};
     my $args         = $params{args} || {};
+    ( my $request_path = $path ) =~ s/\.(m|pm)$//;
 
-    my @run_params = ( $path, %$args );
+    my @run_params = ( $request_path, %$args );
     local $current_test_object = $self;
 
     if ( defined($expect_error) ) {
@@ -125,8 +126,8 @@ method run_test_in_comp (%params) {
     my $test = delete( $params{test} ) || die "must pass test";
     my $args = delete( $params{args} ) || {};
     $self->add_comp( %params, src => '% $.cmeta->args->{_test}->($self);' );
-    my $run_path = $params{path};
-    my @run_params = ( $run_path, %$args );
+    ( my $request_path = $params{path} ) =~ s/\.m$//;
+    my @run_params = ( $request_path, %$args );
     $self->interp->run( @run_params, _test => $test );
 }
 
