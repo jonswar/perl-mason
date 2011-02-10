@@ -221,7 +221,7 @@ method construct_page_component ($compc, $args) {
 method dispatch_to_page_component ($page) {
     $self->catch_abort(
         sub {
-            $page->render();
+            $page->handle();
         }
     );
 }
@@ -655,14 +655,9 @@ error, even if the request object is not immediately destroyed.
 Constructs the page component of class I<$compc>, with hashref of constructor
 arguments I<$args>.
 
-=item dispatch_to_page_component ($page)
+=item match_request_path ($request_path)
 
-Call dispatch on component object I<$page> within a try/catch block. C<< abort
->> calls are caught while other errors are repropagated.
-
-=item resolve_page_component ($request_path)
-
-Given a top level I<$request_path>, return a corresponding component class or
+Given a top level I<$request_path>, return a corresponding component path or
 undef if none was found. Search includes dhandlers and index files. See
 L<Mason::Manual::PageResolution>.
 

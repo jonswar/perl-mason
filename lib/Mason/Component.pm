@@ -36,16 +36,22 @@ method cmeta () {
     }
 }
 
-# Top wrap
+# Default handle - call render
 #
-method wrap () {
-    inner();
+method handle () {
+    $self->render(@_);
 }
 
 # Default render - call wrap
 #
 method render () {
     $self->wrap(@_);
+}
+
+# Top wrap
+#
+method wrap () {
+    inner();
 }
 
 # By default, do not allow path_info
@@ -78,28 +84,60 @@ create methods in your own components without worrying about name clashes.
 This is the standard call chain for the page component (the initial component
 of a request).
 
-    render -> wrap -> main
+    handle -> render -> wrap -> main
 
 In many cases only C<main> will actually do anything.
 
 =over
 
+=item handle
+
+This is the top-most method called on the page component. Its job is to decide
+how to handle the request, e.g.
+
+=over
+
+=item *
+
+throw an error (e.g. permission denied)
+
+=item *
+
+defer to another component via C<< $m->go >>
+
+=item *
+
+redirect to another URL (if in a web environment)
+
+=item *
+
+render the page
+
+=back
+
+It should not output any content itself. By default, it simply calls
+L</render>.
+
 =item render
 
-This method is called on the page component. By default, it calls L</wrap>.
+This method is invoked from L</handle> on the page component. Its job is to
+output the full content of the page. By default, it simply calls L</wrap>.
 
 =item wrap
 
 This method is invoked from L</render> on the page component.  By convention,
-C<wrap> operates in an inverted direction: the superclass method gets to act
-before and after the subclass method. See "Content wrapping" for more
-information. By default, C<wrap> just calls C<< inner() >> to go to the next
-subclass, and then L</main> at the final subclass.
+C<wrap> is an L<augmented|Moose::Manual::MethodModifiers/INNER AND AUGMENT>
+method, with each superclass calling the next subclass.  This is useful for
+cascading templates in which the top-most superclass generates the surrounding
+content.
+
+By default, C<wrap> simply calls C<< inner() >> to go to the next subclass, and
+then L</main> at the bottom subclass.
 
 =item main
 
-This method is invoked when a non-top-level component is called, and from the
-default render method as well. It consists of the code and output in the main
+This method is invoked when a non-page component is called, and from the
+default L</wrap> method as well. It consists of the code and output in the main
 part of the component that is not inside a C<< <%method> >> or C<< <%class> >>
 tag.
 
