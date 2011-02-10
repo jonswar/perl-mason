@@ -201,9 +201,9 @@ method visit () {
         push( @extra_request_params, shift(@_) );
     }
     my $path = $self->rel_to_abs( shift(@_) );
-    my $retval = $self->interp->run( { out_method => \my $buf }, @extra_request_params, $path, @_ );
+    my $result = $self->interp->run( { out_method => \my $buf }, @extra_request_params, $path, @_ );
     $self->print($buf);
-    return $retval;
+    return $result;
 }
 
 #
@@ -302,7 +302,7 @@ method run () {
     # Dispatch to page component, with 'print' tied to component output.
     # Will catch aborts but throw other fatal errors.
     #
-    my $retval = $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
+    $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
 
     # If declined, retry match
     #
@@ -322,7 +322,7 @@ method run () {
 
     # Create and return result object
     #
-    return $self->create_result_object( output => $self->output, retval => $retval );
+    return $self->create_result_object( output => $self->output );
 }
 
 method request_path_not_found ($path) {
@@ -440,11 +440,10 @@ L<Mason::Result|Mason::Result> object returned from C<< $interp->run >>.
 
 =over
 
-=item abort ([return value])
+=item abort ()
 
 Ends the current request, finishing the page without returning through
-components. The optional argument specifies the return value to be placed in
-L<Mason::Result/retval>.
+components.
 
 C<abort> is implemented by throwing an C<Mason::Exception::Abort> object and
 can thus be caught by C<eval>. The C<aborted> method is a shortcut for
@@ -465,7 +464,7 @@ letting C<abort> exceptions pass through:
         # handle fatal errors...
     };
 
-=item clear_and_abort ([return value])
+=item clear_and_abort ()
 
 This method is syntactic sugar for calling C<clear_buffer()> and then
 C<abort()>.  If you are aborting the request because of an error (or, in a web
