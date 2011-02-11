@@ -20,7 +20,7 @@ has 'out_method' => ( isa => 'Mason::Types::OutMethod', default => sub { $defaul
 
 # Derived attributes
 #
-has 'buffer_stack'       => ( init_arg => undef );
+has 'buffer_stack'       => ( init_arg => undef, default => sub { [] } );
 has 'count'              => ( init_arg => undef );
 has 'declined'           => ( init_arg => undef, is => 'rw' );
 has 'declined_paths'     => ( default => sub { {} } );
@@ -33,9 +33,9 @@ has 'request_code_cache' => ( init_arg => undef, default => sub { {} } );
 has 'request_path'       => ( init_arg => undef );
 has 'run_params'         => ( init_arg => undef );
 
-# Class attributes
+# Globals, localized to each request
 #
-our $current_request;
+our ( $current_request, $current_buffer );
 method current_request () { $current_request }
 
 #
@@ -43,7 +43,6 @@ method current_request () { $current_request }
 #
 
 method BUILD ($params) {
-    $self->_push_buffer();
     $self->{orig_request_params} = $params;
     $self->{count}               = $self->{interp}->_incr_request_count;
 }
@@ -277,6 +276,19 @@ method run () {
     $self->{request_path} = $request_path;
     $self->{request_args} = $request_args;
 
+    # Localize current_request and current_buffer until end of scope. Use a guard
+    # because 'local' doesn't work with the aliases inside components.
+    #
+    my $save_current_request = $current_request;
+    my $save_current_buffer  = $current_buffer;
+    scope_guard { $current_request = $save_current_request; $current_buffer = $save_current_buffer };
+    $current_request = $self;
+    $self->_push_buffer();
+
+    # Clean up after request
+    #
+    scope_guard { $self->cleanup_request() };
+
     # Flush interp load cache
     #
     $self->interp->_flush_load_cache();
@@ -285,17 +297,6 @@ method run () {
     # first component is loaded.
     #
     $self->interp->_check_static_source_touch_file();
-
-    # Make this the current request until end of scope. Use a guard
-    # because 'local' doesn't work with the $m alias inside components.
-    #
-    my $save_current_request = $current_request;
-    scope_guard { $current_request = $save_current_request };
-    $current_request = $self;
-
-    # Clean up after request
-    #
-    scope_guard { $self->cleanup_request() };
 
     # Turn request path into a page component
     #
@@ -388,11 +389,13 @@ method _current_buffer () {
 
 method _pop_buffer () {
     pop( @{ $self->{buffer_stack} } );
+    $current_buffer = $self->_current_buffer;
 }
 
 method _push_buffer () {
     my $s = '';
     push( @{ $self->{buffer_stack} }, \$s );
+    $current_buffer = \$s;
 }
 
 method _request_buffer () {

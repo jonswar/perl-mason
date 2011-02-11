@@ -22,6 +22,7 @@ my $interp_count = 0;
 
 # Passed attributes
 #
+has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] } );
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'autoextend_request_path'  => ( isa => 'Mason::Types::Autoextend', coerce => 1, default => sub { [ '.pm', '.m' ] } );
 has 'comp_root'                => ( isa => 'Mason::Types::CompRoot', coerce => 1 );
@@ -40,10 +41,12 @@ has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
 
 # Derived attributes
 #
+has 'allowed_globals_hash'  => ( init_arg => undef, lazy_build => 1 );
 has 'autobase_regex'        => ( init_arg => undef, lazy_build => 1 );
 has 'code_cache'            => ( init_arg => undef, lazy_build => 1 );
 has 'count'                 => ( init_arg => undef, default => sub { $interp_count++ } );
 has 'distinct_string_count' => ( init_arg => undef, default => 0 );
+has 'globals_package'       => ( init_arg => undef, lazy_build => 1 );
 has 'match_request_path'    => ( init_arg => undef, lazy_build => 1 );
 has 'named_block_regex'     => ( init_arg => undef, lazy_build => 1 );
 has 'named_block_types'     => ( init_arg => undef, lazy_build => 1 );
@@ -84,6 +87,16 @@ method BUILD ($params) {
             $self->{request_params}->{$key} = delete( $params->{$key} );
         }
     }
+}
+
+method _build_allowed_globals_hash () {
+    my @allow_globals = uniq( @{ $self->allow_globals } );
+    my @canon_globals = map { join( "", $self->_parse_global_spec($_) ) } @allow_globals;
+    return { map { ( $_, 1 ) } @canon_globals };
+}
+
+method _build_globals_package () {
+    return "Mason::Globals" . $self->count;
 }
 
 method _build_ignore_file_regex () {
@@ -361,6 +374,19 @@ method run () {
     $request->run( $path, @_ );
 }
 
+method set_global () {
+    my ( $spec, $value ) = @_;
+    croak "set_global expects a var name and value" unless $value;
+    my ( $sigil, $name ) = $self->_parse_global_spec($spec);
+    croak "${sigil}${name} is not in the allowed globals list"
+      unless $self->allowed_globals_hash->{"${sigil}${name}"};
+
+    my $varname = sprintf( "%s::%s", $self->globals_package, $name );
+    no strict 'refs';
+    no warnings 'once';
+    $$varname = $value;
+}
+
 #
 # MODIFIABLE METHODS
 #
@@ -496,6 +522,14 @@ method _build_match_request_path ($interp:) {
 #
 # PRIVATE METHODS
 #
+
+method _parse_global_spec () {
+    my $spec = shift;
+    croak "only scalar globals supported at this time (not '$spec')" if $spec =~ /^[@%]/;
+    $spec =~ s/^\$//;
+    die "'$spec' is not a valid global var name" unless $spec =~ qr/[[:alpha:]_]\w*/;
+    return ( '$', $spec );
+}
 
 method _add_default_wrap_method ($compc) {
 
@@ -707,6 +741,20 @@ loaded components.
 =head1 PARAMETERS TO THE new() CONSTRUCTOR
 
 =over
+
+=item allow_globals (varnames)
+
+List of one or more global variable names that will be available in all
+components, like C<< $m >> is by default.
+
+    allow_globals => [qw($dbh)]
+
+As in any programming environment, globals should be created sparingly (if at
+all) and only when other mechanisms (parameter passing, attributes, singletons)
+will not suffice. L<Catalyst::View::Mason2|Catalyst::View::Mason2>, for
+example, creates a C<< $c >> global set to the context object in each request.
+
+Set the values of globals with L</set_global> or L<Mason::Request/set_global>.
 
 =item autobase_names
 
@@ -939,6 +987,17 @@ passed to the Mason::Request constructor. e.g. this tells the request to output
 to standard output:
 
     $interp->run({out_method => sub { print $_[0] }}, '/foo/bar', baz => 5);
+
+=item set_global (varname, value)
+
+Set the global I<varname> to I<value>. This will be visible in all components
+loaded by this interpreter. The variables must be on the L</allow_globals>
+list.
+
+    $interp->set_global('$scalar', 5);
+    $interp->set_global('$scalar2', $some_object);
+
+See also L<Mason::Request/set_global>.
 
 =back
 

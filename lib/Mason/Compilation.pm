@@ -308,9 +308,10 @@ method output_compiled_component () {
     return join(
         "\n",
         map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_flag_comment, $self->_output_class_header, $self->_output_cmeta,
-            $self->_output_attributes,   $self->_output_class_block,  $self->_output_methods,
-            $self->_output_class_footer,
+            $self->_output_flag_comment,        $self->_output_class_header,
+            $self->_output_global_declarations, $self->_output_cmeta,
+            $self->_output_attributes,          $self->_output_class_block,
+            $self->_output_methods,             $self->_output_class_footer,
         )
     ) . "\n";
 }
@@ -337,6 +338,7 @@ method _output_class_header () {
         "\n",
         "use " . $self->interp->component_moose_class . ";",
         "our \$m; *m = \\\$Mason::Request::current_request;",
+        "our \$_m_buffer; *_m_buffer = \\\$Mason::Request::current_buffer;",
 
         # Must be defined here since inner relies on caller()
         "sub _inner { inner() }"
@@ -368,6 +370,17 @@ method _output_class_block () {
     return $self->{blocks}->{class} || '';
 }
 
+method _output_global_declaration ($spec) {
+    my ( $sigil, $name ) = $self->interp->_parse_global_spec($spec);
+    return sprintf( 'our %s%s; *%s = \%s%s::%s;' . "\n",
+        $sigil, $name, $name, $sigil, $self->interp->globals_package, $name );
+}
+
+method _output_global_declarations () {
+    return
+      join( "\n", map { $self->_output_global_declaration($_) } @{ $self->interp->allow_globals } );
+}
+
 method _output_methods () {
 
     # Sort methods so that modifiers come after
@@ -397,8 +410,6 @@ method _output_method ($method) {
     return join(
         "\n",
         $start,
-
-        "my \$_buffer = \$m->_current_buffer;",
 
         # do not add a block around this, it introduces
         # a separate scope and might break cleanup
@@ -569,10 +580,7 @@ method _handle_filter_block ($contents, $name, $arglist) {
         'filter => sub {',
         'my $yield = shift;',
         '$m->capture(sub {',
-        'my $_buffer = $m->_current_buffer;',
-        '</%perl>',
-        $contents,
-        '<%perl>}); });</%perl>',
+        '</%perl>', $contents, '<%perl>}); });</%perl>',
     );
     $self->_handle_method_block( $new_contents, $name, $arglist );
 }
@@ -632,7 +640,7 @@ method _handle_text_block ($contents) {
     $contents =~ s/^\n//;
     $contents =~ s,([\'\\]),\\$1,g;
 
-    $self->_add_to_current_method("\$\$_buffer .= '$contents';\n");
+    $self->_add_to_current_method("\$\$_m_buffer .= '$contents';\n");
 
     $self->{last_code_type} = 'text';
 }
@@ -663,7 +671,7 @@ method _handle_substitution ( $text, $filter_list ) {
         }
     }
 
-    my $code = "for (scalar($text)) { \$\$_buffer .= \$_ if defined }\n";
+    my $code = "for (scalar($text)) { \$\$_m_buffer .= \$_ if defined }\n";
 
     $self->_add_to_current_method($code);
 
@@ -704,7 +712,7 @@ method _handle_plain_text ($text) {
     #
     $text =~ s,([\'\\]),\\$1,g;
 
-    my $code = "\$\$_buffer .= '$text';\n";
+    my $code = "\$\$_m_buffer .= '$text';\n";
     $self->_add_to_current_method($code);
 }
 
