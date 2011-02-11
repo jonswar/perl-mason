@@ -63,6 +63,10 @@ method aborted ($err) {
     return blessed($err) && $err->isa('Mason::Exception::Abort');
 }
 
+method add_cleanup ($code) {
+    push( @{ $self->{cleanups} }, $code );
+}
+
 method apply_filter ($filter, $yield) {
     my $filtered_output;
     $yield = sub { $yield }
@@ -212,6 +216,14 @@ method visit () {
 
 method cleanup_request () {
     $self->interp->_flush_load_cache();
+    foreach my $cleanup ( @{ $self->{cleanups} } ) {
+        try {
+            $cleanup->($self);
+        }
+        catch {
+            warn "error during request cleanup: $_";
+        };
+    }
 }
 
 method construct_page_component ($compc, $args) {
@@ -464,6 +476,11 @@ letting C<abort> exceptions pass through:
         # handle fatal errors...
     };
 
+=item add_cleanup (code)
+
+Add a code reference to be executed when the request is L<cleaned
+up|/cleanup_request>.
+
 =item clear_and_abort ()
 
 This method is syntactic sugar for calling C<clear_buffer()> and then
@@ -648,7 +665,8 @@ as stable as possible.
 =item cleanup_request ()
 
 A place to perform cleanup duties when the request finishes or dies with an
-error, even if the request object is not immediately destroyed.
+error, even if the request object is not immediately destroyed. Includes
+anything registered with L</add_cleanup>.
 
 =item construct_page_component ($compc, $args)
 
