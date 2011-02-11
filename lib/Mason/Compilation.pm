@@ -12,7 +12,7 @@ use Mason::Moose;
 use Mason::Util qw(trim);
 
 # Passed attributes
-has 'interp'    => ( required => 1, weak_ref => 1 );
+has 'interp'      => ( required => 1, weak_ref => 1 );
 has 'path'        => ( required => 1 );
 has 'source_file' => ( required => 1 );
 
@@ -335,12 +335,7 @@ method _output_class_footer () {
 method _output_class_header () {
     return join(
         "\n",
-        "use CLASS;",
-        "use Method::Signatures::Simple;",
-        "use MooseX::HasDefaults::RW;",
-        "use strict;",
-        "use warnings;",
-        "use namespace::autoclean;",
+        "use " . $self->interp->component_moose_class . ";",
         "our \$m; *m = \\\$Mason::Request::current_request;",
 
         # Must be defined here since inner relies on caller()

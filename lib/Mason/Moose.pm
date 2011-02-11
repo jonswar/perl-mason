@@ -5,6 +5,8 @@ use MooseX::StrictConstructor  ();
 use Method::Signatures::Simple ();
 use namespace::autoclean       ();
 use Moose::Exporter;
+use strict;
+use warnings;
 Moose::Exporter->setup_import_methods( also => ['Moose'] );
 
 sub init_meta {

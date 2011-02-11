@@ -3,7 +3,7 @@ use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture_merged);
 use Mason::Util qw(dump_one_line);
 
-sub test_plugins : Test(5) {
+sub test_notify_plugin : Test(5) {
     my $self = shift;
 
     $self->setup_interp(
@@ -24,6 +24,16 @@ sub test_plugins : Test(5) {
     $like->(qr/starting request run - \/test_plugin/);
     $like->(qr/starting request comp - test_plugin_support.mi/);
     $like->(qr/starting compilation parse - \/test_plugin.m/);
+}
+
+sub test_strict_plugin : Test(2) {
+    my $self = shift;
+
+    $self->setup_interp(
+        base_component_moose_class => 'Mason::Test::Overrides::Component::StrictMoose', );
+    $self->add_comp( path => '/test_strict_plugin.m', src => 'hi' );
+    lives_ok { $self->interp->run('/test_strict_plugin') };
+    throws_ok { $self->interp->run( '/test_strict_plugin', foo => 5 ) } qr/Found unknown attribute/;
 }
 
 { package Mason::Test::Plugins::A; use Moose; with 'Mason::Plugin'; }

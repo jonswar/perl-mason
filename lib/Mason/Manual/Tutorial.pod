@@ -569,17 +569,11 @@ Methods can also take argument lists:
     </%method>
 
 Pure-Perl methods that return a value can be added within the << <%class> >>
-section. These methods automatically have access to C<$self>, but must call
-C<$self->m> to get the request object.
+section.
 
     <%class>
     method multiply ($a, $b) {
         return $a * $b;
-    }
-
-    method some_other_method () {
-        my $m = $self->m;
-        ...
     }
     </%class>
 

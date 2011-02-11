@@ -662,6 +662,7 @@ sub _define_class_override_methods {
         code_cache_class              => 'CodeCache',
         compilation_class             => 'Compilation',
         component_class               => 'Component',
+        component_moose_class         => 'Component::Moose',
         component_class_meta_class    => 'Component::ClassMeta',
         component_instance_meta_class => 'Component::InstanceMeta',
         request_class                 => 'Request',
@@ -852,6 +853,10 @@ Specify alternate to L<Mason::Compilation|Mason::Compilation>
 =item base_component_class
 
 Specify alternate to L<Mason::Component|Mason::Component>
+
+=item base_component_moose_class
+
+Specify alternate to L<Mason::Component::Moose|Mason::Component::Moose>
 
 =item base_component_class_meta_class
 

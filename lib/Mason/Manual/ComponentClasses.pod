@@ -1,0 +1,16 @@
+
+=head1 NAME
+
+Mason::Manual::ComponentClasses - How Mason generates classes from components
+
+=head1 DESCRIPTION
+
+=head1 GENERATED CLASS
+
+Here's a sample component:
+
+and here's the class that gets generated for it:
+
+=head2 Package name
+
+=head2 Mason::Component::Moose

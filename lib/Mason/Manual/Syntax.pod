@@ -396,8 +396,4 @@ which prints
 
     foobarbaz
 
-=head1 AUTHORS
-
-Jonathan Swartz <swartz@pobox.com>
-
 =cut
