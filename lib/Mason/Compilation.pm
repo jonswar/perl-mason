@@ -344,20 +344,21 @@ method _output_class_header () {
 }
 
 method _output_cmeta () {
+    my $q = sub { "'$_[0]'" };
     my %cmeta_info = (
-        dir_path     => $self->dir_path,
-        is_top_level => $self->interp->is_top_level_comp_path( $self->path ),
-        path         => $self->path,
-        source_file  => $self->source_file,
+        dir_path     => $q->( $self->dir_path ),
+        is_top_level => $q->( $self->interp->is_top_level_comp_path( $self->path ) ),
+        path         => $q->( $self->path ),
+        source_file  => $q->( $self->source_file ),
+        object_file  => '__FILE__',
+        class        => 'CLASS',
+        interp       => '\$interp',
     );
     return join( "\n",
         "my \$_class_cmeta;",
         "method _set_class_cmeta (\$interp) {",
         "\$_class_cmeta = \$interp->component_class_meta_class->new(",
-        ( map { sprintf( "'%s' => '%s',", $_, $cmeta_info{$_} ) } sort( keys(%cmeta_info) ) ),
-        "'object_file' => __FILE__,",
-        "'class' => CLASS,",
-        "'interp' => \$interp",
+        ( map { sprintf( "'%s' => %s,", $_, $cmeta_info{$_} ) } sort( keys(%cmeta_info) ) ),
         ');',
         '}',
         'sub _class_cmeta { $_class_cmeta }' );
