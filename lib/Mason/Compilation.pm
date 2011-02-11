@@ -352,7 +352,7 @@ method _output_cmeta () {
         source_file  => $q->( $self->source_file ),
         object_file  => '__FILE__',
         class        => 'CLASS',
-        interp       => '\$interp',
+        interp       => '$interp',
     );
     return join( "\n",
         "my \$_class_cmeta;",
