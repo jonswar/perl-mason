@@ -30,7 +30,7 @@ sub test_resolve : Tests(32) {
         }
         else {
             throws_ok { $self->interp->run($run_path)->output }
-            qr/could not find top-level component/,
+            qr/could not find component for request path/,
               $desc;
         }
     };
@@ -115,7 +115,7 @@ sub test_decline : Tests(7) {
         }
         else {
             throws_ok { $self->interp->run($run_path)->output }
-            qr/could not find top-level component/,
+            qr/could not find component for request path/,
               $desc;
         }
         push( @paths_to_decline, $resolve_path );
