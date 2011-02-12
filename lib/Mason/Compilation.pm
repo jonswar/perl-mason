@@ -337,8 +337,9 @@ method _output_class_header () {
     return join(
         "\n",
         "use " . $self->interp->component_moose_class . ";",
-        "our \$m; *m = \\\$Mason::Request::current_request;",
-        "our \$_m_buffer; *_m_buffer = \\\$Mason::Request::current_buffer;",
+        "our (\$m, \$_m_buffer);",
+        "*m = \\\$Mason::Request::current_request;",
+        "*_m_buffer = \\\$Mason::Request::current_buffer;",
 
         # Must be defined here since inner relies on caller()
         "sub _inner { inner() }"
