@@ -154,9 +154,11 @@ components.
 
 =item cmeta
 
-Returns the L<Mason::Component::Meta|Mason::Component::Meta> object associated
-with this component, containing information such as the component's path and
-source file.
+Returns a meta object associated with this component, containing information
+such as the component's path and source file. It will be a
+L<Mason::Component::InstanceMeta> object if called on a component instance, and
+a L<Mason::Component::ClassMeta> object if called on a component class; the
+former contains slightly more information.
 
     my $path = $self->cmeta->path;
 
