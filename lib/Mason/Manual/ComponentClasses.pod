@@ -5,12 +5,109 @@ Mason::Manual::ComponentClasses - How Mason generates classes from components
 
 =head1 DESCRIPTION
 
-=head1 GENERATED CLASS
+Mason generates a Perl/Moose class for every component. While it isn't strictly
+necessary to understand this process to use Mason, it can be helpful,
+especially when Mason isn't behaving quite how you expect. :)
 
-Here's a sample component:
+=head1 OBJECT FILES
 
-and here's the class that gets generated for it:
+Mason writes the generated class into an I<object file>, located in
 
-=head2 Package name
+    <mason_data_directory>/obj/<component_path>.mobj
 
-=head2 Mason::Component::Moose
+For example if your L<data directory|Mason::Interp/data_dir> is
+F</home/myapp/data> and the component path is F</foo/bar.m>, the corresponding
+object file will be
+
+    /home/myapp/data/obj/foo/bar.m.mobj
+
+The object file is rewritten whenever Mason detects a change in the source
+file.
+
+Object files aren't generated in a particularly clean way, so if you're going
+to be peeking at them, consider using the
+L<TidyObjectfiles|Mason::Plugin::TidyObjectfiles> plugin.
+
+=head1 SIMPLE EXAMPLE
+
+Here's a simple component:
+
+    Hello world! The local time is <% scalar(localtime) %>.
+
+and here's the class that gets generated for it, filtered with TidyObjectFiles:
+
+     1 use Mason::Component::Moose;
+     2 our ( $m, $_m_buffer );
+     3 *m         = \$Mason::Request::current_request;
+     4 *_m_buffer = \$Mason::Request::current_buffer;
+     5 sub _inner { inner() }
+     6 my $_class_cmeta;
+     7 
+     8 method _set_class_cmeta ($interp) {
+     9     $_class_cmeta = $interp->component_class_meta_class->new(
+    10         'class'        => CLASS,
+    11         'dir_path'     => '/',
+    12         'interp'       => $interp,
+    13         'is_top_level' => '1',
+    14         'object_file'  => __FILE__,
+    15         'path'         => '/hi.m',
+    16         'source_file'  => '/home/myapp/comps/hi.m',
+    17     );
+    18 }
+    19 sub _class_cmeta { $_class_cmeta }
+    20 
+    21 method main {
+    22 #line 1 "/home/myapp/comps/hi.m"
+    23     $$_m_buffer .= 'Hi there! The time is ';
+    24 #line 1 "/home/myapp/comps/hi.m"
+    25     for ( scalar( scalar(localtime) ) ) { $$_m_buffer .= $_ if defined }
+    26 #line 1 "/home/myapp/comps/hi.m"
+    27     $$_m_buffer .= '.
+    28 ';
+    29 
+    30     return;
+    31 }
+
+The above is as of time of writing; it may well be out of date with the current
+code generator, but it is accurate enough for explanatory purposes.
+
+Line 1 brings in L<Mason::Component::Moose>, which imports L<Moose>, L<CLASS>,
+L<Method::Signatures::Simple> and other things into the current package.
+
+Lines 2-4 defines two dynamic globals, C<$m> (the current request) and
+C<$_m_buffer> (the current output buffer). These are aliased so that they can
+be changed for every component from a single place. See also
+L<Mason::Manual::ComponentGlobals>.
+
+Lines 6-19 create the L<Mason::Component::ClassMeta> object returned from
+L<Mason::Component/cmeta>.
+
+Lines 21-31 contain the L<Mason::Component/main> method, which encapsulates all
+the output and Perl statements in the component that aren't explicitly inside a
+C<< <%method> >> or C<< <%class> >> block.
+
+Lines 22, 24, and 26 contain '#line' statements which make error messages
+appear to come from the source file rather than the object file (and hence more
+useful). This can be disabled with L<Mason::Interp/no_source_line_numbers>.
+
+Lines 23, 25, and 27 output plain strings or the results of code by appending
+them to the current output buffer. The current output buffer can change within
+a request, for example when L<Mason::Request/capture> or
+L<Mason::Request/scomp> is called.
+
+Two things that would be in a normal class are missing above: the package/class
+name and the superclass. These are added dynamically when the object file is
+evaluated.
+
+=head2 Class name
+
+The class name is determined at load time by prepending the
+C<Mason::Interp/component_class_prefix> to the component path, which slashes
+replaced with '::'. Two different Interp objects loading the same object file
+will thus create two separate classes.
+
+=head2 Superclass
+
+The superclass is determined at load time -- see L<Mason::Manual::Inheritance>
+-- and an 'extends' statement is added when evaluating object file.
+
