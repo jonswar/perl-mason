@@ -302,12 +302,12 @@ method load ($path) {
                 && $entry->{source_file} eq $source_file
                 && $entry->{default_parent_compc} eq $default_parent_compc )
             {
-                $self->_load_superclasses( $entry->{compc} );
-                return $entry->{compc};
+                my $compc = $entry->{compc};
+                if ( $entry->{superclass_signature} eq $self->_superclass_signature($compc) ) {
+                    return $compc;
+                }
             }
-            else {
-                $code_cache->remove($path);
-            }
+            $code_cache->remove($path);
         }
 
         # Determine object file and its last modified time
@@ -322,7 +322,6 @@ method load ($path) {
 
     $self->_load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
     $compc->meta->make_immutable();
-    $self->_load_superclasses($compc);
 
     # Save component class in the cache.
     #
@@ -333,23 +332,30 @@ method load ($path) {
             source_lastmod       => $source_lastmod,
             default_parent_compc => $default_parent_compc,
             compc                => $compc,
+            superclass_signature => $self->_superclass_signature($compc),
         }
     );
 
     return $compc;
 }
 
-method _load_superclasses ($compc) {
+method _superclass_signature ($compc) {
+    my @superclasses = $compc->meta->superclasses;
 
     # Recursively load the superclasses for an existing component class in
     # case they have changed.
     #
-    foreach my $superclass ( $compc->meta->superclasses ) {
+    foreach my $superclass (@superclasses) {
         if ( my $cmeta = $superclass->cmeta ) {
             my $path = $cmeta->path;
             $self->load( $cmeta->path );
         }
     }
+
+    # Return a unique signature representing the component class's superclasses
+    # and their versions.
+    #
+    return join( ",", map { join( "-", $_, $_->cmeta ? $_->cmeta->id : 0 ) } @superclasses );
 }
 
 # Memoize load() - this helps both with components used multiple times in a

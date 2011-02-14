@@ -80,14 +80,22 @@ sub test_reload_parent : Test(6) {
     $self->add_comp( path => '/Base.pm',       src => 'method wrap { print "wrap1" }' );
     $self->test_existing_comp( path => '/foo/bar/baz.m', expect => 'wrap1' );
 
-    # FAILS right now
-    #
+    $self->interp->_flush_load_cache();
+    sleep(1);
 
-    # $self->interp->_flush_load_cache();
-    # sleep(1);
+    $self->add_comp( path => '/Base.pm', src => 'method wrap { print "wrap2" }' );
+    $self->test_existing_comp( path => '/foo/bar/baz.m', expect => 'wrap2' );
+}
 
-    # $self->add_comp( path => '/Base.pm', src => 'method wrap { print "wrap2" }' );
-    # $self->test_existing_comp( path => '/foo/bar/baz.m', expect => 'wrap2' );
+sub test_no_unnecessary_reload : Test(1) {
+    my $self   = shift;
+    my $interp = $self->interp;
+
+    $self->add_comp( path => '/foo.m', src => ' ' );
+    my $id1 = $interp->load('/foo.m')->cmeta->id;
+    $self->interp->_flush_load_cache();
+    my $id2 = $interp->load('/foo.m')->cmeta->id;
+    ok( $id1 == $id2 );
 }
 
 1;
