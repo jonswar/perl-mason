@@ -43,13 +43,14 @@ EOF
     ok( $class->can('baz'),  "can call baz after reload" );
 }
 
-sub test_reload_parent : Test(4) {
+sub test_reload_parent : Test(6) {
     my $self   = shift;
     my $interp = $self->interp;
 
     $self->add_comp( path => '/foo/bar/baz.m', src => '<% $.num1 %> <% $.num2 %>' );
     $self->add_comp( path => '/foo/Base.m',    src => '%% method num1 { 5 }' );
     $self->add_comp( path => '/Base.m',        src => '%% method num2 { 6 }' );
+
     $self->test_existing_comp( path => '/foo/bar/baz.m', expect => '5 6' );
 
     $self->interp->_flush_load_cache();
@@ -68,9 +69,25 @@ sub test_reload_parent : Test(4) {
     $self->interp->_flush_load_cache();
     sleep(1);
 
-    $DB::single = 1;
     $self->remove_comp( path => '/foo/Base.m' );
     $self->test_existing_comp( path => '/foo/bar/baz.m', expect => '10 11' );
+
+    $self->interp->_flush_load_cache();
+    sleep(1);
+
+    $self->remove_comp( path => '/foo/Base.m' );
+    $self->add_comp( path => '/foo/bar/baz.m', src => 'hi' );
+    $self->add_comp( path => '/Base.pm',       src => 'method wrap { print "wrap1" }' );
+    $self->test_existing_comp( path => '/foo/bar/baz.m', expect => 'wrap1' );
+
+    # FAILS right now
+    #
+
+    # $self->interp->_flush_load_cache();
+    # sleep(1);
+
+    # $self->add_comp( path => '/Base.pm', src => 'method wrap { print "wrap2" }' );
+    # $self->test_existing_comp( path => '/foo/bar/baz.m', expect => 'wrap2' );
 }
 
 1;
