@@ -4,17 +4,17 @@ use Mason::Moose;
 use Log::Any;
 
 # Passed attributes (generated in compiled component)
-has 'class'       => ( required => 1 );
-has 'dir_path'    => ( required => 1 );
-has 'interp'      => ( required => 1, weak_ref => 1 );
-has 'is_dhandler' => ( init_arg => undef, lazy_build => 1 );
+has 'class'        => ( required => 1 );
+has 'dir_path'     => ( required => 1 );
+has 'interp'       => ( required => 1, weak_ref => 1 );
+has 'is_dhandler'  => ( init_arg => undef, lazy_build => 1 );
 has 'is_top_level' => ( required => 1 );
-has 'object_file' => ( required => 1 );
-has 'path'        => ( required => 1 );
-has 'source_file' => ( required => 1 );
+has 'object_file'  => ( required => 1 );
+has 'path'         => ( required => 1 );
+has 'source_file'  => ( required => 1 );
 
 # Derived attributes
-has 'log' => ( init_arg => undef, lazy_build => 1 );
+has 'log'  => ( init_arg => undef, lazy_build => 1 );
 has 'name' => ( init_arg => undef, lazy_build => 1 );
 
 __PACKAGE__->_define_instance_meta_stubs;
