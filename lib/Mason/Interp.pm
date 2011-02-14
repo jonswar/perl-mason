@@ -736,8 +736,8 @@ __END__
 =head1 DESCRIPTION
 
 Interp is the central Mason object, returned from C<< Mason->new >>. It is
-responsible for creating new Request objects and maintaining the cache of
-loaded components.
+responsible for creating new requests, compiling components, and maintaining
+the cache of loaded components.
 
 =head1 PARAMETERS TO THE new() CONSTRUCTOR
 
