@@ -6,11 +6,17 @@ use Method::Signatures::Simple;
 use namespace::autoclean;
 use Log::Any;
 
-# Bring in standard filters
+my $next_id = 0;
+
 with 'Mason::Filters::Standard';
 
 # Passed attributes
+#
 has 'm' => ( required => 1, weak_ref => 1 );
+
+# Derived attributes
+#
+has 'id' => ( init_arg => undef, default => sub { $next_id++ } );
 
 method BUILD ($params) {
     $self->{_orig_params} = $params;

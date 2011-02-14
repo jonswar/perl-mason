@@ -12,6 +12,7 @@ use Scalar::Util qw(blessed reftype);
 use Try::Tiny;
 
 my $default_out = sub { my ( $text, $self ) = @_; $self->{output} .= $text };
+my $next_id = 0;
 
 # Passed attributes
 #
@@ -24,7 +25,7 @@ has 'buffer_stack'       => ( init_arg => undef, default => sub { [] } );
 has 'declined'           => ( init_arg => undef, is => 'rw' );
 has 'declined_paths'     => ( default => sub { {} } );
 has 'go_result'          => ( init_arg => undef );
-has 'id'                 => ( init_arg => undef );
+has 'id'                 => ( init_arg => undef, default => sub { $next_id++ } );
 has 'output'             => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
 has 'path_info'          => ( init_arg => undef, default => '' );
@@ -44,7 +45,6 @@ method current_request () { $current_request }
 
 method BUILD ($params) {
     $self->{orig_request_params} = $params;
-    $self->{id}                  = $self->{interp}->_incr_request_id;
 }
 
 #

@@ -42,9 +42,9 @@ sub test_id : Test(3) {
     my $self = shift;
     $self->setup_dirs;
     $self->add_comp( path => '/id.m', src => 'id=<% $m->id %>' );
-    is( $self->interp->run('/id')->output, "id=0" );
-    is( $self->interp->run('/id')->output, "id=1" );
-    is( $self->interp->run('/id')->output, "id=2" );
+    my ($id1) = ( $self->interp->run('/id')->output =~ /id=(\d+)/ );
+    my ($id2) = ( $self->interp->run('/id')->output =~ /id=(\d+)/ );
+    ok( $id1 != $id2 );
 }
 
 sub test_log : Test(2) {
