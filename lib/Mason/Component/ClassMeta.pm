@@ -3,6 +3,8 @@ use File::Basename;
 use Mason::Moose;
 use Log::Any;
 
+my $next_id = 0;
+
 # Passed attributes (generated in compiled component)
 has 'class'        => ( required => 1 );
 has 'dir_path'     => ( required => 1 );
@@ -14,6 +16,7 @@ has 'path'         => ( required => 1 );
 has 'source_file'  => ( required => 1 );
 
 # Derived attributes
+has 'id'   => ( init_arg => undef, default => sub { $next_id++ } );
 has 'log'  => ( init_arg => undef, lazy_build => 1 );
 has 'name' => ( init_arg => undef, lazy_build => 1 );
 
