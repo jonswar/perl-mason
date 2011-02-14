@@ -278,14 +278,15 @@ Three new pieces of syntax here:
 
 =item Init block
 
-The C<< <%init> >> block on lines 13-16 specifies a block of Perl code to run
-when this component is first called. In this case it fetches and sorts the list
-of articles into a lexical variable C<< @articles >>.
+The L<%init|Mason::Syntax/_%init_> block on lines 13-16 specifies a block of
+Perl code to run when this component is first called. In this case it fetches
+and sorts the list of articles into a lexical variable C<< @articles >>.
 
 =item %-lines
 
-Lines beginning with a single '%' are treated as Perl rather than HTML. %-lines
-are a good way to wrap loops and conditionals around portions of the component.
+L<%-lines|Mason::Syntax/PERL LINES> - lines beginning with a single '%' - are
+treated as Perl rather than HTML.  They are especially good for loops and
+conditionals.
 
 =item Substitution tags
 
@@ -293,8 +294,9 @@ The line
 
     <b>Showing <% scalar(@articles) %> article<% @articles > 1 ? "s" : "" %>.</b>
 
-shows two substitution tags. Code within C<< <% >> and C<< %> >> is treated as
-a Perl expression, and the result of the expression is output in place.
+shows two L<substitution tags|Mason::Syntax/SUBSTITUTION TAGS>. Code within C<<
+<% >> and C<< %> >> is treated as a Perl expression, and the result of the
+expression is output in place.
 
 =back
 
@@ -324,13 +326,13 @@ Next we create C</article/display.mi>:
     14    <% $.article->content %>
     15  </div>
 
-The C<< <%class> >> block on line 1-4 specifies a block of Perl code to place
-near the top of the generated component class, outside of any methods. This is
-the place to use modules, declare permanent constants/variables, and define
-helper methods.
+The L<%init|Mason::Syntax/_%class_> block on line 1-4 specifies a block of Perl
+code to place near the top of the generated component class, outside of any
+methods. This is the place to use modules, declare permanent
+constants/variables, and define helper methods.
 
-The C<< <%args> >> block on line 7-9 declares a single incoming attribute,
-'article'. These lines are equivalent to the Moose syntax
+The L<%args|Mason::Syntax/_%args_> block on line 7-9 declares a single incoming
+attribute, 'article'. These lines are equivalent to the Moose syntax
 
     has 'article' => (required => 1);
 
@@ -545,4 +547,4 @@ article title, in case it has any HTML-unfriendly characters in it:
 See L<Mason::Manual::Filters> for more information about using, and creating,
 filters.
 
-=head1 CONCLUSION
+=head1 OTHER TOPICS
