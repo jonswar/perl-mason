@@ -5,758 +5,331 @@ Mason::Manual::Tutorial - Mason tutorial
 
 =head1 DESCRIPTION
 
-Mason is a powerful Perl-based templating system, designed to generate dynamic
-content from templates.
+This tutorial shows how to build a sample web application - a wiki called Mwiki
+- using Mason and PSGI.
 
-Mason can be used for processing any kind of content: HTML, XML, plain text,
-etc.  However, it is most often used for generating web pages, so this
-documentation will tend to focus on that use-case. When reading, you can
-mentally replace "page" with "any kind of document", and "HTML" with "any kind
-of content".
+A real web application would almost certainly employ a real data layer (DBI,
+DBIx::Class, Rose::DB::Object) and possibly a separate web framework (Catalyst,
+Dancer, Jifty) but for the sake of this tutorial we're going to do without
+them.
 
-Unlike some other templating systems, Mason is proudly Perl-centric and does
-not attempt to define an alternate, "easier" language. It defines a thin layer
-of syntax and features to facilitate template creation, and leaves everything
-else to Perl. That said, Mason does allow some separation of Perl and content
-to make it easier to collaborate with non-Perl developers.
+=head1 REQUIREMENTS
 
-=head1 COMPONENTS
+In addition to Mason, you'll need. If you're using cpanm:
 
-The component - a file with a mix of Perl and HTML - is Mason's basic building
-block. Pages are usually formed by combining the output from multiple
-components.  An article page for a online magazine, for example, might call
-separate components for the company masthead, ad banner, left table of
-contents, and article body.
+    cpanm CHI
 
-    +---------+------------------+
-    |Masthead | Banner Ad        |
-    +---------+------------------+
-    |         |                  |
-    |+-------+|Text of Article ..|
-    ||       ||                  |
-    ||Related||Text of Article ..|
-    ||Stories||                  |
-    ||       ||Text of Article ..|
-    |+-------+|                  |
-    |         +------------------+
-    |         | Footer           |
-    +---------+------------------+
+=head1 DATA LAYER
 
-The top level component decides the overall page layout.  Individual cells are
-then filled by the output of subordinate components, one for the Masthead, one
-for the Footer, etc. Pages might be built up from as few as one, to as many as
-hundreds of components, with each component contributing a chunk of HTML.
+For the sake of this tutorial we'll assume a single model class,
+C<Mwiki::Node>, with the following API:
 
-Splitting up a page into multiple components gives you several benefits. The
-first benefit is I<consistency>: by embedding standard design elements in
-components, you ensure a consistent look and make it possible to update the
-entire site with just a few edits. The second benefit is I<concurrency>: in a
-multi-person environment, one person can edit the masthead while another edits
-the table of contents.  A last benefit is I<reuseability>: a component produced
-for one site might be useful on another. You can develop a library of generally
-useful components to employ on your sites and to share with others.
+    # Class methods
+    all() - returns a list of Mwiki::Page objects representing all pages in the wiki
+    find($title) - returns the Mwiki::Page object with the specified title, or undef
+    
+    # Instance methods
+    title() - title of the page
+    content() - content of the page, in Markdown format
+    content_as_html() - content of the page, in HTML format
+    update(hashref) - update fields with values from hashref
 
-Mason actually compiles components down to Perl/Moose classes, which means that
-many of the tools you use to develop regular classes - profilers, debuggers,
-and the like - can be used with Mason components with slight tweaking.
+=head1 Chapter 1
 
-=head2 The component root and component paths
+=head2 Top-level page components, index files
 
-When you use Mason, you specify a component root that all component files live
-under. Thereafter, any component will be referred to by its I<path> relative to
-the root. For example, if the component root is '/opt/web/comps', a component
-'/opt/web/comps/foo/bar.m' has the path '/foo/bar.m'.
+Here's our home page component, C</index.m>:
 
-=head2 Component file extensions
+    <html>
+      <head>
+        <link rel="stylesheet" href="/static/css/mwiki.css">
+        <title>Mwiki: Home</title>
+      </head>
+      <body>
+  
+        <h3>Welcome to Mwiki.</h3>
+        
+        <form action="/create">
+        Create a node: 
+        <input type=text name=title>
+        <input type=submit>
+        </form>
+        
+        <p>List of current nodes:</p>
+        
+        <& all_nodes.mi &>
+        
+      </body>
+    </html>
 
-By default Mason facilitates and enforces standard file extensions for
-components.
+In general, any component with a C<.m> extension is considered a I<top-level>
+component, that is, it can be reached by an external URL.
+
+index.m is a special path - it will match the URI of its directory, in this
+case '/'.
+
+We have a create node form that submits to /create, and a list of current
+nodes.
+
+Most of this component contains just HTML, which will be output exactly as
+written.  The single piece of special Mason syntax here is
+
+    <& all_nodes.mi &>
+
+This is a I<component call> - it calls another component, whose output is
+inserted in place.
+
+Splitting a page into multiple components has much the same benefits as
+splitting a regular program into multiple subroutines or objects:
+encapsulation, reuse, etc.
+
+=head1 Chapter 2
+
+=head2 Internal components, %-lines, substitution tags, <%init> blocks
+
+Because all_nodes.mi has an ".mi" extension (rather than ".m"), it is an
+I<internal> rather than a top-level component, and cannot be reached by an
+external URL. It can only be reached via a component call from another
+component.
+
+    <ul class="node_list">
+    % foreach my $node (@nodes) {
+      <li>
+        <a href="/node/view?title=<% $node->title %>"><% $node->title %></a>
+      </li>
+    % }
+    </ul>
+    
+    <%init>
+    my @nodes = sort { $a->title cmp $b->title } Mwiki::Node->all();
+    </%init>
+
+Three new pieces of syntax here:
 
 =over
 
-=item .m
+=item Init block
 
-A public component - can be accessed as the main page component
+The C<< <%init> >> block at the bottom specifies a block of Perl code to run
+when this component is first called. In this case it fetches and sorts the list
+of wiki nodes into a lexical variable C<< @nodes >>.
 
-=item .mi
+=item %-lines
 
-A private component - can only be accessed from other components
+The lines
 
-=item .pm
+    % foreach my $node (@nodes) {
+    % }
 
-A public component that contains only Perl code - see L</Pure-perl components>.
+begin with a single '%', and thus are treated as Perl rather than output
+(HTML). %-lines are a good way to wrap for-loops, while-loops, and
+if-statements around portions of the component.
+
+=item Substitution tags
+
+The line
+
+    <a href="/node/view?title=<% $node->title %>"><% $node->title %></a>
+
+shows two substitution tags. The code within C<< <% >> and C<< %> >> is treated
+as a Perl expression, and the result of the expression is output in place.
 
 =back
 
-=head1 BASIC SYNTAX
+The final output of this component will look like:
 
-Here is a simple component example:
+  <ul class="node_list">
+    <li>
+      <a href="/node/view?title=Baseball">Baseball</a>
+    </li>
+    <li>
+      <a href="/node/view?title=Football">Football</a>
+    </li>
+    ...
+  </ul>
 
-    <%perl>
-    my $noun = 'World';
-    my @time = localtime;
-    </%perl>
-    Hello <% $noun %>,
-    % if ( $time[2] < 12 ) {
-    good morning.
-    % } else {
-    good afternoon.
-    % }
+=head1 Chapter 3
 
-After 12 pm, the output of this component is:
+=head2 Attributes, dollar-dot notation, passing arguments to components
 
-    Hello World, good afternoon.
+Now it's time to create the C</node/view.m> component:
 
-This short example demonstrates the three primary "in-line" Perl sections.
-In-line sections are generally embedded within text and execute in the order
-they appear.
+    <%args>
+    $.title
+    </%args>
 
-The parsing rules for these Perl sections are as follows:
+    <html>
+      <head>
+        <link rel="stylesheet" href="/static/css/mwiki.css">
+        <title>Mwiki: <% $.title %></title>
+      </head>
+      <body>
+
+        <& nav_links.mi, title => $title &>
+        <hr>
+        <% $node->content_as_html() %>
+        </hr>
+        <& nav_links.mi, title => $title &>
+        
+      </body>
+    </html>
+
+    <%init>
+    my $node = MyWiki::Node->find($.title)
+        or $m->not_found;
+    </%init>
+
+In lines 1-3 we declare an incoming attribute, 'title'. These lines are
+equivalent to the Moose syntax
+
+    has 'title' => ();
+
+Attributes in a top-level page component take on the values passed in the URL
+query string. e.g. for the URL
+
+    /node/view?title=Baseball
+
+title will be set to 'Baseball'.
+
+Throughout the component, we refer to the title attribute via the expression
+
+    $.title
+
+This not-quite-valid-Perl syntax is translated behind the scenes to
+
+    $self->title
+
+and is one of the rare cases in Mason where we use source filtering to create
+new syntax within Perl code - because we want attributes and method calls to be
+as convenient as possible.  The filter itself is performed by the L<DollarDot
+plugin|Mason::Plugin::DollarDot>, which is in the default plugins list but can
+be omitted if the syntax offends you. :)
+
+On line __, we try to find a node with the specified title. If unsuccessful, we
+call C<< $m->not_found() >>.  This clears anything that might be in the output
+buffer and aborts the request with a 404 HTTP status. This is a convenience
+method provided by the L<PSGIHandler plugin|Mason::Plugin::PSGIHandler> and
+there is a similar method for L<Mason::Plugin::PSGIHandler/redirect>.
+
+On lines __ and __ we call internal component C<< nav_links.mi >>, so as to
+give us an identical set of links on the top and bottom of the node content.
+This time we're passing a name/value argument pair. Note that because this is a
+relative link, Mason will look for the component in the current directory (C<<
+/node >>).
+
+Here's /node/nav_links.mi:
+
+    <%args>
+    $.title => (required => 1);
+    </%args>
+
+    <a href="/node/edit/<% $.title %>">Edit</a> |
+    <a href="/node/delete/<% $.title %>">Delete</a>
+
+Again we have a declaration of attribute C<< title >>, but this time its value
+is coming from the component call. We specify that the attribute is required;
+an error will be thrown if it is omitted.
+
+=head1 Chapter 5
+
+=head2 Templates / content wrapping, autobases, inheritance, method modifiers
+
+C</index.m> and C</node/view.m> have the same outer HTML template, and other
+pages will as well.  It's going to be tedious to repeat this everywhere. And of
+course, we don't have to. We take the common pieces out of the C</index.m> and
+C</node/view.m> and place them into a new component called Base.m:
+
+    <%augment wrap>
+      <html>
+        <head>
+          <link rel="stylesheet" href="/static/css/mwiki.css">
+          <title>Mwiki</title>
+        </head>
+        <body>
+          <% inner() %>
+        </body>
+      </html>
+    </%augment>
+
+When any page in our hierarchy is rendered, Base.m will get control first. It
+will render the upper portion of the template (lines 2-6), then call the
+specific page component, then render the lower portion of the template (lines
+8-9).
+
+How does this magic work?
 
 =over
 
 =item 1.
 
-Blocks of the form <% xxx %> are replaced with the result of evaluating xxx as
-a single Perl expression.  These are often used for variable replacement. such
-as 'Hello, <% $name %>!'. Whitespace after '<%' and before '%>' is required.
+Any component named Base.m is an I<autobase> component. It automatically
+becomes the superclass of any component in its directory and below. Thus,
+C</index.m> and C</node/view.m> both automatically inherit from Base.m.
 
 =item 2.
 
-Lines beginning with a '%' character are treated as Perl. The '%' must be
-followed by at least one whitespace character.
+When Mason dispatches to a page component like C</index.m> or C</node/view.m>,
+it doesn't call its C<main> method directly. Instead, it calls this chain of
+methods:
 
-=item 3.
+    handle -> render -> wrap -> main
 
-Multiline blocks of Perl code can be inserted with the C<< <%perl> >> .. C<<
-</%perl> >> tag. The enclosed text is executed as Perl and the return value, if
-any, is discarded.
-
-The C<< <%perl> >> tag may appear anywhere in the text, and may span any number
-of lines.
-
-=back
-
-=head2 In-line Perl examples
-
-B<% lines>
-
-Most useful for conditional and loop structures - if, while, foreach, etc. - as
-well as side-effect commands like assignments. Whitespace after the '%' is
-required. Examples:
-
-o Conditional code
-
-    % my $ua = $r->header_in('User-Agent');
-    % if ($ua =~ /msie/i) {
-    Welcome, Internet Explorer users
-    ...
-    % } elsif ($ua =~ /mozilla/i) {
-    Welcome, Netscape users
-    ...
-    % }
-
-o HTML list formed from array
-
-    <ul>
-    % foreach $item (@list) {
-    <li><% $item %></li>
-    % }
-    </ul>
-
-o HTML list formed from hash
-
-    <ul>
-    % while (my ($key,$value) = each(%ENV)) {
-    <li>
-    <b><% $key %></b>: <% $value %>
-    </li>
-    % }
-    </ul>
-
-o HTML table formed from list of hashes
-
-    <table>
-    % foreach my $h (@loh) {
-    <tr>
-    <td><% $h->{foo} %></td>
-    <td bgcolor=#ee0000><% $h->{bar} %></td>
-    <td><% $h->{baz} %></td>
-    </tr>
-    % }
-    </table>
-
-B<< <% xxx %> >>
-
-Most useful for printing out variables, as well as more complex expressions. To
-improve readability, always separate the tag and expression with spaces.
-Examples:
-
-  Dear <% $name %>: We will come to your house at <% $address %> in the
-  fair city of <% $city %> to deliver your $<% $amount %> dollar prize!
-
-  The answer is <% ($y+8) % 2 %>.
-
-  You are <% $age < 18 ? 'not' : '' %> permitted to enter this site.
-
-B<< <%perl> xxx </%perl> >>
-
-Useful for Perl blocks of more than a few lines.
-
-=head1 CALLING COMPONENTS
-
-Mason pages often are built not from a single component, but from multiple
-components that call each other in a hierarchical fashion.
-
-To call one component from another, use the <& &> tag:
-
-    <& /path/to/comp.mi, [name=>value, ...] &>
-
-=over
-
-=item comp_path:
-
-The component path. With a leading '/', the path is relative to the component
-root (L<Mason::Params/comp_root>). Otherwise, it is relative to the location of
-the calling component.
-
-=item name => value pairs:
-
-You may specify one or more C<< name => value >> pairs, e.g. S<C<< player =>
-'M. Jordan' >>>. These are passed as attributes to the component.
+By default each method in the chain just calls the next one, so the usual
+behavior is to effectively call C<main>. However, in this case we are
+augmenting the wrap method, which uses the Moose inner/augment call pattern. In
+general, any superclass which augments the wrap method can output content
+before and after its subclasses.
 
 =back
 
-comp_path may be a literal string (quotes optional) or a Perl expression that
-evaluates to a string. To eliminate the need for quotes in most cases, Mason
-employs some magic parsing: If the first character is one of C<[\w/_.]>,
-comp_path is assumed to be a literal string running up to the first comma or
-&>. Otherwise, comp_path is evaluated as an expression.
+C<< <%augment> >> is actually a generic block that can be used with any method,
+though in practice is most often used with C<< wrap >>. There are analagous
+blocks for each of Moose's L<method modifiers|Moose::Manual::MethodModifiers>:
+C<< <%before> >>, C<< <%after> >>, C<< <%around> >> and C<< <%override> >>.
 
-Here are some examples:
+Now, we can remove those boilerplate lines from C</index.m> and
+C</node/view.m>.
 
-    # relative component paths
-    <& topimage.mi &>
-    <& tools/searchbox.mi &>
+=head1 Chapter 6
 
-    # absolute component path
-    <& /shared/masthead.mi, color=>'salmon' &>
+=head2 RESTful URLs and routes
 
-    # this component path MUST have quotes because it contains a comma
-    <& "sugar,eggs.mi", mix=>1 &>
+URLs like
 
-    # variable component path
-    <& $comp &>
+    /node/view?title=Baseball
 
-    # variable component and attributes
-    <& $comp, %args &>
+are somewhat old-school and not well optimized for search engines. It would be
+cooler to use RESTful URLs:
 
-    # you can use arbitrary expression for component path, but it cannot
-    # begin with a letter or number; delimit with () to remedy this
-    <& (int(rand(2)) ? 'thiscomp.mi' : 'thatcomp.mi'), id=>123 &>
+    /node/view/Baseball
 
-Several request methods also exist for calling components.  C<< $m->comp >>
-performs the equivalent action to <& &>:
-
-    $m->comp('/shared/masthead.mi', color=>'salmon');
-
-C<< $m->scomp >> is like the sprintf version of C<< $m->comp >>: it returns the
-component output, allowing the caller to examine and modify it before printing:
-
-    my $masthead = $m->scomp('/shared/masthead.mi', color=>'salmon');
-    $masthead =~ ...;
-    $m->print($masthead);
-
-=head1 ATTRIBUTES
-
-As we saw above, you can pass name/value attributes when calling components.
-Here's how to declare and access them.
-
-=head2 Read-write by default
- 
-By default, Mason uses 'MooseX::HasDefaults::RW' in each component, which makes
-attributes read-write unless stated otherwise. This is not considered best
-practice for general OO programming, but component instances are short-lived
-and not usually accessed outside of their class so we think the convenience is
-warranted.
-
-=head2 Public attributes - C<< <%args> >>
-
-Mason's C<< <%args> >> section is the most convenient way to declare public
-attributes:
+Let's modify C</node/view.m> to accept this kind of URL. To do this, we simply
+replace
 
     <%args>
-    a
-    b => 'default value'
-    c => (isa => 'Str', default => 'something')
+    $.title
     </%args>
 
-This is equivalent to the following Moose syntax (which you can also use):
+with
 
-    <%class>
-    has 'a' => ();
-    has 'b' => (default => 'default value');
-    has 'c' => (isa => 'Str',
-                default => 'something');
-    </%class>
+    <%route /:title>
 
-and as mentioned above there is an implicit "is => 'rw'" in each.
+A I<route> specifies what to do with the remainder of the URL after /view. In
+this case we expect a single path portion that contains the title. The C<<
+<%route> >> tag is one of several ways of defining routes provided by the
+L<Routes plugin|Mason::Plugin::Routes>.
 
-A declared attribute 'foo' can be accessed inside the component via the
-Perl6-ish syntax
+Any matches from the route (in this case C<title>) are passed to the
+component's constructor as attributes. And, a simple C<title> attribute is
+automatically declared if we don't create one explicitly.
 
-    $.foo
+=head1 Chapter 7
 
-which translates directly to
+=head2 Form handling
 
-    $self->foo()
-
-To set the attribute, you must use:
-
-    $self->foo(5);
-
-=head2 Internal attributes - C<< <%shared> >>
-
-The C<< <%shared> >> lets you define attributes that are shared between all the
-methods of the component, but cannot be initialized from the outside. The
-syntax is idental:
-
-    <%shared>
-    d
-    e => 'default value'
-    f => (isa => 'Str', default => 'something')
-    </%shared>
-
-and the translation is nearly identical:
-
-    <%class>
-    has 'd' => (init_arg => 1);
-    has 'e' => (init_arg => 1, default => 'default value');
-    has 'f' => (init_arg => 1,
-                isa => 'Str',
-                default => 'something');
-    </%class>
-
-except that all are declared with C<< init_arg => 1 >> (meaning they can't be
-passed in).
-
-=head2 Comments and blank lines in attribute declarations
-
-You may place a '#' comment at the end of an attribute line or on its own line,
-and you may put blank lines in C<< <%args> >> or << <%shared> >> sections. Both
-are ignored.
-
-    <%args>
-    g   # a comment
-    # another comment
-
-    h
-    </%args>
-
-=head2 Accessing all attributes
-
-C<< $self->args >> will return a hashref of all of the attributes passed to the
-component when it was created.
-
-=head1 INHERITANCE
-
-Because components correspond to classes, each component inherits from (or
-'extends') a superclass. The default superclass for components is
-L<Mason::Component|Mason::Component>, but this may be overriden in two ways:
-the I<extends flag> and I<autobase components>.
-
-=head2 Extends flag
-
-A component can declare its superclass via the C<extends> flag:
-
-    <%flags>
-    extends => '/some/other/component'
-    </%flags>
-
-The path may be absolute as shown above, or relative to the component's path.
-
-Note that including a raw C<extends> keyword in a C<< <%class> >> section will
-not work reliably.
-
-=head2 Autobase components
-
-Autobase components are specially named components that automatically become
-the superclass of all components in their directory and subdirectories. The
-default names are "Base.pm" and "Base.m" - you can customize this with the
-C<autobase_names> parameter. (In Mason 1 these were called autohandlers.)
-
-For example, in this directory hierarchy,
-
-    Base.pm
-    main.m
-    colors/
-       red.m
-       blue.m
-    flavors/
-       Base.m
-       vanilla.m
-       chocolate.m
-
-assuming that no components have C<extends> flags,
-
-=over
-
-=item *
-
-/Base.pm is the superclass of /main.m, /colors/red.m, /colors/blue.m, and
-/flavors/Base.m.
-
-=item *
-
-/flavors/Base.m is the superclass of vanilla.m and chocolate.m.
-
-=back
-
-If C<Base.pm> and C<Base.m> appear in the same directory, they will both be
-recognized; everything below will inherit from C<Base.m>, and C<Base.m> will
-inherit from C<Base.pm>. This might be useful for separating L<Content
-wrapping> from shared method definitions, for example.
-
-=head1 THE PAGE COMPONENT
-
-The first component invoked in a Mason request is called the I<page> component.
-
-=head2 Determining the page component
-
-If you called C<< $interp->run >> directly, then the page component is
-determined by the first argument to C<run>:
-
-    $interp->run('/company/about');
-
-In a web environment, the page component will be determined by the URL and
-perhaps controller logic in your web framework.
-
-=head2 The dispatch, render and wrap methods
-
-Once the page component has been determined, Mason creates an instance of that
-component and calls C<dispatch> on it. C<dispatch> is a good place to do
-processing before content rendering starts: analyze the path_info, implement
-security restrictions, forward control to another page, etc.
-
-The default C<dispatch> calls C<render>, the default C<render> method calls
-C<wrap>, and the default C<wrap> calls C<main>, which executes the main body of
-the component.
-
-=head2 Content wrapping
-
-You can use the C<< <%augment wrap> >> modifier in superclasses to wrap content
-before and/or after the subclass content. This is useful for creating cascading
-web page templates, for example:
-
-    # /Base.m - top-most template
-    #
-    <%augment wrap>
-      <html>
-        <body>
-          <% inner() %>
-          <div class="footer">Copyright 2010 McHuffy Inc.</div>
-        </body>
-      </html>
-    </%augment>
-    
-    # /product/Base.m - product-specific template
-    #
-    <%augment wrap>
-      <h2>Products</h2>
-      <div class="products_body">
-        <% inner() %>
-      </div>
-    </%augment>
-    
-    # /product/sales/Base.pm - utility methods, no additional template
-    #
-    <%method some_utility_method>
-       ...
-    </%method>
-    
-    # /product/sales/display.m:
-    #
-    <b>Product page content goes here</b>
-    ...
-
-When Mason calls render on /product/sales/display.m, its content will be
-wrapped by two templates: the outermost in /Base.pm, and the next one in
-/product/Base.pm. C<< inner >> passes control to the next inner component. The
-final output will be (with indentation added for readability):
-
-      <html>
-        <body>
-          <h2>Products</h2>
-          <div class="products_body">
-            <b>Product page content goes here</b>
-            ...
-          </div>
-          <div class="footer">Copyright 2010 McHuffy Inc.</div>
-        </body>
-      </html>
-
-Note that neither /product/sales/Base.pm nor /product/sales/display.m need to
-define a C<wrap> method or C<< <%augment wrap> >> modifier. A default wrap will
-be defined automatically and will do the right thing.
-
-If you want a page component to ignore the wrappers above it:
-
-    %% method wrap { $.main() }
-
-=head2 Accessing the page component
-
-You can access the page component with C<< $m->page() >>. For example, to set
-the page's 'title' from any component:
-
-    $m->page->title('The title');
-
-=head1 PERL BLOCKS AND COMPONENTS
-
-=head2 <%init>
-
-This section contains initialization code that executes as soon as the
-component is called. Technically an C<< <%init> >> block is equivalent to a C<<
-<%perl> >> block at the beginning of the C<< main >> method, but there can be
-an aesthetic advantage to placing this block at the end rather than the
-beginning.
-
-You can also include an C<< <%init> >> block inside any C<< <%method> >>; it is
-equivalent to a C<< <%perl> >> block at the beginning of the method.
-
-=head2 <%class>
-
-This code executes once when the component is loaded, in the main body of the
-class outside of any methods. This is the place to use modules, declare
-attributes, and do other things on a class level.
-
-=head2 Pure-perl components
-
-A component with a ".pm" extension is treated as if its entire content was
-surrounded by <%class> tags. You do not need to (and are not allowed to)
-include Mason tags in this component, and it will not produce any output if
-called. This is just a way of defining a class that other components can easily
-interact with and extend. Some applications include: controller logic, web form
-handlers, and L<autobase components|Autobase components>.
-
-=head1 METHODS
-
-Components are compiled to Moose classes. By default a component has a single
-method, 'main', which contains all of the HTML and Perl in the main body of the
-component, but you can add as many other methods as you like. Methods that
-output HTML can be added via the C<< <$method> >> section; these methods
-automatically have access to C<$self> and C<$m>.
-
-    <%method leftcol>
-      <table><tr>
-        <td><% $foo %></td>
-        ...
-      </tr></table>
-    </%method>
-
-    ...
-
-    <% # call leftcol method and insert HTML here %>
-    <% $self->leftcol %>
-
-Methods can also take argument lists:
-
-    <%method list ($style, $items)>
-    <ul style="<% $style %>">
-    % foreach my $item (@$items) {
-    ...
-    % }
-    </ul>
-    </%method>
-
-Pure-Perl methods that return a value can be added within the << <%class> >>
-section.
-
-    <%class>
-    method multiply ($a, $b) {
-        return $a * $b;
-    }
-    </%class>
-
-    ...
+Here's C</node/edit.m>:
 
     <%init>
-    my $value = $self->multiply(5, 6);
+    my $node = MyWiki::Node->find($.title)
+        or $m->not_found;
     </%init>
-
-Note that we are using L<Method::Signatures::Simple|Method::Signatures::Simple>
-to provide the C<method> keyword and argument lists; this is used throughout
-Mason internals as well. If you prefer straight-up Perl subroutines:
-
-    <%class>
-    sub multiply {
-        my ($self, $a, $b) = @_;
-        return $a * $b;
-    }
-    </%class>
-
-=head1 COMMENTS
-
-There are several ways to place comments in components, i.e. arbitrary text
-that is ignored by the parser.
-
-=head2 <%doc>
-
-=head2 <% # comment... %>
-
-A C<< <% %> >> tag is considered a comment if all of its lines are either
-whitespace, or begin with a '#' optionally preceded by whitespace. For example,
-
-    <% # This is a single-line comment %>
-
-    <%
-       # This is a
-       # multi-line comment
-    %>
-
-=head2 %# comment
-
-Because a line beginning with C<%> is treated as Perl, C<%#> automatically
-works as a comment. However we prefer the C<< <% # comment %> >> form over C<<
-%# >>, because it stands out a little more as a comment and because it is more
-flexible with regards to preceding whitespace.
-
-=head2 % if (0) { }
-
-Anything between these two lines
-
-   % if (0) {
-   ...
-   % }
-
-will be skipped by Mason, including component calls.  While we don't recomend
-this for comments per se, it is a useful notation for "commenting out" code
-that you don't want to run.
-
-=head2 HTML/XML/... comments
-
-HTML and other markup languages will have their own comment markers, for
-example C<< <!-- --> >>. Note two important differences with these comments
-versus the above comments:
-
-=over
-
-=item *
-
-They will be sent to the client and appear in the source of the page.
-
-=item *
-
-They do not block component calls and other code from running, so don't try to
-use them to comment out code!
-
-   <!-- Oops, the code below will still run
-      <& /shared/expensive.mi &>
-   -->
-
-=back
-
-=head1 OTHER SYNTAX
-
-=head2 <%flags>
-
-Specifies flags that affect the compilation of the component. e.g.
-
-    <%flags>
-    extends => '/foo/bar'
-    </%flags>
-
-C<extends> is currently the only flag.
-
-=head2 <%text>
-
-Text in this section is printed as-is with all Mason syntax ignored. This is
-useful, for example, when documenting Mason itself from a component:
-
-    <%text>
-    % This is an example of a Perl line.
-    <% This is an example of an expression block. %>
-    </%text>
-
-This works for almost everything, but doesn't let you output C<< </%text> >>
-itself! When all else fails, use C<< $m->print >>:
-
-    % $m->print('The tags are <%text> and </%text>.');
-
-=head2 Backslash at end of line
-
-A backslash (\) at the end of a line suppresses the newline. In HTML
-components, this is mostly useful for fixed width areas like C<< <pre> >> tags,
-since browsers ignore white space for the most part. An example:
-
-    <pre>
-    foo
-    % if (1) {
-    bar
-    % }
-    baz
-    </pre>
-
-outputs
-
-    foo
-    bar
-    baz
-
-because of the newlines on lines 2 and 4. (Lines 3 and 5 do not generate a
-newline because the entire line is taken by Perl.) To suppress the newlines:
-
-    <pre>
-    foo\
-    % if (1) {
-    bar\
-    % }
-    baz
-    </pre>
-
-which prints
-
-    foobarbaz
-
-=head1 FILTERS
-
-Syntax of the form
-
-    <% filter { %>
-    ...
-    </%>
-
-applies a I<filter> to the content between the tags. For example:
-
-    <% sub { uc(shift) } { %>
-    hello world
-    </%>
-
-outputs 'HELLO WORLD', and
-
-    <% $.Cache('5 min') { %>
-    # ... some computed output ...
-    </%>
-
-caches the computed output for 5 minutes.
-
-See L<Mason::Filters|Mason::Filters> for the set of built-in filters and
-instructions on creating your own filters.
-
-=head1 LOGGING
-
-Mason uses L<Log::Any|Log::Any> to log various events, such as the start and
-end of each request and each component call. You can also log to C<Log::Any>
-from a component with the C<$m-E<gt>log> method. e.g.
-
-    $m->log->error("Something bad happened!");
-    $m->log->debugf("Arguments for '%s' were '%s'", $func, \%args)
-        if $m->log->is_debug;
-
-See C<Log::Any::Adapter> for how to direct these logs to an output of your
-choice.
-
-=head1 AUTHORS
-
-Jonathan Swartz <swartz@pobox.com>
-
-=cut
