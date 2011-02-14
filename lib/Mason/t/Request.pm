@@ -38,13 +38,13 @@ sub test_current_comp_class : Test(1) {
     );
 }
 
-sub test_count : Test(3) {
+sub test_id : Test(3) {
     my $self = shift;
     $self->setup_dirs;
-    $self->add_comp( path => '/count.m', src => 'count=<% $m->count %>' );
-    is( $self->interp->run('/count')->output, "count=0" );
-    is( $self->interp->run('/count')->output, "count=1" );
-    is( $self->interp->run('/count')->output, "count=2" );
+    $self->add_comp( path => '/id.m', src => 'id=<% $m->id %>' );
+    is( $self->interp->run('/id')->output, "id=0" );
+    is( $self->interp->run('/id')->output, "id=1" );
+    is( $self->interp->run('/id')->output, "id=2" );
 }
 
 sub test_log : Test(2) {
@@ -86,7 +86,7 @@ sub test_subrequest : Test(4) {
     $self->add_comp(
         path => '/subreq/other.m',
         src  => '
-count=<% $m->count %>
+id=<% $m->id %>
 <% $m->page->cmeta->path %>
 <% $m->request_path %>
 <% Mason::Util::dump_one_line($m->request_args) %>
@@ -98,40 +98,40 @@ count=<% $m->count %>
 This should not get printed.
 <%perl>$m->go("/subreq/other", foo => 5);</%perl>',
         expect => '
-count=1
+id=1
 /subreq/other.m
 /subreq/other
 {foo => 5}
 ',
     );
-    $self->setup_interp;    # reset request count
+    $self->setup_interp;    # reset request id
     $self->test_comp(
         path => '/subreq/visit.m',
         src  => '
 begin
-count=<% $m->count %>
+id=<% $m->id %>
 <%perl>$m->visit("/subreq/other", foo => 5);</%perl>
-count=<% $m->count %>
+id=<% $m->id %>
 end
 ',
         expect => '
 begin
-count=0
-count=1
+id=0
+id=1
 /subreq/other.m
 /subreq/other
 {foo => 5}
-count=0
+id=0
 end
 ',
     );
     my $buf;
-    $self->setup_interp;    # reset request count
+    $self->setup_interp;    # reset request id
     my $result = $self->interp->run( { out_method => \$buf }, '/subreq/go' );
     is( $result->output, '', 'no output' );
     is(
         $buf, '
-count=1
+id=1
 /subreq/other.m
 /subreq/other
 {foo => 5}

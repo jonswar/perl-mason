@@ -21,10 +21,10 @@ has 'out_method' => ( isa => 'Mason::Types::OutMethod', default => sub { $defaul
 # Derived attributes
 #
 has 'buffer_stack'       => ( init_arg => undef, default => sub { [] } );
-has 'count'              => ( init_arg => undef );
 has 'declined'           => ( init_arg => undef, is => 'rw' );
 has 'declined_paths'     => ( default => sub { {} } );
 has 'go_result'          => ( init_arg => undef );
+has 'id'                 => ( init_arg => undef );
 has 'output'             => ( init_arg => undef, default => '' );
 has 'page'               => ( init_arg => undef );
 has 'path_info'          => ( init_arg => undef, default => '' );
@@ -44,7 +44,7 @@ method current_request () { $current_request }
 
 method BUILD ($params) {
     $self->{orig_request_params} = $params;
-    $self->{count}               = $self->{interp}->_incr_request_count;
+    $self->{id}                  = $self->{interp}->_incr_request_id;
 }
 
 #
@@ -522,11 +522,6 @@ The C<< <& &> >> tag provides a shortcut for C<$m-E<gt>comp>.
 Makes the component I<path> absolute if necessary, and calls L<Interp
 comp_exists|Mason::Interp/comp_exists> to determine whether a component exists
 at that path.
-
-=item count ()
-
-Returns the number of this request for the interpreter, a monotonically
-increasing integer starting at 0.
 
 =item current_comp_class ()
 

@@ -18,7 +18,7 @@ use Mason::Moose;
 use autodie qw(:all);
 
 my $default_out = sub { print( $_[0] ) };
-my $interp_count = 0;
+my $next_interp_id = 0;
 
 # Passed attributes
 #
@@ -44,14 +44,14 @@ has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
 has 'allowed_globals_hash'  => ( init_arg => undef, lazy_build => 1 );
 has 'autobase_regex'        => ( init_arg => undef, lazy_build => 1 );
 has 'code_cache'            => ( init_arg => undef, lazy_build => 1 );
-has 'count'                 => ( init_arg => undef, default => sub { $interp_count++ } );
 has 'distinct_string_count' => ( init_arg => undef, default => 0 );
 has 'globals_package'       => ( init_arg => undef, lazy_build => 1 );
+has 'id'                    => ( init_arg => undef, default => sub { $next_interp_id++ } );
 has 'match_request_path'    => ( init_arg => undef, lazy_build => 1 );
 has 'named_block_regex'     => ( init_arg => undef, lazy_build => 1 );
 has 'named_block_types'     => ( init_arg => undef, lazy_build => 1 );
+has 'next_request_id'       => ( init_arg => undef, default => 0 );
 has 'pure_perl_regex'       => ( lazy_build => 1 );
-has 'request_count'         => ( init_arg => undef, default => 0 );
 has 'request_params'        => ( init_arg => undef );
 has 'top_level_regex'       => ( lazy_build => 1 );
 has 'unnamed_block_regex'   => ( init_arg => undef, lazy_build => 1 );
@@ -96,7 +96,7 @@ method _build_allowed_globals_hash () {
 }
 
 method _build_globals_package () {
-    return "Mason::Globals" . $self->count;
+    return "Mason::Globals" . $self->id;
 }
 
 method _build_ignore_file_regex () {
@@ -120,7 +120,7 @@ method _build_code_cache () {
 }
 
 method _build_component_class_prefix () {
-    return "MC" . $self->count;
+    return "MC" . $self->id;
 }
 
 method _build_data_dir () {
@@ -666,8 +666,8 @@ method _flush_load_cache () {
     Memoize::flush_cache('load');
 }
 
-method _incr_request_count () {
-    return $self->{request_count}++;
+method _incr_request_id () {
+    return $self->{request_id}++;
 }
 
 method _make_request () {
