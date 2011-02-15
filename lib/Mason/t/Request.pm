@@ -80,9 +80,9 @@ sub test_page : Test(1) {
 sub test_subrequest : Test(4) {
     my $self = shift;
 
-    # call setup_interp each time to reset request count
-    #
-    $self->setup_interp;
+    my $reset_id = sub { Mason::Request->_reset_next_id };
+
+    $reset_id->();
     $self->add_comp(
         path => '/subreq/other.m',
         src  => '
@@ -104,7 +104,7 @@ id=1
 {foo => 5}
 ',
     );
-    $self->setup_interp;    # reset request id
+    $reset_id->();
     $self->test_comp(
         path => '/subreq/visit.m',
         src  => '
@@ -126,7 +126,7 @@ end
 ',
     );
     my $buf;
-    $self->setup_interp;    # reset request id
+    $reset_id->();
     my $result = $self->interp->run( { out_method => \$buf }, '/subreq/go' );
     is( $result->output, '', 'no output' );
     is(

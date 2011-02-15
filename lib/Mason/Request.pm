@@ -402,6 +402,11 @@ method _request_buffer () {
     $self->{buffer_stack}->[0];
 }
 
+method _reset_next_id () {
+                                                             # for testing
+    $next_id = 0;
+}
+
 __PACKAGE__->meta->make_immutable();
 
 1;
