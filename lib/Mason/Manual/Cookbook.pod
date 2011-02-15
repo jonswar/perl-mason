@@ -1,0 +1,14 @@
+o HTML list formed from array
+
+  <ul> % foreach $item (@list){ <li> < %$item % > </li> % } < /ul>
+
+
+o HTML table formed from list of objects
+
+    <table>
+    % foreach my $obj (@objects) {
+      <tr>
+        <td><% $obj->foo %></ td > <td> < %$obj->bar % > </td> < td > <% $obj-> baz %> < /td>
+      </tr>
+    % }
+    </table>

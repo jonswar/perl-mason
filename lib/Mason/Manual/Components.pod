@@ -1,0 +1,359 @@
+
+=head1 DESCRIPTION
+
+=head1 COMPONENT FILES
+
+=head2 The component root and component paths
+
+When you use Mason, you specify a component root that all component files live
+under. Thereafter, any component will be referred to by its virtual I<path>
+relative to the root. For example, if the component root is '/opt/web/comps', a
+component '/opt/web/comps/foo/bar.m' has the path '/foo/bar.m'.
+
+=head2 Component file extensions
+
+By default Mason facilitates and enforces standard file extensions for
+components.
+
+=over
+
+=item .m - top-level component
+
+A top-level component can serve as the first component in a request.
+
+=item .mi - internal component
+
+An internal component can only be accessed from other components.
+
+=item .pm - pure-perl component
+
+A component with a ".pm" extension is treated as if its entire content was
+surrounded by C<< <%class> >> tags. You do not need to (and are not allowed to)
+include Mason tags in this component, and it will not produce any output if
+called. This is just a way of defining a class that other components can easily
+interact with and extend. Some applications include: controller logic, web form
+handlers, and L<autobase components|Autobase components>.
+
+=back
+
+=head1 ATTRIBUTES
+
+You can declare attributes in components and pass them when calling components.
+
+=head2 Read-write by default
+ 
+L<Mason::Component::Moose> imports L<MooseX::HasDefaults::RW> into all
+components, which makes attributes read-write unless stated otherwise. This is
+not considered best practice for general OO programming, but component
+instances are short-lived and not usually accessed outside of their class so we
+feel the convenience is warranted.
+
+=head2 Incoming attributes - C<< <%args> >>
+
+The C<< <%args> >> block is the most convenient way to declare incoming
+attributes:
+
+    <%args>
+    a
+    b => 'default value'
+    c => (isa => 'Str', default => 'something')
+    </%args>
+
+This is equivalent to the following Moose syntax (which you can also use):
+
+    <%class>
+    has 'a' => ();
+    has 'b' => (default => 'default value');
+    has 'c' => (isa => 'Str',
+                default => 'something');
+    </%class>
+
+and as mentioned above there is an implicit "is => 'rw'" in each.
+
+A declared attribute 'foo' can be accessed inside the component via the
+Perl6-ish syntax
+
+    $.foo
+
+which is transformed by L<DollarDot|Mason::Plugin::DollarDot> to
+
+    $self->foo
+
+To set the attribute, you must use:
+
+    $self->foo(5);
+
+unless you're using L<LvalueAttributes|Mason::Plugin::LvalueAttributes>, in
+which case you can say
+
+    $.foo = 5;
+
+=head2 Internal attributes - C<< <%shared> >>
+
+The C<< <%shared> >> block lets you define attributes that are shared between
+all the methods of the component, but cannot be initialized from the outside.
+The syntax is idental:
+
+    <%shared>
+    d
+    e => 'default value'
+    f => (isa => 'Str', default => 'something')
+    </%shared>
+
+and the translation is nearly identical:
+
+    <%class>
+    has 'd' => (init_arg => 1);
+    has 'e' => (init_arg => 1, default => 'default value');
+    has 'f' => (init_arg => 1,
+                isa => 'Str',
+                default => 'something');
+    </%class>
+
+except that all are declared with C<< init_arg => 1 >> (meaning they can't be
+passed in).
+
+=head2 Comments and blank lines in attribute declarations
+
+You may place a '#' comment at the end of an attribute line or on its own line,
+and you may put blank lines in C<< <%args> >> or << <%shared> >> sections. Both
+are ignored.
+
+    <%args>
+    g   # a comment
+    # another comment
+
+    h
+    </%args>
+
+=head2 Accessing all attributes
+
+C<< $self->args >> will return a hashref of all of the attributes passed to the
+component when it was created.
+
+=head1 METHODS
+
+The base component class, L<Mason::Component>, has but a few built-in methods:
+handle, render, wrap, main, m, and cmeta.
+
+The C<main> method contains the mix of HTML and Perl in the main part of the
+component.
+
+You can add other methods that output HTML via the C<< <$method> >> section;
+these methods automatically have access to C<$self> and C<$m>.
+
+    <%method leftcol>
+      <table><tr>
+        <td><% $foo %></td>
+        ...
+      </tr></table>
+    </%method>
+
+    ...
+
+    <% # call leftcol method and insert HTML here %>
+    <% $self->leftcol %>
+
+Methods can also take argument lists:
+
+    <%method list ($style, $items)>
+    <ul style="<% $style %>">
+    % foreach my $item (@$items) {
+    ...
+    % }
+    </ul>
+    </%method>
+
+Both C<main> and other methods defined with C<< <%method> >> automatically get
+a C<< return undef >> at their end, so that they don't accidentally return
+values.
+
+Pure-Perl methods that return a value can be added within the << <%class> >>
+section.
+
+    <%class>
+    method multiply ($a, $b) {
+        return $a * $b;
+    }
+    </%class>
+
+    ...
+
+    <%init>
+    my $value = $self->multiply(5, 6);
+    </%init>
+
+Note that L<Method::Signatures::Simple> provides the C<method> keyword and
+argument lists; this is used throughout Mason internals as well. If you prefer
+straight-up Perl subroutines:
+
+    <%class>
+    sub multiply {
+        my ($self, $a, $b) = @_;
+        return $a * $b;
+    }
+    </%class>
+
+=head1 INHERITANCE
+
+Each component class naturally inherits from (or 'extends') a superclass. The
+default superclass for components is L<Mason::Component|Mason::Component>, but
+this may be overriden in two ways: the I<extends flag> and I<autobase
+components>.
+
+=head2 Extends flag
+
+A component can declare its superclass via the C<extends> flag:
+
+    <%flags>
+    extends => '/some/other/component'
+    </%flags>
+
+The path may be absolute as shown above, or relative to the component's path.
+
+Note that including a raw C<extends> keyword in a C<< <%class> >> section will
+not work reliably.
+
+=head2 Autobase components
+
+Autobase components are specially named components that automatically become
+the superclass of all components in their directory and subdirectories. The
+default names are "Base.pm" and "Base.m" - you can customize this with the
+C<autobase_names> parameter.
+
+For example, in this directory hierarchy,
+
+    Base.pm
+    main.m
+    colors/
+       red.m
+       blue.m
+    flavors/
+       Base.m
+       vanilla.m
+       chocolate.m
+
+assuming that no components have C<extends> flags,
+
+=over
+
+=item *
+
+/Base.pm is the superclass of /main.m, /colors/red.m, /colors/blue.m, and
+/flavors/Base.m.
+
+=item *
+
+/flavors/Base.m is the superclass of vanilla.m and chocolate.m.
+
+=back
+
+If C<Base.pm> and C<Base.m> appear in the same directory, they will both be
+recognized; everything below will inherit from C<Base.m>, and C<Base.m> will
+inherit from C<Base.pm>. This might be useful for separating L<Content
+wrapping> from shared method definitions, for example.
+
+=head1 GENERATED CLASS
+
+While it isn't strictly necessary to understand how Mason generates component
+classes, it can be helpful, especially for troubleshooting unexpected component
+behavior.
+
+=head2 Object files
+
+Mason writes the generated class into an I<object file>, located in
+
+    <mason_data_directory>/obj/<component_path>.mobj
+
+For example if your L<data directory|Mason::Interp/data_dir> is
+F</home/myapp/data> and the component path is F</foo/bar.m>, the corresponding
+object file will be
+
+    /home/myapp/data/obj/foo/bar.m.mobj
+
+The object file is rewritten whenever Mason detects a change in the source
+file.
+
+Object files aren't generated in a particularly clean way, so if you're going
+to be peeking at them, consider using the L<TidyObjectfiles
+plugin|Mason::Plugin::TidyObjectfiles>.
+
+=head2 Class name
+
+The class name is determined at load time by prepending the
+C<Mason::Interp/component_class_prefix> to the component path, which slashes
+replaced with '::'. Two different Interp objects loading the same object file
+will thus create two separate classes.
+
+=head2 A simple example
+
+Here's a simple component:
+
+    Hello world! The local time is <% scalar(localtime) %>.
+
+and here's the class that gets generated for it, filtered with
+C<TidyObjectFiles>:
+
+     1  use Mason::Component::Moose;
+     2  our ( $m, $_m_buffer );
+     3  *m         = \$Mason::Request::current_request;
+     4  *_m_buffer = \$Mason::Request::current_buffer;
+     5  sub _inner { inner() }
+     6  my $_class_cmeta;
+     7  
+     8  method _set_class_cmeta ($interp) {
+     9      $_class_cmeta = $interp->component_class_meta_class->new(
+    10          'class'        => CLASS,
+    11          'dir_path'     => '/',
+    12          'interp'       => $interp,
+    13          'is_top_level' => '1',
+    14          'object_file'  => __FILE__,
+    15          'path'         => '/hi.m',
+    16          'source_file'  => '/home/myapp/comps/hi.m',
+    17      );
+    18  }
+    19  sub _class_cmeta { $_class_cmeta }
+    20  
+    21  method main {
+    22  #line 1 "/home/myapp/comps/hi.m"
+    23      $$_m_buffer .= 'Hi there! The time is ';
+    24  #line 1 "/home/myapp/comps/hi.m"
+    25      for ( scalar( scalar(localtime) ) ) { $$_m_buffer .= $_ if defined }
+    26  #line 1 "/home/myapp/comps/hi.m"
+    27      $$_m_buffer .= '.
+    28  ';
+    29  
+    30      return;
+    31  }
+
+The above is as of time of writing; it may well be out of date with the current
+code generator, but it is accurate enough for explanatory purposes.
+
+Line 1 brings in L<Mason::Component::Moose>, which imports L<Moose>, L<CLASS>,
+L<Method::Signatures::Simple> and other things into the current package.
+
+Lines 2-4 defines two dynamic globals, C<$m> (the current request) and
+C<$_m_buffer> (the current output buffer). These are aliased so that they can
+be changed for every component from a single place. See also
+L<Mason::Manual::ComponentGlobals>.
+
+Lines 6-19 create the L<Mason::Component::ClassMeta> object returned from
+L<Mason::Component/cmeta>.
+
+Lines 21-31 contain the L<Mason::Component/main> method, which encapsulates all
+the output and Perl statements in the component that aren't explicitly inside a
+C<< <%method> >> or C<< <%class> >> block.
+
+Lines 22, 24, and 26 contain '#line' statements which make error messages
+appear to come from the source file rather than the object file (and hence more
+useful). This can be disabled with L<Mason::Interp/no_source_line_numbers>.
+
+Lines 23, 25, and 27 output plain strings or the results of code by appending
+them to the current output buffer. The current output buffer can change within
+a request, for example when L<Mason::Request/capture> or
+L<Mason::Request/scomp> is called.
+
+Two things that would be in a normal class are missing above: the package/class
+name and the superclass. These are added dynamically when the object file is
+evaluated.
+

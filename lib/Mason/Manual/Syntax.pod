@@ -5,6 +5,8 @@ Mason::Manual::Syntax - Mason component syntax reference
 
 =head1 DESCRIPTION
 
+A reference for all the syntax that can be used in components.
+
 =head1 SUBSTITUTION TAGS
 
 =head2 <% I<expr> %>
@@ -232,13 +234,14 @@ C<@_>.
 
 =head2 <%before I<name>>
 
+=head2 <%override I<name>>
+
 Modifies a method with the specified I<name>. See
-L<Moose::Manual::MethodModifiers|Moose::Manual::MethodModifiers> for a
-description of each modifier.
+L<Moose::Manual::MethodModifiers> for a description of each modifier.
 
 C<$self> is automatically shifted off for the body of C<< <%after> >>, C<<
-<%augment> >>, and C<< <%before> >>. C<$orig> and C<$self> are automatically
-shifted off for the body of C<< <%around> >>.
+<%augment> >>, C<< <%before> >> and C< <%override> >. C<$orig> and C<$self> are
+automatically shifted off for the body of C<< <%around> >>.
 
     <%after render>
        <% # Add analytics line after everything has rendered %>
@@ -284,6 +287,47 @@ generates
     </tr>
 
 See L<Mason::Manual::Filters> for more information on filters.
+
+=head1 CALLING COMPONENTS
+
+=head2 <& I<path>, I<args> &>
+
+    <& /path/to/comp.mi, name=>value, ... &>
+
+I<path> is an absolute or relative component path. If the latter, it is
+considered relative to the location of the current component. I<args> is a list
+of one or more name/value pairs.
+
+The path may be a literal string (quotes optional) or a Perl expression that
+evaluates to a string. To eliminate the need for quotes in most cases, Mason
+employs some magic parsing: If the first character is one of C<[\w/_.]>,
+comp_path is assumed to be a literal string running up to the first comma or
+&>. Otherwise, comp_path is evaluated as an expression.
+
+Here are some examples:
+
+    # relative component paths
+    <& topimage.mi &>
+    <& tools/searchbox.mi &>
+
+    # absolute component path
+    <& /shared/masthead.mi, color=>'salmon' &>
+
+    # this component path MUST have quotes because it contains a comma
+    <& "sugar,eggs.mi", mix=>1 &>
+
+    # variable component path
+    <& $comp &>
+
+    # variable component and attributes
+    <& $comp, %args &>
+
+    # you can use arbitrary expression for component path, but it cannot
+    # begin with a letter or number; delimit with () to remedy this
+    <& (int(rand(2)) ? 'thiscomp.mi' : 'thatcomp.mi'), id=>123 &>
+
+You can also call components with the L<Mason::Request/comp> and
+L<Mason::Request/scomp> methods.
 
 =head1 COMMENTS
 

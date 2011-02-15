@@ -76,7 +76,7 @@ A new instance of the component class is created whenever a component is called
 - whether via a top level request, C<< <& &> >> tags, or an << $m->comp >>
 call.
 
-We leave this class as devoid of built-in methods as possible, alllowing you to
+We leave this class as devoid of built-in methods as possible, allowing you to
 create methods in your own components without worrying about name clashes.
 
 =head1 STRUCTURAL METHODS

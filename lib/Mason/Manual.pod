@@ -1,0 +1,22 @@
+
+=head1 NAME
+
+Mason::Manual
+
+=head1 DESCRIPTION
+
+Mason is a powerful Perl-based templating system, designed to generate dynamic
+content from templates.
+
+Mason can be used for processing any kind of content: HTML, XML, plain text,
+etc.  However, it is most often used for generating web pages, so this
+documentation will tend to focus on that use-case. When reading, you can
+mentally replace "page" with "any kind of document", and "HTML" with "any kind
+of content".
+
+Unlike some other templating systems, Mason is proudly Perl-centric and does
+not attempt to define an alternate, "easier" language. It defines a thin layer
+of syntax and features to facilitate template creation, and leaves everything
+else to Perl. That said, Mason does allow some separation of Perl and content
+to make it easier to collaborate with non-Perl developers.
+
