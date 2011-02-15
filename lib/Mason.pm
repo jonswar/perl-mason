@@ -1,9 +1,6 @@
 package Mason;
-use Carp;
-use List::Util qw(first);
 use Mason::Interp;
 use Mason::PluginManager;
-use Moose;
 use strict;
 use warnings;
 
@@ -26,10 +23,70 @@ sub new {
     return $interp_class->new( mason_root_class => $class, plugins => \@plugins, %params );
 }
 
-my ( %apply_plugins_cache, %final_subclass_seen );
-
 1;
 
 __END__
 
 =pod
+
+=head1 NAME
+
+Mason - Powerful, high-performance templating for the web and beyond
+
+=head1 SYNOPSIS
+
+    % my $name = "Mason";
+    Hello world! Welcome to <% $name %>.
+
+=head1 DESCRIPTION
+
+Mason is a powerful Perl-based templating system, designed to generate dynamic
+content of all kinds.
+
+Unlike many templating systems, Mason does not attempt to invent an alternate,
+"easier" syntax for templates.  It provides a set of syntax and features
+specific to template creation, but underneath it is still clearly and proudly
+recognizable as Perl.
+
+Mason is most often used for generating web pages. It can handle web requests
+directly via PSGI, or act as the view layer for a web framework such as
+Catalyst or Dancer.
+
+All documentation is indexed at L<Mason::Manual>.
+
+=head1 HISTORY
+
+Mason has been on CPAN since 1998, under the name L<HTML::Mason>. This is the
+first major version in ten years.
+
+=head1 SUPPORT
+
+The mailing list is L<mason-users@lists.sourceforge.net>. You must be
+subscribed to send a message. To subscribe, visit
+L<https://lists.sourceforge.net/lists/listinfo/mason-users>.
+
+You can also visit us at C<#mason> on L<irc://irc.perl.org/#mason>.
+
+Bugs and feature requests will be tracked at RT:
+
+    http://rt.cpan.org/NoAuth/Bugs.html?Dist=Mason
+    bug-mason@rt.cpan.org
+
+The latest source code can be browsed and fetched at:
+
+    http://github.com/jonswar/perl-mason
+    git clone git://github.com/jonswar/perl-mason.git
+
+The official Mason website is L<http://www.masonhq.com/>, however it contains
+mostly information about Mason 1 (HTML::Mason). We're not sure what the future
+of the website will be wrt Mason 2.
+
+=head1 ACKNOWLEDGEMENTS
+
+Thanks to Stevan Little and the entire L<Moose> team for the general
+awesomeness of Moose, which motivated me to create a second version of Mason
+years after I thought I was done.
+
+Thanks to Tatsuhiko Miyagawa and the L<PSGI/Plack|http://plackperl.org/> team
+for giving the Perl web application world a massive shot of adrenaline.
+
