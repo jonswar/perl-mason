@@ -140,7 +140,7 @@ method _build_named_block_regex () {
 }
 
 method _build_named_block_types () {
-    return [qw(after augment around before filter method)];
+    return [qw(after augment around before filter method override)];
 }
 
 method _build_pure_perl_regex () {

@@ -236,7 +236,7 @@ C<@_>.
 
 =head2 <%override I<name>>
 
-Modifies a method with the specified I<name>. See
+Modifies a content-producing method with the specified I<name>. See
 L<Moose::Manual::MethodModifiers> for a description of each modifier.
 
 C<$self> is automatically shifted off for the body of C<< <%after> >>, C<<
@@ -261,6 +261,11 @@ automatically shifted off for the body of C<< <%around> >>.
         <% $self->$orig() %>
       </div>
     </%around>
+
+    <%override navbar>
+      <% super() %>
+      <a href="extra">extra</a>
+    </%override>
 
 =head2 <%filter I<name> I<params>>
 

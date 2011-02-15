@@ -43,12 +43,19 @@ before method call
 after method call
 </%after>
 
+<%override render>
+start override
+<% super() %>
+end override
+</%override>
+
 <%method method_call_with_arglist ($foo, $bar)>
 <% $foo %> - <% $bar %>
 </%method>
 
 EOF
         expect => <<'EOF',
+start override
 <BODY>
 class message
 
@@ -61,6 +68,8 @@ after method call
 3 - 4
 init message
 </BODY>
+
+end override
 EOF
     );
 }
