@@ -96,13 +96,10 @@ C<< <%once> >> has been replaced with C<< <%class> >>.
 =item *
 
 C<< <%cleanup> >> has been eliminated; it was not very useful anyway, since it
-was not guaranteed to run after an exception.
-
-Use a L<guard|Guard> to execute code when the main method or another component
-method exits.
-
-Use a C<< DEMOLISH >> method to execute code after the component instance is
-freed.
+was not guaranteed to run after an exception. You can use
+L<Mason::Request/add_cleanup> to add cleanup code for the end of the request,
+which is good enough in most cases, or you can add a C<DEMOLISH> method to the
+component.
 
 =item *
 
