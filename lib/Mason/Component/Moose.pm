@@ -23,8 +23,13 @@ sub init_meta {
 
 1;
 
-# ABSTRACT: Moose policies and exports for Mason components
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Component::Moose - Moose policies and exports for Mason components
 
 =head1 DESCRIPTION
 

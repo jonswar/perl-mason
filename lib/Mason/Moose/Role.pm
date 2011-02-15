@@ -16,10 +16,13 @@ sub init_meta {
 
 1;
 
-# ABSTRACT: Mason Moose role policies
 __END__
 
 =pod
+
+=head1 NAME
+
+Mason::Moose::Role - Mason Moose role policies
 
 =head1 SYNOPSIS
 

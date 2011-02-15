@@ -4,8 +4,13 @@ with 'Mason::Plugin';
 
 1;
 
-# ABSTRACT: Provide a cache object to each component
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Plugin::Cache - Provide a cache object to each component
 
 =head1 SYNOPSIS
 

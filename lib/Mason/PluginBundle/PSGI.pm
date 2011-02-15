@@ -6,8 +6,13 @@ sub requires_plugins { qw(HTMLFilters PSGIHandler) }
 
 1;
 
-# ABSTRACT: PSGI plugin bundle
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::PluginBundle::PSGI - PSGI plugin bundle
 
 =head1 INCLUDED PLUGINS
 

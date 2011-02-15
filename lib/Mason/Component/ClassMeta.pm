@@ -53,8 +53,13 @@ __PACKAGE__->meta->make_immutable();
 
 1;
 
-# ABSTRACT: Meta-information about Mason component class
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Component::ClassMeta - Meta-information about Mason component class
 
 =head1 SYNOPSIS
 

@@ -4,8 +4,14 @@ with 'Mason::Plugin';
 
 1;
 
-# ABSTRACT: Create lvalue accessors for all rw component attributes
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Plugin::LvalueAttributes - Create lvalue accessors for all rw component
+attributes
 
 =head1 SYNOPSIS
 

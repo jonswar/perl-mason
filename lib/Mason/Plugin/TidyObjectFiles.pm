@@ -4,8 +4,13 @@ with 'Mason::Plugin';
 
 1;
 
-# ABSTRACT: Tidy object files
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Plugin::TidyObjectFiles - Tidy object files
 
 =head1 DESCRIPTION
 

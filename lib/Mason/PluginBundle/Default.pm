@@ -6,8 +6,13 @@ sub requires_plugins { qw(Defer DollarDot) }
 
 1;
 
-# ABSTRACT: Default plugins
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::PluginBundle::Default - Default plugins
 
 =head1 INCLUDED PLUGINS
 

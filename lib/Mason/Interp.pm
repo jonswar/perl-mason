@@ -722,8 +722,13 @@ sub _define_class_override_methods {
 
 1;
 
-# ABSTRACT: Mason Interpreter
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Interp - Mason Interpreter
 
 =head1 SYNOPSIS
 

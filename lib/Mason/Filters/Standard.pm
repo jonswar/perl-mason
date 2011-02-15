@@ -42,8 +42,13 @@ method Trim () {
 
 1;
 
-# ABSTRACT: Standard filters
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Filters::Standard - Standard filters
 
 =head1 DESCRIPTION
 

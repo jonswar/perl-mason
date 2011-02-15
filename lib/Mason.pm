@@ -30,7 +30,6 @@ my ( %apply_plugins_cache, %final_subclass_seen );
 
 1;
 
-# ABSTRACT: Powerful class-based templating system
 __END__
 
 =pod

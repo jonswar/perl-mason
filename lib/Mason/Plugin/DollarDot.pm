@@ -4,8 +4,14 @@ with 'Mason::Plugin';
 
 1;
 
-# ABSTRACT: Allow $. as substitution for $self-> and in attribute names
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Plugin::DollarDot - Allow $. as substitution for $self-> and in
+attribute names
 
 =head1 SYNOPSIS
 

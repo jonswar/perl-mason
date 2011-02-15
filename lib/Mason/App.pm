@@ -24,8 +24,13 @@ sub run {
 
 1;
 
-# ABSTRACT: Implementation of bin/mason
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::App - Implementation of bin/mason
 
 =head1 DESCRIPTION
 

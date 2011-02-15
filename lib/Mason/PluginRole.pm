@@ -16,10 +16,13 @@ sub init_meta {
 
 1;
 
-# ABSTRACT: Helper for defining Mason plugin roles
 __END__
 
 =pod
+
+=head1 NAME
+
+Mason::PluginRole - Helper for defining Mason plugin roles
 
 =head1 SYNOPSIS
 

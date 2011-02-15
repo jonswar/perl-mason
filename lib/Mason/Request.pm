@@ -406,8 +406,13 @@ __PACKAGE__->meta->make_immutable();
 
 1;
 
-# ABSTRACT: Mason Request Class
 __END__
+
+=pod
+
+=head1 NAME
+
+Mason::Request - Mason Request Class
 
 =head1 SYNOPSIS
 

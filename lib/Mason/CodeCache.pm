@@ -30,10 +30,13 @@ method get_keys () {
 
 1;
 
-# ABSTRACT: Result returned from Mason request
 __END__
 
 =pod
+
+=head1 NAME
+
+Mason::CodeCache - Result returned from Mason request
 
 =head1 DESCRIPTION
 
