@@ -6,8 +6,6 @@ components
 
 =head1 DESCRIPTION
 
-=head1 DETERMINING THE PAGE COMPONENT
-
 Given the request path
 
     /news/sports/hockey
