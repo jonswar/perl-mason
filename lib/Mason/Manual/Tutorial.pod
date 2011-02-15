@@ -60,12 +60,6 @@ For the purposes of this tutorial, we're going to stick with #1; that will let
 us demonstrate the widest range of Mason's abilities. Just keep in mind that
 certain techniques mentioned here are irrelevant if you are in camp #2.
 
-=head1 FILES FOR THIS TUTORIAL
-
-If you want to play along and don't feel like typing all this in, the files for
-this tutorial are available in the eg/ directory of the Mason distribution, or
-you can view them at L<|github>.
-
 =head1 DATA LAYER
 
 Let's dispense with the model, the part of our app that has little to do with
@@ -568,6 +562,12 @@ article title, in case it has any HTML-unfriendly characters in it:
 
 See L<Mason::Manual::Filters> for more information about using, and creating,
 filters.
+
+=head1 FILES FROM THIS TUTORIAL
+
+The final set of files for our blog demo are in the C<eg/blog> directory of the
+Mason distribution, or you can view them at
+L<github|https://github.com/jonswar/perl-mason/tree/master/eg/blog>.
 
 =head1 ADDITIONAL TOPICS
 
