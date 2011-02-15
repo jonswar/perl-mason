@@ -1,0 +1,5 @@
+The micro-blog demo built in Mason::Manual::Tutorial.
+
+Run install.sh to install CPAN modules and the database.
+
+Run plackup to start the server.
