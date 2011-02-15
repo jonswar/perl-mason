@@ -60,6 +60,12 @@ For the purposes of this tutorial, we're going to stick with #1; that will let
 us demonstrate the widest range of Mason's abilities. Just keep in mind that
 certain techniques mentioned here are irrelevant if you are in camp #2.
 
+=head1 FILES FOR THIS TUTORIAL
+
+If you want to play along and don't feel like typing all this in, the files for
+this tutorial are available in the eg/ directory of the Mason distribution, or
+you can view them at L<|github>.
+
 =head1 DATA LAYER
 
 Let's dispense with the model, the part of our app that has little to do with
@@ -99,14 +105,24 @@ L<Rose::DB::Object::Tutorial> for more information.
 
 First we install some modules.
 
-    cpanm Date::Format DBD::SQLite CHI Mason Mason::Plugin::PSGI Rose::DB::Object
+    # Requires cpanm: http://search.cpan.org/perldoc?App::cpanminus
+    cpanm -S Date::Format DBD::SQLite Mason Mason::Plugin::PSGIHandler
+    cpanm -S Plack Plack::Middleware::Session Rose::DB::Object
 
 C<mason_psgi_setup>, which comes with the PSGI plugin, is the easiest way to
 set up a Mason psgi app:
 
     % mason_psgi_setup blog
+    writing blog/app.psgi
+    writing blog/comps/Base.m
+    writing blog/comps/index.m
+    Run
 
-We're actually only going to use the app.psgi this time, so let's delete the
+        cd blog; plackup -r
+
+    to start your server.
+
+We're actually only going to use the C<app.psgi> this time, so let's delete the
 components it generated:
 
     % rm blog/comps/*
@@ -204,6 +220,8 @@ Mason actually compiles components down to Perl/Moose classes, which means that
 many of the tools you use to develop regular classes - profilers, debuggers,
 and the like - can be used with Mason components with slight tweaking.
 
+See L<Moose::Manual::Components> for more information about components.
+
 =head1 CHAPTER 3
 
 =head2 Top-level page components, index files
@@ -231,7 +249,7 @@ L<top-level|top_level_component> component, that is, it can be reached by an
 external URL.
 
 C<index.m> is a special path - it will match the URI of its directory, in this
-case '/'.
+case '/'. (For more special paths, see L<Mason::Manual::RequestDispatch>.)
 
 Most of this component contains just HTML, which will be output exactly as
 written.  The single piece of special Mason syntax here is
@@ -361,8 +379,8 @@ filtering offends you. :)
 =head2 Templates / content wrapping, autobases, inheritance, method modifiers
 
 Now we have to handle the URL C</new_article>, linked from the home page. We do
-this with our second top-level page component, C</new_article.m>. It contains
-only HTML (for now).
+this with our second page component, C</new_article.m>. It contains only HTML
+(for now).
 
      1  <html>
      2    <head>
@@ -495,13 +513,12 @@ On lines 7 and 14, we set a message in the Plack session that we want to
 display on the next page. Rather than just making this work for a specific
 page, let's add generic code to the template in C<Base.m>:
 
-    ...
-    <body>
-    
-    % if (my $message = delete($m->req->session->{message})) {
-          <div class="message"><% $message %></div>
-    % }      
-    ...
+     7      <body>
+ =>  8  % if (my $message = delete($m->req->session->{message})) {
+ =>  9        <div class="message"><% $message %></div>
+ => 10  % }      
+    11        <% inner() %>
+    12      </body>
 
 Now, any page can place a message in the session, and it'll appear on just the
 next page.
@@ -518,20 +535,20 @@ the component, such as its path and the arguments that were passed to it.
 We need to change C<< /new_article.m >> to repopulate the form with the
 submitted values when validation fails.
 
-     1 <h2>Add an article</h2>
-     2 
-     3 <% $.FillInForm($form_data) { %>
-     4 <form action="/article/publish" method=post>
-     5   <p>Title: <input type=text size=30 name=title></p>
-     6   <p>Text:</p>
-     7   <textarea name=content rows=20 cols=70></textarea>
-     8   <p><input type=submit value="Publish"></p>
-     9 </form>
-    10 </%>
-    11 
-    12 <%init>
-    13 my $form_data = delete($m->req->session->{form_data});
-    14 </%init>
+     1  <h2>Add an article</h2>
+     2  
+     3  <% $.FillInForm($form_data) { %>
+     4  <form action="/article/publish" method=post>
+     5    <p>Title: <input type=text size=30 name=title></p>
+     6    <p>Text:</p>
+     7    <textarea name=content rows=20 cols=70></textarea>
+     8    <p><input type=submit value="Publish"></p>
+     9  </form>
+    10  </%>
+    11  
+    12  <%init>
+    13  my $form_data = delete($m->req->session->{form_data});
+    14  </%init>
 
 On lines 3 and 10 we surround the form with a I<filter>. A filter takes a
 content block as input and returns a new content block which is output in its
@@ -554,7 +571,7 @@ filters.
 
 =head1 ADDITIONAL TOPICS
 
-Some topics that we did not cover here but are worth looking at:
+Some topics that we could not fit in here but are worth looking at:
 
 =over
 
@@ -571,3 +588,6 @@ L<Adding methods to components|Mason::Manual::Components/METHODS>
 L<Caching|Mason::Plugin::Cache>
 
 =back
+
+See L<Mason::Manual> for a full list of documentation.
+

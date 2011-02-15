@@ -422,10 +422,15 @@ Mason::Request - Mason Request Class
 
 =head1 DESCRIPTION
 
-Mason::Request represents the current Mason request, and is the access point
-for most Mason features not provided by syntactic tags.  Inside a component you
-can access the current request object via the global C<$m>.  Outside of a
-component, you can use the class method C<Mason::Request->current_request>.
+Mason::Request represents a single request for a page, and is the access point
+for most Mason features not provided by syntactic tags.
+
+A Mason request is created when you call C<< $interp->run >>, or in a web
+environment, for each new web request.
+
+Inside a component you can access the current request object via the global
+C<$m>.  Outside of a component, you can use the class method
+C<Mason::Request->current_request>.
 
 =head1 COMPONENT PATHS
 

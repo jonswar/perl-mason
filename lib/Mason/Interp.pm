@@ -732,11 +732,12 @@ Mason::Interp - Mason Interpreter
 
 =head1 SYNOPSIS
 
-    my $interp = Mason->new (comp_root => '/path/to/comps',
-                             data_dir  => '/path/to/data',
-                             ...);
-
-    my $output = $interp->run('/request/path', foo => 5)->output();
+    my $interp = Mason->new(
+        comp_root => '/path/to/comps',
+        data_dir  => '/path/to/data',
+        ...
+    );
+    my $output = $interp->run( '/request/path', foo => 5 )->output();
 
 =head1 DESCRIPTION
 

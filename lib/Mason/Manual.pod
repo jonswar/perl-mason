@@ -1,22 +1,71 @@
 
 =head1 NAME
 
-Mason::Manual
+Mason::Manual - Index of Mason documentation
 
-=head1 DESCRIPTION
+=head1 MANUALS
 
-Mason is a powerful Perl-based templating system, designed to generate dynamic
-content from templates.
+=over
 
-Mason can be used for processing any kind of content: HTML, XML, plain text,
-etc.  However, it is most often used for generating web pages, so this
-documentation will tend to focus on that use-case. When reading, you can
-mentally replace "page" with "any kind of document", and "HTML" with "any kind
-of content".
+=item L<Mason::Manual::Tutorial>
 
-Unlike some other templating systems, Mason is proudly Perl-centric and does
-not attempt to define an alternate, "easier" language. It defines a thin layer
-of syntax and features to facilitate template creation, and leaves everything
-else to Perl. That said, Mason does allow some separation of Perl and content
-to make it easier to collaborate with non-Perl developers.
+Provides a tour of Mason by showing how to build a micro-blog application. A
+good place to start.
 
+=item L<Mason::Manual::Admin>
+
+Information for Mason administrators, including how to set up Mason in various
+environments.
+
+=item L<Mason::Manual::Components>
+
+All about components, the building blocks of Mason.
+
+=item L<Mason::Manual::Syntax>
+
+A full reference of syntax that can be used in components.
+
+=item L<Mason::Manual::RequestDispatch>
+
+How request paths get mapped to page components.
+
+=item L<Mason::Manual::Cookbook>
+
+Recipes for common Mason tasks.
+
+=item L<Mason::Manual::Filters>
+
+Using and creating filters that can be applied to portions of content in a
+component.
+
+=item L<Mason::Manual::Plugins>
+
+Using and creating plugins to modify Mason behavior.
+
+=item L<Mason::Manual::UpgradingFromMason1>
+
+Summary of differences between Mason 1 and Mason 2.
+
+=back
+
+=head1 OBJECT DOCUMENTATION
+
+=over
+
+=item L<Mason::Interp>
+
+Mason::Interp is the central Mason object, returned from C<< Mason->new >>. It
+is responsible for creating new requests, compiling components, and maintaining
+the cache of loaded components.
+
+=item L<Mason::Request>
+
+Mason::Request represents a single request for a page, and is the access point
+for most Mason features not provided by syntactic tags.
+
+=item L<Mason::Component>
+
+Mason::Component is the base class from which all generated component classes
+inherit, directly or indirectly.
+
+=back

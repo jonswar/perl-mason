@@ -5,7 +5,7 @@ Mason::Manual::Filters - Content filters in Mason
 
 =head1 DESCRIPTION
 
-Filters can be used to process the output of a block in a component.
+Filters can be used to process portions of content in a component.
 
 A set of filters comes built-in with Mason - see
 L<Mason::Filters::Standard|Mason::Filters::Standard>. Others will be available

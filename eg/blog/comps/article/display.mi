@@ -1,0 +1,13 @@
+<%class>
+use Date::Format;
+</%class>
+
+<%args>
+$.article => (required => 1)
+</%args>
+
+<div class="article">
+  <h3><% $.article->title %></h3>
+  <h4><% time2str("%D %T", $.article->create_time) %></h4>
+  <% $.article->content %>
+</div>

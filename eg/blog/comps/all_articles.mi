@@ -1,0 +1,16 @@
+% if (@articles) {
+<b>Showing <% scalar(@articles) %> article<% @articles > 1 ? "s" : "" %>.</b>
+<ul class="articles">
+%   foreach my $article (@articles) {
+  <li><& article/display.mi, article => $article &></li>
+%   }
+</ul>
+% }
+% else {
+<p>No articles yet.</p>
+% }
+
+<%init>
+my @articles = @{ Blog::Article::Manager->get_articles
+    (sort_by => 'create_time DESC') };
+</%init>

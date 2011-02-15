@@ -1,14 +1,27 @@
-o HTML list formed from array
 
-  <ul> % foreach $item (@list){ <li> < %$item % > </li> % } < /ul>
+=head1 NAME
 
+Mason::Manual::Cookbook - Recipes for common Mason tasks
 
-o HTML table formed from list of objects
+=head1 RECIPES
+
+=head2 HTML list formed from array
+
+    <ul> 
+    % foreach $item (@list) { 
+      <li><% $item %></li> 
+    % } 
+    </ul>
+
+=head2 HTML table formed from list of objects
 
     <table>
+      <tr><th>Foo</th><th>Bar</th><th>Baz</th></tr>
     % foreach my $obj (@objects) {
       <tr>
-        <td><% $obj->foo %></ td > <td> < %$obj->bar % > </td> < td > <% $obj-> baz %> < /td>
+        <td><% $obj->foo %></td>
+        <td><% $obj->bar %></td>
+        <td><% $obj->baz %></td>
       </tr>
     % }
     </table>

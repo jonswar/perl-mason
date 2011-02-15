@@ -1,14 +1,52 @@
 
+=head1 NAME
+
+Mason::Manual::Components - The building blocks of Mason
+
 =head1 DESCRIPTION
+
+The I<component> - a file with a mix of Perl and HTML - is Mason's basic
+building block. Pages are usually formed by combining the output from multiple
+components.  An article page for a online magazine, for example, might call
+separate components for the company masthead, ad banner, left table of
+contents, and article body.
+
+    +---------+------------------+
+    |Masthead | Banner Ad        |
+    +---------+------------------+
+    |         |                  |
+    |+-------+|Text of Article ..|
+    ||       ||                  |
+    ||Related||Text of Article ..|
+    ||Stories||                  |
+    ||       ||Text of Article ..|
+    |+-------+|                  |
+    |         +------------------+
+    |         | Footer           |
+    +---------+------------------+
+
+The top level component decides the overall page layout.  Individual cells are
+then filled by the output of subordinate components.  Pages might be built up
+from as few as one, to as many as hundreds of components, with each component
+contributing a chunk of HTML.
+
+Splitting up a page into multiple components gives you roughly the same
+benefits as splitting up an application into multiple classes: encapsulation,
+reusability, development concurrency, separation of concerns, etc.
+
+Mason actually compiles components down to Perl/Moose classes, which means that
+many of the tools you use to develop regular classes - profilers, debuggers,
+and the like - can be used with Mason components with slight tweaking.
 
 =head1 COMPONENT FILES
 
 =head2 The component root and component paths
 
-When you use Mason, you specify a component root that all component files live
-under. Thereafter, any component will be referred to by its virtual I<path>
-relative to the root. For example, if the component root is '/opt/web/comps', a
-component '/opt/web/comps/foo/bar.m' has the path '/foo/bar.m'.
+When you use Mason, you specify a L<component root|Mason::Interp/comp_root>
+that all component files live under. Thereafter, any component will be referred
+to by its virtual I<path> relative to the root. For example, if the component
+root is '/opt/web/comps', a component '/opt/web/comps/foo/bar.m' has the path
+'/foo/bar.m'.
 
 =head2 Component file extensions
 
@@ -19,7 +57,7 @@ components.
 
 =item .m - top-level component
 
-A top-level component can serve as the first component in a request.
+A top-level component can serve as the page component in a request.
 
 =item .mi - internal component
 
@@ -27,20 +65,45 @@ An internal component can only be accessed from other components.
 
 =item .pm - pure-perl component
 
-A component with a ".pm" extension is treated as if its entire content was
-surrounded by C<< <%class> >> tags. You do not need to (and are not allowed to)
-include Mason tags in this component, and it will not produce any output if
-called. This is just a way of defining a class that other components can easily
-interact with and extend. Some applications include: controller logic, web form
-handlers, and L<autobase components|Autobase components>.
+A pure-perl component contains only code; it is parsed as if its entire content
+was within a L<%class|Mason::Manual::Syntax/E<lt>%classE<gt>> block. You do not
+need to (and are not allowed to) include Mason tags in this component, and it
+will not produce any output if called. This is just a way of defining a class
+that other components can easily interact with and extend. Some applications
+include: controller logic, web form handlers, and L<autobase
+components|Autobase components>.
 
 =back
+
+=head1 CALLING COMPONENTS
+
+The initial component in a request, called the page component, is called from
+L<Mason::Interp/run>, which in turn may be called from a PSGI handler or an MVC
+framework view depending on your setup. See L<Mason::Manual::RequestDispatch>
+for more information about how the page component is chosen.
+
+A component can call another component with the L<E<lt>& &E<gt>
+tag|Mason::Manual::Syntax/CALLING COMPONENTS>:
+
+    <& /path/to/comp.mi, name=>value, ... &>
+
+or via the L<Mason::Request/comp> and L<Mason::Request/scomp> methods:
+
+    <%init>
+    $m->comp('/some/component.mi', foo => 5);
+    my $output = $m->scomp('/some/other/component.mi');
+    </%init>
+
+From the implementation perspective, calling a component means creating a new
+instance of the component's class with the specified parameters, and then
+calling method C<handle> (for the page component) or C<main> (for an internal
+component) on the instance.
 
 =head1 ATTRIBUTES
 
 You can declare attributes in components and pass them when calling components.
 
-=head2 Read-write by default
+=head2 Components are read-write by default
  
 L<Mason::Component::Moose> imports L<MooseX::HasDefaults::RW> into all
 components, which makes attributes read-write unless stated otherwise. This is
@@ -48,18 +111,19 @@ not considered best practice for general OO programming, but component
 instances are short-lived and not usually accessed outside of their class so we
 feel the convenience is warranted.
 
-=head2 Incoming attributes - C<< <%args> >>
+=head2 Declaring incoming attributes - C<< <%args> >>
 
 The C<< <%args> >> block is the most convenient way to declare incoming
 attributes:
 
     <%args>
-    a
-    b => 'default value'
-    c => (isa => 'Str', default => 'something')
+    $.a
+    $.b => 'default value'
+    $.c => (isa => 'Str', default => 'something')
     </%args>
 
-This is equivalent to the following Moose syntax (which you can also use):
+The '$.' prefix on each line is optional and harmless. This is equivalent to
+the following Moose syntax:
 
     <%class>
     has 'a' => ();
@@ -70,25 +134,7 @@ This is equivalent to the following Moose syntax (which you can also use):
 
 and as mentioned above there is an implicit "is => 'rw'" in each.
 
-A declared attribute 'foo' can be accessed inside the component via the
-Perl6-ish syntax
-
-    $.foo
-
-which is transformed by L<DollarDot|Mason::Plugin::DollarDot> to
-
-    $self->foo
-
-To set the attribute, you must use:
-
-    $self->foo(5);
-
-unless you're using L<LvalueAttributes|Mason::Plugin::LvalueAttributes>, in
-which case you can say
-
-    $.foo = 5;
-
-=head2 Internal attributes - C<< <%shared> >>
+=head2 Declaring internal attributes - C<< <%shared> >>
 
 The C<< <%shared> >> block lets you define attributes that are shared between
 all the methods of the component, but cannot be initialized from the outside.
@@ -126,10 +172,31 @@ are ignored.
     h
     </%args>
 
-=head2 Accessing all attributes
+=head2 Accessing attributes
 
-C<< $self->args >> will return a hashref of all of the attributes passed to the
-component when it was created.
+A declared attribute 'foo' can be accessed inside the component via the
+Perl6-ish syntax
+
+    $.foo
+
+which is transformed by L<DollarDot|Mason::Plugin::DollarDot> to
+
+    $self->foo
+
+In the rest of this documentation we will use C<$.> notation, but feel free to
+substitute C<< $self-> >> conceptually and/or in reality.
+
+To set the attribute, you must use:
+
+    $.foo(5);
+
+unless you're using L<LvalueAttributes|Mason::Plugin::LvalueAttributes>, in
+which case you can say
+
+    $.foo = 5;
+
+C<< $.cmeta->args >> will return a hashref of all of the attributes passed to
+the component when it was created/called.
 
 =head1 METHODS
 
@@ -152,7 +219,7 @@ these methods automatically have access to C<$self> and C<$m>.
     ...
 
     <% # call leftcol method and insert HTML here %>
-    <% $self->leftcol %>
+    <% $.leftcol %>
 
 Methods can also take argument lists:
 
@@ -180,7 +247,7 @@ section.
     ...
 
     <%init>
-    my $value = $self->multiply(5, 6);
+    my $value = $.multiply(5, 6);
     </%init>
 
 Note that L<Method::Signatures::Simple> provides the C<method> keyword and
@@ -193,6 +260,25 @@ straight-up Perl subroutines:
         return $a * $b;
     }
     </%class>
+
+=head2 Output versus return value
+
+Most Mason methods output content such as HTML. The content is not actually
+returned, but is instead appended to an implicit buffer. This is slightly more
+complicated but is necessary for supporting streaming applications.
+
+When Mason generates C<main> and other methods declared with C<< <%method> >>,
+it puts an implicit
+
+    return undef;
+
+at the bottom of the method, so that unless you specify otherwise, there will
+be no return value. This is important because of syntactical shortcuts like
+
+    <% inner() %>
+    <% $.leftcol %>
+
+which would (undesirably) print the return value if it existed.
 
 =head1 INHERITANCE
 
@@ -255,9 +341,8 @@ wrapping> from shared method definitions, for example.
 
 =head1 GENERATED CLASS
 
-While it isn't strictly necessary to understand how Mason generates component
-classes, it can be helpful, especially for troubleshooting unexpected component
-behavior.
+It can be helpful to understand how Mason generates component classes,
+especially for troubleshooting unexpected component behavior.
 
 =head2 Object files
 
@@ -326,8 +411,9 @@ C<TidyObjectFiles>:
     30      return;
     31  }
 
-The above is as of time of writing; it may well be out of date with the current
-code generator, but it is accurate enough for explanatory purposes.
+(Caveat: the above is as of time of writing and may well be out of date with
+the current code generator, but it is accurate enough for explanatory
+purposes.)
 
 Line 1 brings in L<Mason::Component::Moose>, which imports L<Moose>, L<CLASS>,
 L<Method::Signatures::Simple> and other things into the current package.
@@ -353,7 +439,7 @@ them to the current output buffer. The current output buffer can change within
 a request, for example when L<Mason::Request/capture> or
 L<Mason::Request/scomp> is called.
 
-Two things that would be in a normal class are missing above: the package/class
-name and the superclass. These are added dynamically when the object file is
-evaluated.
+Two things that would be in a normal class are missing above: the C<package>
+and C<extends> declarations. These are added dynamically when the object file
+is evaluated.
 
