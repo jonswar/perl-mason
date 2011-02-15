@@ -44,9 +44,13 @@ and the like - can be used with Mason components with slight tweaking.
 
 When you use Mason, you specify a L<component root|Mason::Interp/comp_root>
 that all component files live under. Thereafter, any component will be referred
-to by its virtual I<path> relative to the root. For example, if the component
-root is '/opt/web/comps', a component '/opt/web/comps/foo/bar.m' has the path
-'/foo/bar.m'.
+to by its virtual I<path> relative to the root, rather than its full filename.
+
+For example, if the component root is '/opt/web/comps', then the component path
+'/foo/bar.m' refers to the file '/opt/web/comps/foo/bar.m'.
+
+It is also possible to specify multiple component roots, ala Perl's C<@INC>, in
+which case a component path might refer to one of several files.
 
 =head2 Component file extensions
 
@@ -87,7 +91,7 @@ tag|Mason::Manual::Syntax/CALLING COMPONENTS>:
 
     <& /path/to/comp.mi, name=>value, ... &>
 
-or via the L<Mason::Request/comp> and L<Mason::Request/scomp> methods:
+or via the L<Mason::Request/comp> or L<Mason::Request/scomp> methods:
 
     <%init>
     $m->comp('/some/component.mi', foo => 5);

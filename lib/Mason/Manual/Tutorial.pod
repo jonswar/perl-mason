@@ -160,7 +160,7 @@ object that creates and controls other Mason objects.
 
 Line 15 specifies the L<component root|Mason::Interp/comp_root>, the top of the
 component hierarchy. All component files must live under this directory, and
-any L<component path|Mason::Manual::Glossary/component_path> is considered
+any L<component path|Mason::Manual::Components/COMPONENT FILES> is considered
 relative to it.
 
 Line 16 specifies the L<data directory|Mason::Interp/data_dir>, a writable
@@ -169,7 +169,7 @@ directory that Mason uses for various features and optimizations.
 Line 20-28 is standard PSGI, creating the PSGI app and adding middleware.
 
 We need to make three small changes to this file. First, to add the
-L<HTMLFilters plugin|Mason::Plugin::HTMLFilters> plugin:
+L<HTMLFilters plugin|Mason::Plugin::HTMLFilters>:
 
      # Include Mason plugins here
  =>  my @plugins = ('PSGI', 'HTMLFilters');
@@ -225,7 +225,7 @@ Mason actually compiles components down to Perl/Moose classes, which means that
 many of the tools you use to develop regular classes - profilers, debuggers,
 and the like - can be used with Mason components with slight tweaking.
 
-See L<Moose::Manual::Components> for more information about components.
+See L<Mason::Manual::Components> for more information about components.
 
 =head1 CHAPTER 3
 
@@ -250,19 +250,20 @@ Here's our first component to serve the home page, C</index.m>:
     15  </html>
 
 Any component with a C<.m> extension is considered a
-L<top-level|top_level_component> component, that is, it can be reached by an
-external URL.
+L<top-level|Mason::Manual::Components/COMPONENT FILES> component, that is, it
+can be reached by an external URL.
 
 C<index.m> is a special path - it will match the URI of its directory, in this
-case '/'. (For more special paths, see L<Mason::Manual::RequestDispatch>.)
+case '/'. (For more special paths and details on how Mason finds page
+components, see L<Mason::Manual::RequestDispatch>.)
 
 Most of this component contains just HTML, which will be output exactly as
 written.  The single piece of special Mason syntax here is
 
     10  <& all_articles.mi &>
 
-This is a L<component call|Mason::Manual::Glossary/component call> - it invokes
-another component, whose output is inserted in place.
+This is a L<component call|Mason::Manual::Components/CALLING COMPONENTS> - it
+invokes another component, whose output is inserted in place.
 
 Splitting a page into multiple components has much the same benefits as
 splitting a regular program into multiple subroutines or objects:
@@ -273,9 +274,9 @@ encapsulation, reuse, etc.
 =head2 Internal components, %-lines, substitution tags, <%init> blocks
 
 Because all_articles.mi has an C<.mi> extension (rather than C<.m>), it is an
-L<internal|Mason::Manual::Glossary/internal_component> rather than a top-level
-component, and cannot be reached by an external URL. It can only be reached via
-a component call from another component.
+L<internal|Mason::Manual::Components/Component file extensions> rather than a
+top-level component, and cannot be reached by an external URL. It can only be
+reached via a component call from another component.
 
      1  % if (@articles) {
      2  <b>Showing <% scalar(@articles) %> article<% @articles > 1 ? "s" : "" %>.</b>
@@ -300,10 +301,10 @@ Three new pieces of syntax here:
 
 =item Init block
 
-The L<%init|Mason::Manual::Syntax/E<lt>%initE<gt>> block on lines 13-16
-specifies a block of Perl code to run when this component is first called. In
-this case it fetches and sorts the list of articles into a lexical variable C<<
-@articles >>.
+The L<E<lt>%initE<gt>|Mason::Manual::Syntax/E<lt>%initE<gt>> block on lines
+13-16 specifies a block of Perl code to run when this component is first
+called. In this case it fetches and sorts the list of articles into a lexical
+variable C<< @articles >>.
 
 =item %-lines
 
@@ -349,14 +350,14 @@ Next we create C</article/display.mi>, another internal component:
     13    <% $.article->content %>
     14  </div>
 
-The L<%class|Mason::Manual::Syntax/E<lt>%classE<gt>> block on lines 1-4
-specifies a block of Perl code to place near the top of the generated component
-class, outside of any methods. This is the place to use modules, declare
-permanent constants/variables, and define helper methods.
+The L<E<lt>%classE<gt>|Mason::Manual::Syntax/E<lt>%classE<gt>> block on lines
+1-4 specifies a block of Perl code to place near the top of the generated
+component class, outside of any methods. This is the place to use modules,
+declare permanent constants/variables, and define helper methods.
 
-The L<%args|Mason::Manual::Syntax/E<lt>%argsE<gt>> block on lines 6-8 declares
-a single incoming attribute, 'article'. These lines are equivalent to the Moose
-syntax
+The L<E<lt>%argsE<gt>|Mason::Manual::Syntax/E<lt>%argsE<gt>> block on lines 6-8
+declares a single incoming attribute, 'article'. These lines are equivalent to
+the Moose syntax
 
     has 'article' => (required => 1);
 
@@ -435,10 +436,10 @@ How does this magic work?
 
 =item 1.
 
-Any component named Base.m is an L<autobase|Mason::Manual::Glossary/autobase>
-component. It automatically becomes the superclass of any component in its
-directory and below. Thus, C</index.m> and C</node/view.m> both automatically
-inherit from C</Base.m>.
+Any component named Base.m is an L<autobase|Mason::Manual::Components/Autobase
+components> component. It automatically becomes the superclass of any component
+in its directory and below. Thus, C</index.m> and C</node/view.m> both
+automatically inherit from C</Base.m>.
 
 =item 2.
 
@@ -493,11 +494,11 @@ rather than a Mason component. >>
     16  }
 
 The C<.pm> extension indicates that this is a
-L<pure-perl|Mason::Manual::Glossary/pure_perl_component> component. Other than
-the 'package' and 'use Moose' lines that are generated by Mason, it looks just
-like a regular Perl class. You could accomplish the same thing with a C<.m>
-component containing a single C<< <%class> >> block, but this is easier and
-more self-documenting.
+L<pure-perl|Mason::Manual::Components/Component file extensions> component.
+Other than the 'package' and 'use Moose' lines that are generated by Mason, it
+looks just like a regular Perl class. You could accomplish the same thing with
+a C<.m> component containing a single C<< <%class> >> block, but this is easier
+and more self-documenting.
 
 On lines 1 and 2 we declare incoming attributes. Because this is a top-level
 page component, the attributes will be populated with our POST parameters.

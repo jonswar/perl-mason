@@ -11,8 +11,8 @@ A reference for all the syntax that can be used in components.
 
 =head2 <% I<expr> %>
 
-Blocks of the form <% xxx %> are replaced with the result of evaluating xxx as
-a Perl expression in scalar context.
+Blocks of the form C<< <% expr %> >> are replaced with the result of evaluating
+C<expr> as a Perl expression in scalar context.
 
     Hello, <% $name %>! The current time is <% scalar(localtime) %>.
 
@@ -82,9 +82,9 @@ Blocks that do not take a name argument.
 =head2 <%args>
 
 Contains one or more attribute declarations, one per line. Each line starts
-with the attribute name, followed optionally by a comma operator (=>) and
-either a scalar value (which becomes the default) or a list (which becomes the
-Moose attribute properties). e.g. this block
+with the attribute name, followed optionally by a comma operator (C<< => >>)
+and either a scalar value (which becomes the default) or a list (which becomes
+the Moose attribute properties). e.g. this block
 
     <%args>
     a
@@ -149,7 +149,8 @@ Declares the component's superclass (another component). The path may be
 absolute as shown above, or relative to the component's path. This is the only
 way to declare the component's superclass; using an C<< extends >> keyword
 directly will not work reliably. If not provided, the component's superclass is
-determined automatically via L<Tutorial/Autobase components>.
+determined automatically via L<autobase components|Tutorial/Autobase
+components>.
 
 =back
 
@@ -178,7 +179,7 @@ discarded.  May appear anywhere in the text and any number of times.
 =head2 <%shared>
 
 Contains one or more attribute declarations, one per line. Has the same syntax
-as << <%args> >>, but the resulting attributes are declared with C<< init_arg
+as C<< <%args> >>, but the resulting attributes are declared with C<< init_arg
 => undef >>. e.g. this block
 
     <%args>
@@ -205,7 +206,7 @@ Text in this section is printed as-is with all Mason syntax ignored.
     </%text>
 
 This works for almost everything, but doesn't let you output C<< </%text> >>
-itself! When all else fails, use L<< Mason::Request/print >>:
+itself! When all else fails, use L<Mason::Request/print>:
 
     % $m->print('The tags are <%text> and </%text>.');
 
