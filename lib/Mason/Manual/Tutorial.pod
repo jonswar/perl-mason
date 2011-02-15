@@ -152,8 +152,7 @@ Now let's take a look at the C<app.psgi> it generated.
     27      $app;
     28  };
 
-Line 10 lists the Mason plugins we're using, in this case
-L<PSGI|Mason::Plugin::PSGIHandler>.  See L<Mason::Manual::Plugins> for
+Line 10 lists the Mason plugins we're using. See L<Mason::Manual::Plugins> for
 information about using and creating plugins.
 
 Line 14-18 creates the L<Mason interpreter|Mason::Interp>, the central Mason
@@ -169,13 +168,25 @@ directory that Mason uses for various features and optimizations.
 
 Line 20-28 is standard PSGI, creating the PSGI app and adding middleware.
 
-We're only going to make a single change to this file, to add Session support:
+We need to make three small changes to this file. First, to add the
+L<HTMLFilters plugin|Mason::Plugin::HTMLFilters> plugin:
 
-    25  builder {
-    26      # Include PSGI middleware here
- => 27      enable 'Session';
-    28      $app;
-    29  };
+     # Include Mason plugins here
+ =>  my @plugins = ('PSGI', 'HTMLFilters');
+
+Second, to load our model:
+
+     my $cwd = dirname( realpath(__FILE__) );
+ =>  unshift(@INC, "$cwd/lib");
+ =>  require Blog::Article;
+
+Third, to add Session support:
+
+     builder {
+         # Include PSGI middleware here
+ =>      enable 'Session';
+         $app;
+     };
 
 =head1 CHAPTER 2
 
