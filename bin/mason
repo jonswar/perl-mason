@@ -25,15 +25,14 @@ the result to STDOUT.
 
 =head1 MASON OPTIONS
 
-Any Mason options can be specified on the command line and will be passed to
-Mason->new, via L<MooseX::Getopt|MooseX::Getopt>. e.g.
+The following Mason options can be specified on the command line:
 
-    --comp_root /path/to/comp_root --data_dir /path/to/data_dir
-    --plugins MyPlugin --plugins MyOtherPlugin
+    --data-dir /path/to/data_dir
+    --plugins MyPlugin,MyOtherPlugin
 
-By default C<comp_root> will be set to the directory of the template file, or
-to a temporary directory if using STDIN, and C<data_dir> will be set to a
-temporary directory.
+The C<comp_root> will be set to the directory of the template file or to a
+temporary directory if using STDIN. If not specified C<data_dir> will be set to
+a temporary directory.
 
 =head1 ADDITIONAL OPTIONS
 
@@ -41,18 +40,25 @@ temporary directory.
 
 =item --args json-string
 
-A list of arguments to pass to the component, in JSON form. e.g.
+A hash of arguments to pass to the page component, in JSON form. e.g.
 
-    --args '["count",5,"names",["Alice","Bob"]]'
+    --args '{"count":5,"names":["Alice","Bob"]}'
 
 =back
-
-=head1 AUTHOR
-
-Jonathan Swartz
 
 =head1 SEE ALSO
 
 L<Mason|Mason>
+
+=head1 AUTHOR
+
+Jonathan Swartz <swartz@pobox.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Jonathan Swartz.
+
+This is free software; you can redistribute it and/or modify it under the same
+terms as the Perl 5 programming language system itself.
 
 =cut

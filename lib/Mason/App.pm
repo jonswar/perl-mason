@@ -2,24 +2,49 @@ package Mason::App;
 use Cwd qw(realpath);
 use File::Basename;
 use File::Temp qw(tempdir);
+use Getopt::Long;
 use Mason;
+use JSON;
 use strict;
 use warnings;
 
 sub run {
+    my ( %params, $args );
+    GetOptions(
+        'args=s' => \$args,
+        map { dashify($_) . "=s" => \$params{$_} } qw(data_dir plugins)
+    ) or usage();
+    %params = map { defined( $params{$_} ) ? ( $_, $params{$_} ) : () } keys(%params);
+    if ( $params{plugins} ) {
+        $params{plugins} = [ split( /\s*,\s*/, $params{plugins} ) ];
+    }
+    my %run_args = defined($args) ? %{ decode_json($args) } : ();
+
     my $file = shift(@ARGV);
+    usage() if @ARGV;
     if ( !$file ) {
         my $tempdir = tempdir( 'mason-XXXX', TMPDIR => 1, CLEANUP => 1 );
         $file = "$tempdir/stdin.m";
         open( my $fh, ">", $file );
         while (<STDIN>) { print $fh $_ }
     }
-    usage() if @ARGV;
 
     my $comp_root = dirname($file);
     my $path      = "/" . basename($file);
-    my $interp    = Mason->new( comp_root => $comp_root );
-    print $interp->run($path)->output . "\n";
+    my $interp    = Mason->new( comp_root => $comp_root, autoextend_request_path => [], %params );
+    print $interp->run( $path, %run_args )->output . "\n";
+}
+
+sub usage {
+    print
+      "usage: $0 [--data-dir dir] [--plugins Plugin1,Plugin2] [--args json-string] [template-file]\n";
+    exit;
+}
+
+sub dashify {
+    my $name = shift;
+    $name =~ s/_/-/g;
+    return $name;
 }
 
 1;
