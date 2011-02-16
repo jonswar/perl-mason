@@ -54,10 +54,8 @@ Catalyst or Dancer.
 
 All documentation is indexed at L<Mason::Manual>.
 
-=head1 HISTORY
-
-Mason has been on CPAN since 1998, under the name L<HTML::Mason>. This is the
-first major version in ten years.
+The previous major version of Mason (1.x) is available under the name
+L<HTML::Mason>.
 
 =head1 SUPPORT
 
@@ -78,7 +76,7 @@ The latest source code can be browsed and fetched at:
     git clone git://github.com/jonswar/perl-mason.git
 
 The official Mason website is L<http://www.masonhq.com/>, however it contains
-mostly information about Mason 1 (HTML::Mason). We're not sure what the future
+mostly information about L<Mason 1|HTML::Mason>. We're not sure what the future
 of the website will be wrt Mason 2.
 
 =head1 ACKNOWLEDGEMENTS
@@ -89,4 +87,8 @@ years after I thought I was done.
 
 Thanks to Tatsuhiko Miyagawa and the L<PSGI/Plack|http://plackperl.org/> team
 for giving the Perl web application world a massive shot of adrenaline.
+
+=head1 SEE ALSO
+
+L<HTML::Mason>
 

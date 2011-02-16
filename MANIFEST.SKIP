@@ -19,6 +19,7 @@
 ^lib/Pod
 ^localcpan
 ^misc
+^profile
 ^release
 ^t/make
 ^tmp

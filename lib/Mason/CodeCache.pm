@@ -28,6 +28,8 @@ method get_keys () {
     return keys( %{ $self->{datastore} } );
 }
 
+__PACKAGE__->meta->make_immutable();
+
 1;
 
 __END__

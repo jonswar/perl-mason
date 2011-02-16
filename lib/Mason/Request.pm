@@ -403,7 +403,8 @@ method _request_buffer () {
 }
 
 method _reset_next_id () {
-                                                             # for testing
+
+    # for testing
     $next_id = 0;
 }
 

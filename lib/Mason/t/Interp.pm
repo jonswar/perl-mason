@@ -1,5 +1,3 @@
-## Please see file perltidy.ERR
-## Please see file perltidy.ERR
 package Mason::t::Interp;
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture);

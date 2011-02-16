@@ -720,6 +720,8 @@ sub _define_class_override_methods {
     }
 }
 
+__PACKAGE__->meta->make_immutable();
+
 1;
 
 __END__

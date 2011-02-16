@@ -84,4 +84,6 @@ method apply_plugins_to_class ($class: $base_subclass, $name, $plugins) {
     return $final_subclass;
 }
 
+__PACKAGE__->meta->make_immutable();
+
 1;
