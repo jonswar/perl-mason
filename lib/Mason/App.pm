@@ -8,12 +8,20 @@ use JSON;
 use strict;
 use warnings;
 
+my $usage =
+  "usage: $0 [--data-dir dir] [--plugins Plugin1,Plugin2] [--args json-string] [template-file]";
+
 sub run {
-    my ( %params, $args );
+    my ( %params, $args, $help );
     GetOptions(
         'args=s' => \$args,
+        'h|help' => \$help,
         map { dashify($_) . "=s" => \$params{$_} } qw(data_dir plugins)
     ) or usage();
+    if ($help) {
+        system("perldoc $0");
+        exit;
+    }
     %params = map { defined( $params{$_} ) ? ( $_, $params{$_} ) : () } keys(%params);
     if ( $params{plugins} ) {
         $params{plugins} = [ split( /\s*,\s*/, $params{plugins} ) ];
@@ -36,8 +44,7 @@ sub run {
 }
 
 sub usage {
-    print
-      "usage: $0 [--data-dir dir] [--plugins Plugin1,Plugin2] [--args json-string] [template-file]\n";
+    print "$usage\n";
     exit;
 }
 
