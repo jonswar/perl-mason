@@ -22,6 +22,13 @@ To use Mason from a script or library, use the L<Mason::Interp> API:
     );
     my $output = $interp->run( '/request/path', foo => 5 )->output();
 
+To try out Mason syntax from the command line, use the L<mason> script:
+
+    % mason
+    2 + 2 = <% 2+2 %>
+    ^D
+    2 + 2 = 4
+
 =head1 LOGGING
 
 Mason uses L<Log::Any|Log::Any> to log various events, such as the start and
