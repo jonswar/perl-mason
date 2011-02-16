@@ -40,6 +40,6 @@ Mason::CodeCache - Result returned from Mason request
 
 =head1 DESCRIPTION
 
-Internal class that Manages the cache of components for L<Mason::Interp>.
+Internal class that manages the cache of components for L<Mason::Interp>.
 
 =cut
