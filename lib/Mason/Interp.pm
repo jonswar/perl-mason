@@ -747,6 +747,8 @@ the cache of loaded components.
 
 =head1 PARAMETERS TO THE new() CONSTRUCTOR
 
+=for html <a name="allow_globals" />
+
 =over
 
 =item allow_globals (varnames)
@@ -763,17 +765,23 @@ example, creates a C<< $c >> global set to the context object in each request.
 
 Set the values of globals with L</set_global> or L<Mason::Request/set_global>.
 
+=for html <a name="autobase_names" />
+
 =item autobase_names
 
 Array reference of L<autobase|Mason::Manual/Autobase components> filenames to
 check in order when determining a component's superclass. Default is C<<
 ["Base.pm", "Base.m"] >>.
 
+=for html <a name="autoextend_request_path" />
+
 =item autoextend_request_path
 
 Array reference of extensions to automatically add to the request path when
 searching for a matching page component. Defaults to [".pm", ".m"]. An empty
 list, or a false value, means do no autoextending.
+
+=for html <a name="comp_root" />
 
 =item comp_root
 
@@ -787,11 +795,15 @@ This parameter may be either a single path or an array reference of paths. If
 it is an array reference, the paths will be searched in the provided order
 whenever a component path is resolved, much like Perl's C<< @INC >>.
 
+=for html <a name="component_class_prefix" />
+
 =item component_class_prefix
 
 Prefix to use in generated component classnames. Defaults to 'MC' plus the
 interpreter's count, e.g. MC0. So a component '/foo/bar' would get a classname
 like 'MC0::foo::bar'.
+
+=for html <a name="data_dir" />
 
 =item data_dir
 
@@ -802,11 +814,15 @@ Mason will create the directory on startup if necessary.
 Defaults to a temporary directory that will be cleaned up at process end. This
 will hurt performance as Mason will have to recompile components on each run.
 
+=for html <a name="dhandler_names" />
+
 =item dhandler_names
 
 Array reference of dhandler file names to check in order when resolving a
 top-level path. Default is C<< ["dhandler.pm", "dhandler.m"] >>. An empty list
 disables this feature.
+
+=for html <a name="index_names" />
 
 =item index_names
 
@@ -814,15 +830,21 @@ Array reference of index file names to check in order when resolving a
 top-level path. Default is C<< ["index.pm", "index.m"] >>. An empty list
 disables this feature.
 
+=for html <a name="no_source_line_numbers" />
+
 =item no_source_line_numbers
 
 Do not put in source line number comments when generating code.  Setting this
 to true will cause error line numbers to reflect the real object file, rather
 than the source component.
 
+=for html <a name="object_file_extension" />
+
 =item object_file_extension
 
 Extension to add to the end of object files. Default is ".mobj".
+
+=for html <a name="plugins" />
 
 =item plugins
 
@@ -838,15 +860,21 @@ A list of plugins and/or plugin bundles:
 
 See L<Mason::Manual::Plugins>.
 
+=for html <a name="out_method" />
+
 =item out_method
 
 Default L<Request/out_method> passed to each new request.
+
+=for html <a name="pure_perl_extensions" />
 
 =item pure_perl_extensions
 
 A listref of file extensions of components to be considered as pure perl (see
 L<Mason::Manual::Syntax/Pure_Perl_Components>). Default is C<< ['.pm' >>. If an
 empty list is specified, then no components will be considered pure perl.
+
+=for html <a name="static_source" />
 
 =item static_source
 
@@ -864,12 +892,16 @@ L</static_source_touch_file>.
 We recommend turning this mode on in your production sites if possible, if
 performance is of any concern.
 
+=for html <a name="static_source_touch_file" />
+
 =item static_source_touch_file
 
 Specifies a filename that Mason will check once at the beginning of every
 request when in L</static_source> mode. When the file timestamp changes
 (indicating that a component has changed), Mason will clear its in-memory
 component cache and recheck existing object files.
+
+=for html <a name="top_level_extensions" />
 
 =item top_level_extensions
 
@@ -895,36 +927,52 @@ to create a final class, which you can get with
 
     $interp->compilation_class
 
+=for html <a name="base_code_cache_class" />
+
 =over
 
 =item base_code_cache_class
 
 Specify alternate to L<Mason::CodeCache|Mason::CodeCache>
 
+=for html <a name="base_compilation_class" />
+
 =item base_compilation_class
 
 Specify alternate to L<Mason::Compilation|Mason::Compilation>
+
+=for html <a name="base_component_class" />
 
 =item base_component_class
 
 Specify alternate to L<Mason::Component|Mason::Component>
 
+=for html <a name="base_component_moose_class" />
+
 =item base_component_moose_class
 
 Specify alternate to L<Mason::Component::Moose|Mason::Component::Moose>
 
+=for html <a name="base_component_class_meta_class" />
+
 =item base_component_class_meta_class
 
 Specify alternate to L<Mason::Component::ClassMeta|Mason::Component::ClassMeta>
+
+=for html <a name="base_component_instance_meta_class" />
 
 =item base_component_instance_meta_class
 
 Specify alternate to
 L<Mason::Component::IntanceMeta|Mason::Component::IntanceMeta>
 
+=for html <a name="base_request_class" />
+
 =item base_request_class
 
 Specify alternate to L<Mason::Request|Mason::Request>
+
+=for html <a name="base_result_class" />
 
 =item base_result_class
 
@@ -933,6 +981,8 @@ Specify alternate to L<Mason::Result|Mason::Result>
 =back
 
 =head1 PUBLIC METHODS
+
+=for html <a name="all_paths" />
 
 =over
 
@@ -947,19 +997,27 @@ Returns a list of distinct component paths under I<dir_path>, which defaults to
 Note that these are all component paths, not filenames, and all component roots
 are searched if there are multiple ones.
 
+=for html <a name="comp_exists" />
+
 =item comp_exists (path)
 
 Returns a boolean indicating whether a component exists for the absolute
 component I<path>.
+
+=for html <a name="count" />
 
 =item count
 
 Returns the number of this interpreter, a monotonically increasing integer for
 the process starting at 0.
 
+=for html <a name="flush_code_cache" />
+
 =item flush_code_cache
 
 Empties the component cache and removes all component classes.
+
+=for html <a name="glob_paths" />
 
 =item glob_paths (pattern)
 
@@ -971,15 +1029,21 @@ Returns a list of all component paths matching the glob I<pattern>. e.g.
 Note that these are all component paths, not filenames, and all component roots
 are searched if there are multiple ones.
 
+=for html <a name="load" />
+
 =item load (path)
 
 Returns the component object corresponding to an absolute component I<path>, or
 undef if none exists. Dies with an error if the component fails to load because
 of a syntax error.
 
+=for html <a name="object_dir" />
+
 =item object_dir
 
 Returns the directory containing component object files.
+
+=for html <a name="run" />
 
 =item run ([request params], path, args...)
 
@@ -994,6 +1058,8 @@ passed to the Mason::Request constructor. e.g. this tells the request to output
 to standard output:
 
     $interp->run({out_method => sub { print $_[0] }}, '/foo/bar', baz => 5);
+
+=for html <a name="set_global" />
 
 =item set_global (varname, value)
 
@@ -1014,6 +1080,8 @@ These methods are not intended to be called externally, but may be useful to
 modify with method modifiers in plugins and subclasses. We will attempt to keep
 their APIs stable.
 
+=for html <a name="is_pure_perl_comp_path" />
+
 =over
 
 =item is_pure_perl_comp_path ($path)
@@ -1021,15 +1089,21 @@ their APIs stable.
 Determines whether I<$path> is a pure Perl component - by default, uses
 L</pure_perl_extensions>.
 
+=for html <a name="is_top_level_comp_path" />
+
 =item is_top_level_comp_path ($path)
 
 Determines whether I<$path> is a valid top-level component - by default, uses
 L</top_level_extensions>.
 
+=for html <a name="modify_loaded_class" />
+
 =item modify_loaded_class ( $compc )
 
 An opportunity to modify loaded component class I<$compc> (e.g. add additional
 methods or apply roles) before it is made immutable.
+
+=for html <a name="write_object_file" />
 
 =item write_object_file ($object_file, $object_contents)
 

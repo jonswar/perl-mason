@@ -93,6 +93,8 @@ of a request).
 
 In many cases only C<main> will actually do anything.
 
+=for html <a name="handle" />
+
 =over
 
 =item handle
@@ -123,10 +125,14 @@ render the page
 It should not output any content itself. By default, it simply calls
 L</render>.
 
+=for html <a name="render" />
+
 =item render
 
 This method is invoked from L</handle> on the page component. Its job is to
 output the full content of the page. By default, it simply calls L</wrap>.
+
+=for html <a name="wrap" />
 
 =item wrap
 
@@ -139,6 +145,8 @@ content.
 By default, C<wrap> simply calls C<< inner() >> to go to the next subclass, and
 then L</main> at the bottom subclass.
 
+=for html <a name="main" />
+
 =item main
 
 This method is invoked when a non-page component is called, and from the
@@ -150,12 +158,16 @@ tag.
 
 =head1 OTHER METHODS
 
+=for html <a name="m" />
+
 =over
 
 =item m
 
 Returns the current request. This is also available via C<< $m >> inside Mason
 components.
+
+=for html <a name="cmeta" />
 
 =item cmeta
 
