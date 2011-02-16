@@ -58,7 +58,7 @@ by at least one whitespace character.
 Lines beginning with a double '%%' are treated as Perl and included in the main
 class body, as if they had been placed in a C<< <%class> >> section.
 
-    %% use Data::UUID;
+    %% use Data::Dumper;
 
     %% has 'attr' => ( ... );
 
