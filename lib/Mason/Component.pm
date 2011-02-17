@@ -3,7 +3,6 @@ use Mason::Component::InstanceMeta;
 use Moose;    # no Mason::Moose - don't want StrictConstructor
 use MooseX::HasDefaults::RO;
 use Method::Signatures::Simple;
-use namespace::autoclean;
 use Log::Any;
 
 with 'Mason::Filters::Standard';

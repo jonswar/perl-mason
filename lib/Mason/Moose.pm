@@ -3,7 +3,6 @@ use Moose                      ();
 use MooseX::HasDefaults::RO    ();
 use MooseX::StrictConstructor  ();
 use Method::Signatures::Simple ();
-use namespace::autoclean       ();
 use Moose::Exporter;
 use strict;
 use warnings;
@@ -14,7 +13,6 @@ sub init_meta {
     my %params    = @_;
     my $for_class = $params{for_class};
     Method::Signatures::Simple->import( into => $for_class );
-    namespace::autoclean->import( -cleanee => $for_class );
     Moose->init_meta(@_);
     MooseX::StrictConstructor->init_meta(@_);
     MooseX::HasDefaults::RO->init_meta(@_);
@@ -49,4 +47,3 @@ equivalent to
     use MooseX::HasDefaults::RO;
     use MooseX::StrictConstructor;
     use Method::Signatures::Simple;
-    use namespace::autoclean;

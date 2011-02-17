@@ -2,7 +2,6 @@ package Mason::Component::Moose;
 use Moose                      ();
 use MooseX::HasDefaults::RW    ();
 use Method::Signatures::Simple ();
-use namespace::autoclean       ();
 use Moose::Exporter;
 use strict;
 use warnings;
@@ -13,7 +12,6 @@ sub init_meta {
     my %params    = @_;
     my $for_class = $params{for_class};
     Method::Signatures::Simple->import( into => $for_class );
-    namespace::autoclean->import( -cleanee => $for_class );
     MooseX::HasDefaults::RW->init_meta(@_);
     {
         no strict 'refs';
@@ -40,7 +38,6 @@ and is equivalent to
     use Moose;
     use MooseX::HasDefaults::RW;
     use Method::Signatures::Simple;
-    use namespace::autoclean;
 
 =head1 OVERRIDING
 

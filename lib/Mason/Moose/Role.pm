@@ -1,7 +1,6 @@
 package Mason::Moose::Role;
 use Moose::Role                ();
 use Method::Signatures::Simple ();
-use namespace::autoclean       ();
 use Moose::Exporter;
 Moose::Exporter->setup_import_methods( also => ['Moose::Role'] );
 
@@ -10,7 +9,6 @@ sub init_meta {
     my %params    = @_;
     my $for_class = $params{for_class};
     Method::Signatures::Simple->import( into => $for_class );
-    namespace::autoclean->import( -cleanee => $for_class );
     Moose::Role->init_meta(@_);
 }
 
@@ -36,4 +34,3 @@ equivalent to
 
     use Moose::Role;
     use Method::Signatures::Simple;
-    use namespace::autoclean;
