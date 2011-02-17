@@ -1,7 +1,7 @@
 package Mason::t::Request;
 use Test::Class::Most parent => 'Mason::Test::Class';
-use Log::Any::Adapter;
-use Test::Log::Dispatch;
+use Log::Any::Test;
+use Log::Any qw($log);
 
 sub _get_current_comp_class {
     my $m = shift;
@@ -47,22 +47,16 @@ sub test_id : Test(3) {
     ok( $id1 != $id2 );
 }
 
-sub test_log : Test(2) {
+sub test_log : Test(1) {
     my $self = shift;
-    my $log = Test::Log::Dispatch->new( min_level => 'debug' );
-    Log::Any::Adapter->set( { category => 'Mason::Component::log::one.m', lexically => \my $lex },
-        'Dispatch', dispatcher => $log );
     $self->add_comp( path => '/log/one.m', src => '% $m->log->info("message one")' );
-    $self->add_comp( path => '/log/two.m', src => '% $m->log->info("message two")' );
     $self->run_test_in_comp(
         path => '/log.m',
         test => sub {
             my $comp = shift;
             my $m    = $comp->m;
             $m->comp('/log/one.m');
-            $m->comp('/log/two.m');
             $log->contains_ok("message one");
-            $log->does_not_contain_ok("message two");
         },
     );
 }
