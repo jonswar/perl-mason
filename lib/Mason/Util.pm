@@ -3,6 +3,7 @@ use Carp;
 use Class::MOP;
 use Class::Unload;
 use Fcntl qw( :DEFAULT :seek );
+use File::Find;
 use File::Spec::Functions ();
 use Try::Tiny;
 use strict;
@@ -10,7 +11,7 @@ use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(can_load catdir catfile checksum dump_one_line is_absolute mason_canon_path read_file touch_file trim write_file);
+  qw(can_load catdir catfile checksum dump_one_line find_wanted is_absolute mason_canon_path read_file touch_file trim write_file);
 
 my $Fetch_Flags          = O_RDONLY | O_BINARY;
 my $Store_Flags          = O_WRONLY | O_CREAT | O_BINARY;
@@ -69,6 +70,17 @@ sub dump_one_line {
     my ($value) = @_;
 
     return Data::Dumper->new( [$value] )->Indent(0)->Sortkeys(1)->Quotekeys(0)->Terse(1)->Dump();
+}
+
+# From File::Find::Wanted
+sub find_wanted {
+    my $func = shift;
+    my @files;
+
+    local $_;
+    find( sub { push @files, $File::Find::name if &$func }, @_ );
+
+    return @files;
 }
 
 sub is_absolute {

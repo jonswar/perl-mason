@@ -1,7 +1,7 @@
 package Mason::Interp;
+use Carp;
 use Devel::GlobalDestruction;
 use File::Basename;
-use File::Find::Wanted;
 use File::Path;
 use File::Temp qw(tempdir);
 use Guard;
@@ -11,7 +11,7 @@ use Mason::CodeCache;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
-use Mason::Util qw(catdir catfile is_absolute mason_canon_path touch_file write_file);
+use Mason::Util qw(catdir catfile find_wanted is_absolute mason_canon_path touch_file write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
