@@ -26,7 +26,7 @@ sub test_errors : Test(22) {
     $try->( "<%\n\n5%>",                  qr/whitespace required before '%>' at .* line 3/ );
     $try->( "<%args>\n123\n</%args>",     qr/Invalid attribute line '123'/ );
     $try->( "<%args>\n\$\$abc\n</%args>", qr/Invalid attribute line '\$\$abc'/ );
-    $try->( '<% $.Upper { %>Hi',          qr/<% { %> without matching <\/%>/ );
+    $try->( '<% $.Upper { %>Hi',     qr/<% { %> without matching <\/%>/ );
     $try->( '<%method 1a>Hi</%method>',   qr/Invalid method name '1a'/ );
     $try->(
         "<%method a>Hi</%method>\n<%method a>Bye</%method>",

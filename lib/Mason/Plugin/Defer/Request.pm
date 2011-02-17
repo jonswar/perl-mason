@@ -1,7 +1,7 @@
 package Mason::Plugin::Defer::Request;
 use Mason::PluginRole;
 
-has 'defers' => (is => 'rw', init_arg => undef, default => sub { [] });
+has 'defers' => ( is => 'rw', init_arg => undef, default => sub { [] } );
 
 before 'flush_buffer' => sub {
     my $self = shift;

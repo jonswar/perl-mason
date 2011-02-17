@@ -1,7 +1,7 @@
 package Mason::DynamicFilter;
 use Mason::Moose;
 
-has 'filter' => (isa => 'CodeRef');
+has 'filter' => ( isa => 'CodeRef' );
 
 around 'BUILDARGS' => sub {
     my $orig  = shift;

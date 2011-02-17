@@ -81,9 +81,9 @@ of the website will be wrt Mason 2.
 
 =head1 ACKNOWLEDGEMENTS
 
-Thanks to Stevan Little and the entire L<Moose> team for the general
-awesomeness of Moose, which motivated me to create a second version of Mason
-years after I thought I was done.
+Thanks to Stevan Little and the L<Moose> team for the awesomeness of Moose,
+which motivated me to create a second version of Mason years after I thought I
+was done.
 
 Thanks to Tatsuhiko Miyagawa and the L<PSGI/Plack|http://plackperl.org/> team
 for giving the Perl web application world a massive shot of adrenaline.
