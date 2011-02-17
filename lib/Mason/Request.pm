@@ -1,5 +1,4 @@
 package Mason::Request;
-use autodie qw(:all);
 use Carp;
 use File::Basename;
 use Guard;

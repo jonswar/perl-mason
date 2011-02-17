@@ -15,7 +15,6 @@ use Mason::Util qw(catdir catfile is_absolute mason_canon_path touch_file write_
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
-use autodie qw(:all);
 
 my $default_out = sub { print( $_[0] ) };
 my $next_id = 0;
@@ -659,7 +658,7 @@ method _determine_parent_compc ($path, $flags) {
 
 method _extract_flags_from_object_file ($object_file) {
     my $flags = {};
-    open( my $fh, "<", $object_file );
+    open( my $fh, "<", $object_file ) or die "could not open '$object_file': $!";
     my $line = <$fh>;
     if ( my ($flags_str) = ( $line =~ /\# FLAGS: (.*)/ ) ) {
         $flags = JSON->new->decode($flags_str);
