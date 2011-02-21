@@ -6,12 +6,12 @@ use File::Path;
 use File::Temp qw(tempdir);
 use Guard;
 use JSON;
-use List::MoreUtils qw(first_index uniq);
 use Mason::CodeCache;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
-use Mason::Util qw(catdir catfile find_wanted is_absolute mason_canon_path touch_file write_file);
+use Mason::Util
+  qw(catdir catfile find_wanted first_index is_absolute mason_canon_path touch_file uniq write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;

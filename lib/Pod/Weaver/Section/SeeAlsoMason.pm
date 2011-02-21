@@ -2,8 +2,6 @@ package Pod::Weaver::Section::SeeAlsoMason;
 use Moose;
 with 'Pod::Weaver::Role::Section';
 
-use Moose::Autobox;
-
 # Add "SEE ALSO: Mason"
 
 sub weave_section {
