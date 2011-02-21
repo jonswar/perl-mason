@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** denotes an incompatible change
 
-2.01  Feb 16, 2011
+2.01  Feb 20, 2011
 
 - Add missing Devel::GlobalDestruction dependency; get rid of List::MoreUtils, Moose::Autobox
 
