@@ -49,8 +49,6 @@ For example, to use L<MooseX::StrictConstructor> in every component:
     package My::Mason::Component::Moose;
     use Moose::Exporter;
     use MooseX::StrictConstructor ();
-    use strict;
-    use warnings;
     use base qw(Mason::Component::Moose);
 
     sub init_meta {
