@@ -32,8 +32,8 @@ contains just the page output, but plugins may add additional accessors.
 
 =item output
 
-The output of the entire page, unless L<Mason::Request/out_method> was defined
-in which case this will be empty.
+The output of the entire page, unless L<out_method|Mason::Request/out_method>
+was defined in which case this will be empty.
 
 =back
 

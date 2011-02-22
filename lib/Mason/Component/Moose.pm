@@ -42,7 +42,7 @@ and is equivalent to
 =head1 OVERRIDING
 
 To override the default behavior, subclass this class and specify it as
-C<base_component_moose_class> to L<Mason::Interp/Mason::Interp>.
+C<base_component_moose_class> to L<Mason::Interp|Mason::Interp>.
 
 For example, to use L<MooseX::StrictConstructor> in every component:
 

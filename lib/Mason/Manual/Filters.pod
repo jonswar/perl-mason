@@ -112,8 +112,8 @@ C<HTML> filter in L<Mason::Plugin::HTMLFilters|Mason::Plugin::HTMLFilters>:
 
 =head2 Manual invocation
 
-L<Mason::Request/apply_filter> can be used to manually apply a filter to a
-string. It returns the filtered output.
+L<apply_filter|Mason::Request/apply_filter> can be used to manually apply a
+filter to a string. It returns the filtered output.
 
 =head1 CREATING A FILTER
 

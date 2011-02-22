@@ -537,7 +537,7 @@ Clears the Mason output buffer. Any output sent before this line is discarded.
 Useful for handling error conditions that can only be detected in the middle of
 a request.
 
-clear_buffer is, of course, thwarted by L</flush_buffer>.
+clear_buffer is, of course, thwarted by L<flush_buffer|/flush_buffer>.
 
 =for html <a name="comp" />
 
@@ -601,7 +601,7 @@ C</dhandler.m>, and a third would throw a "not found" error.
 =item flush_buffer ()
 
 Flushes the main output buffer. Anything currently in the buffer is sent to the
-request's L</out_method>.
+request's L<out_method|/out_method>.
 
 Note that anything output within a C<< $m->scomp >> or C<< $m->capture >> will
 not have made it to the main output buffer, and thus cannot be flushed.
@@ -617,7 +617,7 @@ done.
 The first argument may optionally be a hashref of parameters which are passed
 to the C<Mason::Request> constructor.
 
-See also L</visit>.
+See also L<visit|/visit>.
 
 =for html <a name="interp" />
 
@@ -717,7 +717,7 @@ subrequest:
 
     $m->visit({out_method => \my $buffer}, ...);
 
-See also L</go>.
+See also L<go|/go>.
 
 =back
 
@@ -735,7 +735,7 @@ as stable as possible.
 
 A place to perform cleanup duties when the request finishes or dies with an
 error, even if the request object is not immediately destroyed. Includes
-anything registered with L</add_cleanup>.
+anything registered with L<add_cleanup|/add_cleanup>.
 
 =for html <a name="construct_page_component" />
 

@@ -82,16 +82,18 @@ components|Autobase components>.
 =head1 CALLING COMPONENTS
 
 The initial component in a request, called the page component, is called from
-L<Mason::Interp/run>, which in turn may be called from a PSGI handler or an MVC
-framework view depending on your setup. See L<Mason::Manual::RequestDispatch>
-for more information about how the page component is chosen.
+L<run|Mason::Interp/run>, which in turn may be called from a PSGI handler or an
+MVC framework view depending on your setup. See
+L<Mason::Manual::RequestDispatch> for more information about how the page
+component is chosen.
 
 A component can call another component with the L<E<lt>& &E<gt>
 tag|Mason::Manual::Syntax/CALLING COMPONENTS>:
 
     <& /path/to/comp.mi, name=>value, ... &>
 
-or via the L<Mason::Request/comp> or L<Mason::Request/scomp> methods:
+or via the L<comp|Mason::Request/comp> or L<scomp|Mason::Request/scomp>
+methods:
 
     <%init>
     $m->comp('/some/component.mi', foo => 5);
@@ -428,20 +430,21 @@ be changed for every component from a single place. See also
 L<Mason::Manual::ComponentGlobals>.
 
 Lines 6-19 create the L<Mason::Component::ClassMeta> object returned from
-L<Mason::Component/cmeta>.
+L<cmeta|Mason::Component/cmeta>.
 
-Lines 21-31 contain the L<Mason::Component/main> method, which encapsulates all
-the output and Perl statements in the component that aren't explicitly inside a
-C<< <%method> >> or C<< <%class> >> block.
+Lines 21-31 contain the L<main|Mason::Component/main> method, which
+encapsulates all the output and Perl statements in the component that aren't
+explicitly inside a C<< <%method> >> or C<< <%class> >> block.
 
 Lines 22, 24, and 26 contain '#line' statements which make error messages
 appear to come from the source file rather than the object file (and hence more
-useful). This can be disabled with L<Mason::Interp/no_source_line_numbers>.
+useful). This can be disabled with
+L<no_source_line_numbers|Mason::Interp/no_source_line_numbers>.
 
 Lines 23, 25, and 27 output plain strings or the results of code by appending
 them to the current output buffer. The current output buffer can change within
-a request, for example when L<Mason::Request/capture> or
-L<Mason::Request/scomp> is called.
+a request, for example when L<capture|Mason::Request/capture> or
+L<scomp|Mason::Request/scomp> is called.
 
 Two things that would be in a normal class are missing above: the C<package>
 and C<extends> declarations. These are added dynamically when the object file

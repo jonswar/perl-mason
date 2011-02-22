@@ -13,6 +13,7 @@
 ^dist\.ini
 ^docs
 ^git
+^htdocs
 ^inc/\.author
 ^lib/Dist
 ^lib/Mason/Plugin/make

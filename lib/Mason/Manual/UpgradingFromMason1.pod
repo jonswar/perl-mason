@@ -97,9 +97,9 @@ C<< <%once> >> has been replaced with C<< <%class> >>.
 
 C<< <%cleanup> >> has been eliminated; it was not very useful anyway, since it
 was not guaranteed to run after an exception. You can use
-L<Mason::Request/add_cleanup> to add cleanup code for the end of the request,
-which is good enough in most cases, or you can add a C<DEMOLISH> method to the
-component.
+L<add_cleanup|Mason::Request/add_cleanup> to add cleanup code for the end of
+the request, which is good enough in most cases, or you can add a C<DEMOLISH>
+method to the component.
 
 =item *
 
@@ -232,8 +232,9 @@ instead.
 =item *
 
 C<current_comp> has been eliminated. Within a component, use C<< $self >>;
-outside a component you can call L<Mason::Request/current_comp_class>, which
-will at least get you the class.
+outside a component you can call
+L<current_comp_class|Mason::Request/current_comp_class>, which will at least
+get you the class.
 
 =item *
 

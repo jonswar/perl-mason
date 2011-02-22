@@ -122,36 +122,37 @@ render the page
 =back
 
 It should not output any content itself. By default, it simply calls
-L</render>.
+L<render|/render>.
 
 =for html <a name="render" />
 
 =item render
 
-This method is invoked from L</handle> on the page component. Its job is to
-output the full content of the page. By default, it simply calls L</wrap>.
+This method is invoked from L<handle|/handle> on the page component. Its job is
+to output the full content of the page. By default, it simply calls
+L<wrap|/wrap>.
 
 =for html <a name="wrap" />
 
 =item wrap
 
-This method is invoked from L</render> on the page component.  By convention,
-C<wrap> is an L<augmented|Moose::Manual::MethodModifiers/INNER AND AUGMENT>
-method, with each superclass calling the next subclass.  This is useful for
-cascading templates in which the top-most superclass generates the surrounding
-content.
+This method is invoked from L<render|/render> on the page component.  By
+convention, C<wrap> is an L<augmented|Moose::Manual::MethodModifiers/INNER AND
+AUGMENT> method, with each superclass calling the next subclass.  This is
+useful for cascading templates in which the top-most superclass generates the
+surrounding content.
 
 By default, C<wrap> simply calls C<< inner() >> to go to the next subclass, and
-then L</main> at the bottom subclass.
+then L<main|/main> at the bottom subclass.
 
 =for html <a name="main" />
 
 =item main
 
 This method is invoked when a non-page component is called, and from the
-default L</wrap> method as well. It consists of the code and output in the main
-part of the component that is not inside a C<< <%method> >> or C<< <%class> >>
-tag.
+default L<wrap|/wrap> method as well. It consists of the code and output in the
+main part of the component that is not inside a C<< <%method> >> or C<<
+<%class> >> tag.
 
 =back
 

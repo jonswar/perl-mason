@@ -72,7 +72,7 @@ Mason::Component::ClassMeta - Meta-information about Mason component class
 Every L<Mason::Component|Mason::Component> class has an associated
 L<Mason::Component::ClassMeta|Mason::Component::ClassMeta> object, containing
 meta-information such as the component's path and source file. It can be
-accessed with the L<Mason::Component/cmeta> method.
+accessed with the L<cmeta|Mason::Component/cmeta> method.
 
 When called from an instance, a
 L<Mason::Component::InstanceMeta|Mason::Component::InstanceMeta> is returned,

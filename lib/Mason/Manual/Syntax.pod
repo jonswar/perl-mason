@@ -206,7 +206,7 @@ Text in this section is printed as-is with all Mason syntax ignored.
     </%text>
 
 This works for almost everything, but doesn't let you output C<< </%text> >>
-itself! When all else fails, use L<Mason::Request/print>:
+itself! When all else fails, use L<print|Mason::Request/print>:
 
     % $m->print('The tags are <%text> and </%text>.');
 
@@ -332,8 +332,8 @@ Here are some examples:
     # begin with a letter or number; delimit with () to remedy this
     <& (int(rand(2)) ? 'thiscomp.mi' : 'thatcomp.mi'), id=>123 &>
 
-You can also call components with the L<Mason::Request/comp> and
-L<Mason::Request/scomp> methods.
+You can also call components with the L<comp|Mason::Request/comp> and
+L<scomp|Mason::Request/scomp> methods.
 
 =head1 COMMENTS
 

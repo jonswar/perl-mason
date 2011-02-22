@@ -764,7 +764,7 @@ all) and only when other mechanisms (parameter passing, attributes, singletons)
 will not suffice. L<Catalyst::View::Mason2|Catalyst::View::Mason2>, for
 example, creates a C<< $c >> global set to the context object in each request.
 
-Set the values of globals with L</set_global> or L<Mason::Request/set_global>.
+Set the values of globals with L<set_global|/set_global>.
 
 =for html <a name="autobase_names" />
 
@@ -865,15 +865,16 @@ See L<Mason::Manual::Plugins>.
 
 =item out_method
 
-Default L<Request/out_method> passed to each new request.
+Default L<out_method|Request/out_method> passed to each new request.
 
 =for html <a name="pure_perl_extensions" />
 
 =item pure_perl_extensions
 
 A listref of file extensions of components to be considered as pure perl (see
-L<Mason::Manual::Syntax/Pure_Perl_Components>). Default is C<< ['.pm' >>. If an
-empty list is specified, then no components will be considered pure perl.
+L<Pure Perl Components|Mason::Manual::Syntax/Pure_Perl_Components>). Default is
+C<< ['.pm' >>. If an empty list is specified, then no components will be
+considered pure perl.
 
 =for html <a name="static_source" />
 
@@ -888,7 +889,7 @@ When true, Mason assumes that the component source tree is unchanging: it will
 not check component source files to determine if the memory cache or object
 file has expired.  This can save many file stats per request. However, in order
 to get Mason to recognize a component source change, you must touch the
-L</static_source_touch_file>.
+L<static_source_touch_file|/static_source_touch_file>.
 
 We recommend turning this mode on in your production sites if possible, if
 performance is of any concern.
@@ -898,9 +899,9 @@ performance is of any concern.
 =item static_source_touch_file
 
 Specifies a filename that Mason will check once at the beginning of every
-request when in L</static_source> mode. When the file timestamp changes
-(indicating that a component has changed), Mason will clear its in-memory
-component cache and recheck existing object files.
+request when in L<static_source|/static_source> mode. When the file timestamp
+changes (indicating that a component has changed), Mason will clear its
+in-memory component cache and recheck existing object files.
 
 =for html <a name="top_level_extensions" />
 
@@ -1065,13 +1066,13 @@ to standard output:
 =item set_global (varname, value)
 
 Set the global I<varname> to I<value>. This will be visible in all components
-loaded by this interpreter. The variables must be on the L</allow_globals>
-list.
+loaded by this interpreter. The variables must be on the
+L<allow_globals|/allow_globals> list.
 
     $interp->set_global('$scalar', 5);
     $interp->set_global('$scalar2', $some_object);
 
-See also L<Mason::Request/set_global>.
+See also L<set_global|Mason::Request/set_global>.
 
 =back
 
@@ -1088,14 +1089,14 @@ their APIs stable.
 =item is_pure_perl_comp_path ($path)
 
 Determines whether I<$path> is a pure Perl component - by default, uses
-L</pure_perl_extensions>.
+L<pure_perl_extensions|/pure_perl_extensions>.
 
 =for html <a name="is_top_level_comp_path" />
 
 =item is_top_level_comp_path ($path)
 
 Determines whether I<$path> is a valid top-level component - by default, uses
-L</top_level_extensions>.
+L<top_level_extensions|/top_level_extensions>.
 
 =for html <a name="modify_loaded_class" />
 
