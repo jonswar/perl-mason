@@ -100,7 +100,7 @@ L<Rose::DB::Object::Tutorial> for more information.
 First we install some modules.
 
     # Requires cpanm: http://search.cpan.org/perldoc?App::cpanminus
-    cpanm -S Date::Format DBD::SQLite Mason Mason::Plugin::PSGIHandler
+    cpanm -S Date::Format DBD::SQLite Mason Mason::Plugin::PSGIHandler Mason::Plugin::HTMLFilters
     cpanm -S Plack Plack::Middleware::Session Rose::DB::Object
 
 C<mason_psgi_setup>, which comes with the PSGI plugin, is the easiest way to
