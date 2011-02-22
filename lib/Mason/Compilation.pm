@@ -480,6 +480,7 @@ method _handle_attributes_list ($contents, $attr_type) {
             push( @attributes, $self->_attribute_declaration( $name, $params, $line_number ) );
         }
         else {
+            $self->{line_number} = $line_number;
             $self->throw_syntax_error("Invalid attribute line '$line'");
         }
     }

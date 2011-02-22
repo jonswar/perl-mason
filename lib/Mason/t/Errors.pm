@@ -13,21 +13,21 @@ sub test_errors : Test(22) {
         '<& /does/not/exist &>',
         qr/could not find component for path '\/does\/not\/exist' - component root is \Q[$root]\E/,
     );
-    $try->( '<%method>',                  qr/<%method> block requires a name/ );
-    $try->( '<%before>',                  qr/<%before> block requires a name/ );
-    $try->( '<%init>',                    qr/<%init> without matching <\/%init>/ );
-    $try->( '<%attr>',                    qr/unknown block '<%attr>'/ );
-    $try->( '<%',                         qr/'<%' without matching '%>'/ );
-    $try->( '<& foo',                     qr/'<&' without matching '&>'/ );
-    $try->( '%my $i = 1;',                qr/% must be followed by whitespace/ );
-    $try->( '%%my $i = 1;',               qr/%% must be followed by whitespace/ );
-    $try->( "%% if (1) {\nhi\n%% }",      qr/%%-lines cannot be used to surround content/ );
-    $try->( "<%5\n\n%>",                  qr/whitespace required after '<%' at .* line 1/ );
-    $try->( "<%\n\n5%>",                  qr/whitespace required before '%>' at .* line 3/ );
-    $try->( "<%args>\n123\n</%args>",     qr/Invalid attribute line '123'/ );
-    $try->( "<%args>\n\$\$abc\n</%args>", qr/Invalid attribute line '\$\$abc'/ );
-    $try->( '<% $.Upper { %>Hi',     qr/<% { %> without matching <\/%>/ );
-    $try->( '<%method 1a>Hi</%method>',   qr/Invalid method name '1a'/ );
+    $try->( '<%method>',                    qr/<%method> block requires a name/ );
+    $try->( '<%before>',                    qr/<%before> block requires a name/ );
+    $try->( '<%init>',                      qr/<%init> without matching <\/%init>/ );
+    $try->( '<%attr>',                      qr/unknown block '<%attr>'/ );
+    $try->( '<%',                           qr/'<%' without matching '%>'/ );
+    $try->( '<& foo',                       qr/'<&' without matching '&>'/ );
+    $try->( '%my $i = 1;',                  qr/% must be followed by whitespace/ );
+    $try->( '%%my $i = 1;',                 qr/%% must be followed by whitespace/ );
+    $try->( "%% if (1) {\nhi\n%% }",        qr/%%-lines cannot be used to surround content/ );
+    $try->( "<%5\n\n%>",                    qr/whitespace required after '<%' at .* line 1/ );
+    $try->( "<%\n\n5%>",                    qr/whitespace required before '%>' at .* line 3/ );
+    $try->( "<%args>\n\$\$abc\n</%args>",   qr/Invalid attribute line '\$\$abc' at .* line 2/ );
+    $try->( "<%args>\na\nb\n123\n</%args>", qr/Invalid attribute line '123' at .* line 4/ );
+    $try->( '<% $.Upper { %>Hi',       qr/<% { %> without matching <\/%>/ );
+    $try->( '<%method 1a>Hi</%method>',     qr/Invalid method name '1a'/ );
     $try->(
         "<%method a>Hi</%method>\n<%method a>Bye</%method>",
         qr/Duplicate definition of method 'a'/
