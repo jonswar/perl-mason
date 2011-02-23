@@ -47,7 +47,7 @@ method BUILD ($params) {
     $self->{orig_request_params} = $params;
 }
 
-method _build_result  () {
+method _build_result () {
     return $self->interp->result_class->new;
 }
 
@@ -229,14 +229,6 @@ method construct_page_component ($compc, $args) {
     return $compc->new( %$args, 'm' => $self );
 }
 
-method dispatch_to_page_component ($page) {
-    $self->catch_abort(
-        sub {
-            $page->handle();
-        }
-    );
-}
-
 method catch_abort ($code) {
     my $retval;
     try {
@@ -307,15 +299,19 @@ method run () {
     $log->debugf( "starting request with component '%s'", $page_path )
       if $log->is_debug;
 
-    # Construct page component
-    #
-    my $page = $self->construct_page_component( $page_compc, $request_args );
-    $self->{page} = $page;
+    $self->catch_abort(
+        sub {
 
-    # Dispatch to page component, with 'print' tied to component output.
-    # Will catch aborts but throw other fatal errors.
-    #
-    $self->with_tied_print( sub { $self->dispatch_to_page_component($page) } );
+            # Construct page component
+            #
+            my $page = $self->construct_page_component( $page_compc, $request_args );
+            $self->{page} = $page;
+
+            # Dispatch to page component, with 'print' tied to component output.
+            #
+            $self->with_tied_print( sub { $page->handle } );
+        }
+    );
 
     # If declined, retry match
     #
