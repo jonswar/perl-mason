@@ -9,6 +9,10 @@ Revision history for Mason
   - Include HTMLFilters in eg/blog/install.sh (qiuhw)
   - Fix t/mason-app.t to be perl-location-agnostic (qiuhw)
 
+* Backend
+  - Remove InstanceMeta object, make args() a direct method of component
+  - Add pluggable Mason::Component::Import for importing non-Moose things into components
+
 2.01  Feb 20, 2011
 
 * Fixes
