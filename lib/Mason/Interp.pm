@@ -693,15 +693,14 @@ method _source_file_for_path ($path) {
 #
 sub _define_class_override_methods {
     my %class_overrides = (
-        code_cache_class              => 'CodeCache',
-        compilation_class             => 'Compilation',
-        component_class               => 'Component',
-        component_moose_class         => 'Component::Moose',
-        component_class_meta_class    => 'Component::ClassMeta',
-        component_import_class        => 'Component::Import',
-        component_instance_meta_class => 'Component::InstanceMeta',
-        request_class                 => 'Request',
-        result_class                  => 'Result',
+        code_cache_class           => 'CodeCache',
+        compilation_class          => 'Compilation',
+        component_class            => 'Component',
+        component_moose_class      => 'Component::Moose',
+        component_class_meta_class => 'Component::ClassMeta',
+        component_import_class     => 'Component::Import',
+        request_class              => 'Request',
+        result_class               => 'Result',
     );
 
     while ( my ( $method_name, $name ) = each(%class_overrides) ) {
@@ -967,13 +966,6 @@ Specify alternate to L<Mason::Component::ClassMeta|Mason::Component::ClassMeta>
 =item base_component_import_class
 
 Specify alternate to L<Mason::Component::Import|Mason::Component::Import>
-
-=for html <a name="base_component_instance_meta_class" />
-
-=item base_component_instance_meta_class
-
-Specify alternate to
-L<Mason::Component::InstanceMeta|Mason::Component::InstanceMeta>
 
 =for html <a name="base_request_class" />
 

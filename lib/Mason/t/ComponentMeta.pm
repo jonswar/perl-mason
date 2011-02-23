@@ -1,7 +1,7 @@
 package Mason::t::ComponentMeta;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_cmeta : Test(12) {
+sub test_cmeta : Test(11) {
     my $self = shift;
     $self->run_test_in_comp(
         path => '/component/meta.m',
@@ -16,10 +16,9 @@ sub test_cmeta : Test(12) {
                 is( $cmeta->source_file,  $source_file,        'source_file' );
                 like( $cmeta->object_file, qr|/component/meta.m.mobj|, 'object_file' );
             }
-            my $args = $comp->cmeta->args;
+            my $args = $comp->args;
             delete( $args->{_test} );
             cmp_deeply( $args, { foo => 5, bar => [ 'baz', 7 ] } );
-            throws_ok { ref($comp)->cmeta->args } qr/cannot call args.*/;
         },
     );
 }

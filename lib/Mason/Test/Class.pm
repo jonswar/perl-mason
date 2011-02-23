@@ -125,7 +125,7 @@ method test_existing_comp (%params) {
 method run_test_in_comp (%params) {
     my $test = delete( $params{test} ) || die "must pass test";
     my $args = delete( $params{args} ) || {};
-    $self->add_comp( %params, src => '% $.cmeta->args->{_test}->($self);' );
+    $self->add_comp( %params, src => '% $.args->{_test}->($self);' );
     ( my $request_path = $params{path} ) =~ s/\.m$//;
     my @run_params = ( $request_path, %$args );
     $self->interp->run( @run_params, _test => $test );

@@ -128,7 +128,6 @@ As of this writing the following Mason classes can be modified with plugins:
     Mason::Component
     Mason::Component::ClassMeta
     Mason::Component::Import
-    Mason::Component::InstanceMeta
     Mason::Request
     Mason::Result
 

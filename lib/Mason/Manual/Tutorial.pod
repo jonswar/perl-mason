@@ -483,7 +483,7 @@ rather than a Mason component. >>
      5      my $session = $m->req->session;
      6      if ( !$.content || !$.title ) {
      7          $session->{message} = "Content and title required.";
-     8          $session->{form_data} = $.cmeta->args;
+     8          $session->{form_data} = $.args;
      9          $m->redirect('/new_article');
     10      }
     11      my $article = Blog::Article->new
@@ -530,9 +530,8 @@ Now, any page can place a message in the session, and it'll appear on just the
 next page.
 
 On line 8, we place the POST data in the session so that we can repopulate the
-form with it - we'll do that in the next chapter. L<C<< $.cmeta
->>|Mason::Component/cmeta> provides access to various meta-information about
-the component, such as its path and the arguments that were passed to it.
+form with it - we'll do that in the next chapter. C<< $.args >> is a special
+component attribute that contains all the arguments passed to the component.
 
 =head1 CHAPTER 8
 

@@ -201,8 +201,9 @@ which case you can say
 
     $.foo = 5;
 
-C<< $.cmeta->args >> will return a hashref of all of the attributes passed to
-the component when it was created/called.
+C<< $.args >> will return a hashref of all of the parameters passed to the
+component when it was created/called, regardless of whether they correspond to
+declared attributes.
 
 =head1 METHODS
 

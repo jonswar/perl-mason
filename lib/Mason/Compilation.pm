@@ -336,7 +336,7 @@ method _output_class_footer () {
 method _output_class_header () {
     return join(
         "\n",
-        "use Mason::Component::Moose;",
+        "use " . $self->interp->component_moose_class . ";",
         "use " . $self->interp->component_import_class . ";",
         "our (\$m, \$_m_buffer);",
         "*m = \\\$Mason::Request::current_request;",
