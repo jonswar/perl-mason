@@ -703,6 +703,11 @@ sub _define_class_override_methods {
         result_class               => 'Result',
     );
 
+    # e.g.
+    # $method_name        = component_moose_class
+    # $base_method_name   = base_component_moose_class
+    # $default_base_class = Mason::Component::Moose
+    #
     while ( my ( $method_name, $name ) = each(%class_overrides) ) {
         my $base_method_name   = "base_$method_name";
         my $default_base_class = "Mason::$name";
@@ -711,9 +716,11 @@ sub _define_class_override_methods {
         has $base_method_name => ( isa      => 'Str', default    => $default_base_class );
         __PACKAGE__->meta->add_method(
             "_build_$method_name" => sub {
-                my $self = shift;
-                return Mason::PluginManager->apply_plugins_to_class( $self->$base_method_name,
-                    $name, $self->plugins );
+                my $self       = shift;
+                my $base_class = $self->$base_method_name;
+                Class::MOP::load_class($base_class);
+                return Mason::PluginManager->apply_plugins_to_class( $base_class, $name,
+                    $self->plugins );
             }
         );
     }
