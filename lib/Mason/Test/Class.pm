@@ -99,6 +99,7 @@ method test_existing_comp (%params) {
     my $desc         = $params{desc} || $path;
     my $expect       = trim( $params{expect} );
     my $expect_error = $params{expect_error};
+    my $expect_data  = $params{expect_data};
     my $verbose      = $params{v} || $params{verbose};
     my $args         = $params{args} || {};
     ( my $request_path = $path ) =~ s/\.(m|pm)$//;
@@ -119,6 +120,10 @@ method test_existing_comp (%params) {
         else {
             is( $output, $expect, $desc );
         }
+    }
+    elsif ( defined($expect_data) ) {
+        $desc ||= $caller;
+        cmp_deeply( $self->interp->run(@run_params)->data, $expect_data, $desc );
     }
 }
 

@@ -71,6 +71,14 @@ sub test_page : Test(1) {
     );
 }
 
+sub test_result_data : Test(1) {
+    my $self = shift;
+    $self->test_comp(
+        src         => '% $m->result->data->{color} = "red"',
+        expect_data => { color => "red" }
+    );
+}
+
 sub test_subrequest : Test(4) {
     my $self = shift;
 

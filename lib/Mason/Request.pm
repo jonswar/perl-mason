@@ -10,7 +10,7 @@ use Mason::Moose;
 use Scalar::Util qw(blessed reftype);
 use Try::Tiny;
 
-my $default_out = sub { my ( $text, $self ) = @_; $self->{output} .= $text };
+my $default_out = sub { my ( $text, $self ) = @_; $self->result->_append_output($text) };
 my $next_id = 0;
 
 # Passed attributes
@@ -31,6 +31,7 @@ has 'path_info'          => ( init_arg => undef, default => '' );
 has 'request_args'       => ( init_arg => undef );
 has 'request_code_cache' => ( init_arg => undef, default => sub { {} } );
 has 'request_path'       => ( init_arg => undef );
+has 'result'             => ( init_arg => undef, lazy_build => 1 );
 has 'run_params'         => ( init_arg => undef );
 
 # Globals, localized to each request
@@ -44,6 +45,10 @@ method current_request () { $current_request }
 
 method BUILD ($params) {
     $self->{orig_request_params} = $params;
+}
+
+method _build_result  () {
+    return $self->interp->result_class->new;
 }
 
 #
@@ -115,10 +120,6 @@ method construct () {
     my $compc = $self->load($path)
       or $self->_comp_not_found($path);
     return $compc->new( @_, 'm' => $self );
-}
-
-method create_result_object () {
-    return $self->interp->result_class->new(@_);
 }
 
 method current_comp_class () {
@@ -332,9 +333,7 @@ method run () {
     #
     $self->flush_buffer;
 
-    # Create and return result object
-    #
-    return $self->create_result_object( output => $self->output );
+    return $self->result;
 }
 
 method request_path_not_found ($path) {
