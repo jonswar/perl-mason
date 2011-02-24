@@ -66,3 +66,12 @@ The default C<allow_path_info> returns false.
 C<allow_path_info> is not checked on dhandlers, since the whole point of
 dhandlers is to match partial paths.
 
+=head2 Routes
+
+It is possible to use route syntax to more elegantly parse C<< $m->path_info >>
+for dhandlers and partial paths, e.g.
+
+    %% route "{year:[0-9]+}/{month:[0-9]{2}}";
+
+See L<Mason::Plugin::RouterSimple>.
+
