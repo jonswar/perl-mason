@@ -159,7 +159,13 @@ method _build_top_level_regex () {
         return qr/./;                     # matches everything
     }
     else {
-        my $regex = join( '|', @$extensions ) . '$';
+        my $regex = join( '|', @$extensions );
+        if ( my @other_names = grep { !/$regex/ } @{ $self->dhandler_names },
+            @{ $self->index_names } )
+        {
+            $regex .= '|(?:/(?:' . join( '|', @other_names ) . '))';
+        }
+        $regex = '(?:' . $regex . ')$';
         return qr/$regex/;
     }
 }
@@ -474,15 +480,11 @@ method _build_match_request_path ($interp:) {
     # Create a closure for efficiency - all this data is immutable for an interp.
     #
     my @dhandler_subpaths = map { "/$_" } @{ $interp->dhandler_names };
-    my $regex = '(/'
-      . join( "|",
-        @{ $interp->autobase_names },
-        @{ $interp->dhandler_names },
-        @{ $interp->index_names } )
-      . ')$';
-    my $ignore_file_regex = qr/$regex/;
-    my %is_dhandler_name  = map { ( $_, 1 ) } @{ $interp->dhandler_names };
-    my @autoextensions    = @{ $interp->autoextend_request_path };
+    my $ignore_file_regex =
+      '(/' . join( "|", @{ $interp->autobase_names }, @{ $interp->dhandler_names } ) . ')$';
+    $ignore_file_regex = qr/$ignore_file_regex/;
+    my %is_dhandler_name = map { ( $_, 1 ) } @{ $interp->dhandler_names };
+    my @autoextensions = @{ $interp->autoextend_request_path };
 
     return sub {
         my ( $request, $request_path ) = @_;
@@ -503,7 +505,7 @@ method _build_match_request_path ($interp:) {
                 next if $declined_paths->{$candidate_path};
                 if ( my $compc = $interp->load($candidate_path) ) {
                     if (
-                        ( $candidate_path =~ /$ignore_file_regex/ || $compc->cmeta->is_top_level )
+                        $compc->cmeta->is_top_level
                         && (   $path_info eq ''
                             || $compc->cmeta->is_dhandler
                             || $compc->allow_path_info )

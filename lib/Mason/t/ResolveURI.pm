@@ -1,7 +1,7 @@
 package Mason::t::ResolveURI;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_resolve : Tests(32) {
+sub test_resolve : Tests(33) {
     my $self = shift;
 
     my @interp_params = ();
@@ -60,15 +60,16 @@ sub test_resolve : Tests(32) {
     $try->( $run_path, ['/foo/blarg.m'],                  undef );
     $try->( $run_path, ['/foo/blarg/dhandler.m'],         undef );
 
-    # Can't access autobase, dhandler or index directly.
+    # Can't access autobase or dhandler directly, but can access index
     $try->( '/foo/Base',     ['/foo/Base.m'],     undef );
     $try->( '/foo/dhandler', ['/foo/dhandler.m'], '/foo/dhandler.m', 'dhandler' );
-    $try->( '/foo/index',    ['/foo/index.m'],    undef );
+    $try->( '/foo/index',    ['/foo/index.m'],    '/foo/index.m' );
 
     # no autoextend_run_path
     @interp_params = ( autoextend_request_path => [], top_level_extensions => ['.html'] );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html.m'], undef );
+    $try->( "/foo.m/bar.mi",     ['/foo.m/bar.mi'],       undef );
 
     # dhandler_names
     @interp_params = ( dhandler_names => ['dhandler'] );
