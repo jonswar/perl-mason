@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** denotes an incompatible change
 
-2.02  Feb 20, 2011
+2.02  Feb 24, 2011
 
 * Fixes
   - Allow index file (index.m, index.pm) to be accessed directly with /index path (Matthias Dietrich)
