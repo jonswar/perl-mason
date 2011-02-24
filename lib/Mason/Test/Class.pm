@@ -111,7 +111,7 @@ method test_existing_comp (%params) {
         $desc ||= $expect_error;
         throws_ok( sub { $self->interp->run(@run_params) }, $expect_error, $desc );
     }
-    elsif ( defined($expect) ) {
+    if ( defined($expect) ) {
         $desc ||= $caller;
         my $output = trim( $self->interp->run(@run_params)->output );
         if ( ref($expect) eq 'Regexp' ) {
@@ -121,7 +121,7 @@ method test_existing_comp (%params) {
             is( $output, $expect, $desc );
         }
     }
-    elsif ( defined($expect_data) ) {
+    if ( defined($expect_data) ) {
         $desc ||= $caller;
         cmp_deeply( $self->interp->run(@run_params)->data, $expect_data, $desc );
     }
