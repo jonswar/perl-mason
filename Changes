@@ -4,6 +4,9 @@ Revision history for Mason
 
 2.03  Feb 24, 2011
 
+* Fixes
+  - Depend on Log::Any 0.08, for Log::Any::Test (David Wheeler)
+
 2.02  Feb 24, 2011
 
 * Fixes
