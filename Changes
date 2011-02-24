@@ -9,6 +9,7 @@ Revision history for Mason
   - Fix error line # for invalid attribute
   - Include HTMLFilters in eg/blog/install.sh (qiuhw)
   - Fix t/mason-app.t to be perl-location-agnostic (qiuhw)
+  - Prevent CPAN from indexing built-in plugin implementation files
 
 * Backend
   - Remove InstanceMeta object, make args() a direct method of component
