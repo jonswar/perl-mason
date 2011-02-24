@@ -5,6 +5,7 @@ Revision history for Mason
 2.02  Feb 20, 2011
 
 * Fixes
+  - Allow index file (index.m, index.pm) to be accessed directly with /index path (Matthias Dietrich)
   - Fix error line # for invalid attribute
   - Include HTMLFilters in eg/blog/install.sh (qiuhw)
   - Fix t/mason-app.t to be perl-location-agnostic (qiuhw)
