@@ -8,6 +8,17 @@ sub _get_current_comp_class {
     return $m->current_comp_class;
 }
 
+sub test_capture : Test(1) {
+    my $self = shift;
+    $self->run_test_in_comp(
+        test => sub {
+            my $comp = shift;
+            my $m    = $comp->m;
+            is( $m->capture( sub { print "abcde" } ), 'abcde' );
+        }
+    );
+}
+
 sub test_comp_exists : Test(1) {
     my $self = shift;
 
@@ -76,6 +87,19 @@ sub test_result_data : Test(1) {
     $self->test_comp(
         src         => '% $m->result->data->{color} = "red"',
         expect_data => { color => "red" }
+    );
+}
+
+sub test_scomp : Test(2) {
+    my $self = shift;
+    $self->add_comp( path => '/str', src => 'abcde' );
+    $self->run_test_in_comp(
+        test => sub {
+            my $comp = shift;
+            my $m    = $comp->m;
+            is( $m->scomp('/str'), 'abcde' );
+            is( $m->capture( sub { $m->scomp('/str') } ), '' );
+        }
     );
 }
 

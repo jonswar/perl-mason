@@ -81,10 +81,15 @@ method remove_comp (%params) {
     unlink($source_file);
 }
 
-method test_comp (%params) {
-    my $caller = ( caller(1) )[3];
+method _gen_comp_path () {
+    my $caller = ( caller(2) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
-    my $path    = $params{path} || ( "/$caller_base" . ( ++$gen_path_count ) . ".m" );
+    my $path = "/$caller_base" . ( ++$gen_path_count ) . ".m";
+    return $path;
+}
+
+method test_comp (%params) {
+    my $path    = $params{path} || $self->_gen_comp_path;
     my $source  = $params{src}  || " ";
     my $verbose = $params{v}    || $params{verbose};
 
@@ -130,6 +135,7 @@ method test_existing_comp (%params) {
 method run_test_in_comp (%params) {
     my $test = delete( $params{test} ) || die "must pass test";
     my $args = delete( $params{args} ) || {};
+    $params{path} ||= $self->_gen_comp_path;
     $self->add_comp( %params, src => '% $.args->{_test}->($self);' );
     ( my $request_path = $params{path} ) =~ s/\.m$//;
     my @run_params = ( $request_path, %$args );

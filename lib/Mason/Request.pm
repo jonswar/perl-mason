@@ -194,7 +194,8 @@ method rel_to_abs ($path) {
 }
 
 method scomp () {
-    my $buf = $self->capture( sub { $self->comp(@_) } );
+    my @params = @_;
+    my $buf = $self->capture( sub { $self->comp(@params) } );
     return $buf;
 }
 

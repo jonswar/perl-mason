@@ -4,6 +4,9 @@ Revision history for Mason
 
 2.04  Feb 24, 2011
 
+* Fixes
+  - Fix broken $m->scomp (Tomohiro Hosaka)
+
 2.03  Feb 24, 2011
 
 * Improvements
