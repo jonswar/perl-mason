@@ -1,7 +1,7 @@
 package Mason::t::Errors;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_errors : Test(22) {
+sub test_comp_errors : Test(22) {
     my $self = shift;
     my $try  = sub {
         my ( $src, $expect_error ) = @_;
@@ -40,6 +40,12 @@ sub test_errors : Test(22) {
     $try->( '<% "foobar" { %>Hi</%>',        qr/'foobar' is neither a code ref/ );
     $try->( "<%flags>\nfoo => 1\n</%flags>", qr/Invalid flag 'foo'/ );
     $try->( '<% $foo %>', qr/Global symbol "\$foo" requires explicit package name/ );
+}
+
+sub test_non_comp_errors : Test(1) {
+    my $self = shift;
+    throws_ok( sub { $self->interp->_make_request()->current_comp_class },
+        qr/cannot determine current_comp_class/ );
 }
 
 1;

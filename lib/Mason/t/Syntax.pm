@@ -63,6 +63,7 @@ sub test_empty_percents2 : Test(1) {
 some text,
 %
 % $m->print('foo, ');
+% $m->print(undef);
 and some more
 EOF
         expect => <<'EOF',
