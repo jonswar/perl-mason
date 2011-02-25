@@ -9,12 +9,13 @@ use strict;
 use warnings;
 
 my $usage =
-  "usage: $0 [--data-dir dir] [--plugins Plugin1,Plugin2] [--args json-string] [template-file]";
+  "usage: $0 [--data-dir dir] [--plugins Plugin1,Plugin2] [--args json-string] [-e source] [template-file]";
 
 sub run {
-    my ( %params, $args, $help );
+    my ( %params, $args, $source, $help );
     GetOptions(
         'args=s' => \$args,
+        'e=s'    => \$source,
         'h|help' => \$help,
         map { dashify($_) . "=s" => \$params{$_} } qw(data_dir plugins)
     ) or usage();
@@ -28,13 +29,21 @@ sub run {
     }
     my %run_args = defined($args) ? %{ decode_json($args) } : ();
 
-    my $file = shift(@ARGV);
-    usage() if @ARGV;
-    if ( !$file ) {
-        my $tempdir = tempdir( 'mason-XXXX', TMPDIR => 1, CLEANUP => 1 );
-        $file = "$tempdir/stdin.m";
+    my $tempdir = tempdir( 'mason-XXXX', TMPDIR => 1, CLEANUP => 1 );
+    my $file;
+    if ($source) {
+        $file = "$tempdir/source.m";
         open( my $fh, ">", $file );
-        while (<STDIN>) { print $fh $_ }
+        print $fh $source;
+    }
+    else {
+        $file = shift(@ARGV);
+        usage() if @ARGV;
+        if ( !$file ) {
+            $file = "$tempdir/stdin.m";
+            open( my $fh, ">", $file );
+            while (<STDIN>) { print $fh $_ }
+        }
     }
 
     my $comp_root = dirname($file);

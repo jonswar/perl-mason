@@ -19,13 +19,16 @@ mason - evaluate a mason template and output the result
    # Evaluate template from STDIN
    mason [mason options] [--args json-string]
 
+   # Evaluate template in string
+   mason [mason options] [--args json-string] -e "string"
+
    # Evaluate template in file
    mason [mason options] [--args json-string] template-file
 
 =head1 DESCRIPTION
 
-Reads a Mason template (component) from STDIN or a file, runs it and outputs
-the result to STDOUT.
+Reads a Mason template (component) from STDIN, a string, or a file. Runs the
+template and outputs the result to STDOUT.
 
 =head1 MASON OPTIONS
 
