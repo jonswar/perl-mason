@@ -55,9 +55,8 @@ method create_interp () {
     $params{plugins} = $default_plugins if @$default_plugins;
     rmtree( $self->data_dir );
     return Mason->new(
-        comp_root              => $self->comp_root,
-        data_dir               => $self->data_dir,
-        no_source_line_numbers => 1,
+        comp_root => $self->comp_root,
+        data_dir  => $self->data_dir,
         %params,
     );
 }

@@ -131,4 +131,29 @@ EOF
     );
 }
 
+sub test_empty_sections : Test(1) {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+hi
+<%after foo></%after>
+<%around foo></%around>
+<%before foo></%before>
+<%method foo></%method>
+<%filter bar></%filter>
+<%override allow_path_info></%override>
+<%args></%args>
+<%class></%class>
+<%doc></%doc>
+<%flags></%flags>
+<%init></%init>
+<%perl></%perl>
+<%shared></%shared>
+<%text></%text>
+bye
+',
+        expect => "hibye",
+    );
+}
+
 1;

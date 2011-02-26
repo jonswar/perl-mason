@@ -1,7 +1,7 @@
 package Mason::t::Errors;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_comp_errors : Test(25) {
+sub test_comp_errors : Test(31) {
     my $self = shift;
     my $try  = sub {
         my ( $src, $expect_error, %extra ) = @_;
@@ -22,6 +22,8 @@ sub test_comp_errors : Test(25) {
     $try->( '<%before>',                    qr/<%before> block requires a name/ );
     $try->( '<%init>',                      qr/<%init> without matching <\/%init>/ );
     $try->( '<%attr>',                      qr/unknown block '<%attr>'/ );
+    $try->( '<%blah>',                      qr/unknown block '<%blah>'/ );
+    $try->( '<%init foo>',                  qr/<%init> block does not take a name/ );
     $try->( '<%',                           qr/'<%' without matching '%>'/ );
     $try->( '<& foo',                       qr/'<&' without matching '&>'/ );
     $try->( '%my $i = 1;',                  qr/% must be followed by whitespace/ );
@@ -42,10 +44,15 @@ sub test_comp_errors : Test(25) {
         "<%before a>Hi</%before>\n<%before a>Bye</%before>",
         qr/Duplicate definition of method modifier 'before a'/
     );
+    $try->(
+        '<%method b><%after main>Hi</%after></%method>',
+        qr/Cannot nest <%after> block inside <%method> block/
+    );
     $try->( '<% "foobar" { %>Hi</%>',        qr/'foobar' is neither a code ref/ );
     $try->( "<%flags>\nfoo => 1\n</%flags>", qr/Invalid flag 'foo'/ );
     $try->( "<%flags>\nextends => 'blah'\n</%flags>",
         qr/could not load '\/blah' for extends flag/ );
+    $try->( "<%flags>\nextends => %foo\n</%flags>", qr/Global symbol/ );
     $try->( '<% $foo %>',      qr/Global symbol "\$foo" requires explicit package name/ );
     $try->( '%% die "bleah";', qr/bleah/ );
     $try->( 'die "blargh";',   qr/blargh/, path => '/blargh.pm' );

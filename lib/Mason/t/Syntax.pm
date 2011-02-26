@@ -146,6 +146,22 @@ g = 8
     );
 }
 
+sub test_multiline_comment : Test(1) {
+    my $self = shift;
+
+    $self->test_comp(
+        src => '
+hi<%
+    # comment
+
+    # another comment
+
+%>bye
+',
+        expect => 'hibye',
+    );
+}
+
 sub test_shared : Test(3) {
     shift->test_parse(
         src => '

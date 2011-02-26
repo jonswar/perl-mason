@@ -42,7 +42,6 @@ method _build_dir_path () {
 # Parse the component source, or a single method block body
 #
 method parse () {
-    $self->{in_block}       = undef;
     $self->{last_code_type} = '';
 
     if ( $self->{is_pure_perl} ) {
@@ -106,12 +105,6 @@ method _match_block ($block_regex, $named) {
 
         $self->throw_syntax_error("<%$block_type> block does not take a name")
           if ( !$named && defined($name) );
-
-        $self->throw_syntax_error(
-            "Cannot nest a $block_type block inside a $self->{in_block} block")
-          if $self->{in_block};
-
-        local $self->{in_block} = $block_type;
 
         my $block_method = "_handle_${block_type}_block";
 
@@ -511,7 +504,9 @@ method _handle_init_block ($contents) {
 # Save current regex position, then locally set source to the contents and
 # recursively parse.
 #
-method _recursive_parse ($contents, $method) {
+method _recursive_parse ($block_type, $contents, $method) {
+    local $self->{in_recursive_parse} = $block_type;
+
     my $save_pos = pos( $self->{source} );
     scope_guard { pos( $self->{source} ) = $save_pos };
     {
@@ -521,11 +516,17 @@ method _recursive_parse ($contents, $method) {
     }
 }
 
+method _assert_not_nested ($block_type) {
+    $self->throw_syntax_error(
+        "Cannot nest <%$block_type> block inside <%$self->{in_recursive_parse}> block")
+      if $self->{in_recursive_parse};
+}
+
 method _handle_apply_filter ($filter_expr) {
     my $rest = substr( $self->{source}, pos( $self->{source} ) );
     my $method = $self->_new_method_hash( type => 'apply_filter' );
     local $self->{end_parse} = undef;
-    $self->_recursive_parse( $rest, $method );
+    $self->_recursive_parse( 'filter', $rest, $method );
     if ( my $incr = $self->{end_parse} ) {
         pos( $self->{source} ) += $incr;
     }
@@ -547,10 +548,12 @@ method _handle_method_block ( $contents, $name, $arglist ) {
     $self->throw_syntax_error("Duplicate definition of method '$name'")
       if exists $self->{methods}->{$name};
 
+    $self->_assert_not_nested('method');
+
     my $method = $self->_new_method_hash( name => $name, arglist => $arglist );
     $self->{methods}->{$name} = $method;
 
-    $self->_recursive_parse( $contents, $method );
+    $self->_recursive_parse( 'method', $contents, $method );
 }
 
 method _handle_after_block ()    { $self->_handle_method_modifier_block( 'after',    @_ ) }
@@ -565,6 +568,8 @@ method _handle_method_modifier_block ( $block_type, $contents, $name ) {
     $self->throw_syntax_error("Invalid method modifier name '$name'")
       if $name !~ /^$identifier$/;
 
+    $self->_assert_not_nested($block_type);
+
     my $method_key = "$block_type $name";
 
     $self->throw_syntax_error("Duplicate definition of method modifier '$method_key'")
@@ -574,7 +579,7 @@ method _handle_method_modifier_block ( $block_type, $contents, $name ) {
       $self->_new_method_hash( name => $name, type => 'modifier', modifier => $modifier );
     $self->{methods}->{"$method_key"} = $method;
 
-    $self->_recursive_parse( $contents, $method );
+    $self->_recursive_parse( $block_type, $contents, $method );
 }
 
 method _handle_filter_block ($contents, $name, $arglist) {
