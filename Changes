@@ -7,6 +7,9 @@ Revision history for Mason
 * Fixes
   - Fix broken $m->scomp (Tomohiro Hosaka)
 
+* Testing
+  - Add a pile of tests to fill in coverage gaps
+
 2.03  Feb 24, 2011
 
 * Improvements
