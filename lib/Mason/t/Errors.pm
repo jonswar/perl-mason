@@ -1,11 +1,16 @@
 package Mason::t::Errors;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_comp_errors : Test(22) {
+sub test_comp_errors : Test(25) {
     my $self = shift;
     my $try  = sub {
-        my ( $src, $expect_error ) = @_;
-        $self->test_comp( src => $src, expect_error => $expect_error, desc => $expect_error );
+        my ( $src, $expect_error, %extra ) = @_;
+        $self->test_comp(
+            src          => $src,
+            expect_error => $expect_error,
+            desc         => $expect_error,
+            %extra
+        );
     };
     my $root = $self->interp->comp_root->[0];
 
@@ -39,7 +44,17 @@ sub test_comp_errors : Test(22) {
     );
     $try->( '<% "foobar" { %>Hi</%>',        qr/'foobar' is neither a code ref/ );
     $try->( "<%flags>\nfoo => 1\n</%flags>", qr/Invalid flag 'foo'/ );
-    $try->( '<% $foo %>', qr/Global symbol "\$foo" requires explicit package name/ );
+    $try->( "<%flags>\nextends => 'blah'\n</%flags>",
+        qr/could not load '\/blah' for extends flag/ );
+    $try->( '<% $foo %>',      qr/Global symbol "\$foo" requires explicit package name/ );
+    $try->( '%% die "bleah";', qr/bleah/ );
+    $try->( 'die "blargh";',   qr/blargh/, path => '/blargh.pm' );
+}
+
+sub test_bad_allow_globals : Test(2) {
+    my $self = shift;
+    throws_ok { $self->create_interp( allow_globals => ['@p'] ) } qr/only scalar globals supported/;
+    throws_ok { $self->create_interp( allow_globals => ['i-'] ) } qr/not a valid/;
 }
 
 sub test_non_comp_errors : Test(1) {

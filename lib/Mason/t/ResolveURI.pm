@@ -1,7 +1,7 @@
 package Mason::t::ResolveURI;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_resolve : Tests(33) {
+sub test_resolve : Tests(35) {
     my $self = shift;
 
     my @interp_params = ();
@@ -70,6 +70,9 @@ sub test_resolve : Tests(33) {
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html.m'], undef );
     $try->( "/foo.m/bar.mi",     ['/foo.m/bar.mi'],       undef );
+    @interp_params = ( autoextend_request_path => [], top_level_extensions => [] );
+    $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
+    $try->( "/foo.m/bar.mi",     ['/foo.m/bar.mi'],     '/foo.m/bar.mi',     '' );
 
     # dhandler_names
     @interp_params = ( dhandler_names => ['dhandler'] );

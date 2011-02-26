@@ -53,6 +53,7 @@ method setup_interp () {
 method create_interp () {
     my (%params) = @_;
     $params{plugins} = $default_plugins if @$default_plugins;
+    rmtree( $self->data_dir );
     return Mason->new(
         comp_root              => $self->comp_root,
         data_dir               => $self->data_dir,
@@ -62,6 +63,7 @@ method create_interp () {
 }
 
 method add_comp (%params) {
+    $self->_validate_keys( \%params, qw(path src v verbose) );
     my $path    = $params{path} || die "must pass path";
     my $source  = $params{src}  || " ";
     my $verbose = $params{v}    || $params{verbose};
@@ -94,11 +96,13 @@ method test_comp (%params) {
     my $verbose = $params{v}    || $params{verbose};
 
     $self->add_comp( path => $path, src => $source, verbose => $verbose );
+    delete( $params{src} );
 
     $self->test_existing_comp( %params, path => $path );
 }
 
 method test_existing_comp (%params) {
+    $self->_validate_keys( \%params, qw(args desc expect expect_data expect_error path v verbose) );
     my $path         = $params{path} or die "must pass path";
     my $caller       = ( caller(1) )[3];
     my $desc         = $params{desc} || $path;
@@ -177,6 +181,13 @@ method mkpath_and_write_file ( $source_file, $source ) {
     unlink($source_file) if -e $source_file;
     mkpath( dirname($source_file), 0, 0775 );
     write_file( $source_file, $source );
+}
+
+method _validate_keys ( $params, @allowed_keys ) {
+    my %is_allowed = map { ( $_, 1 ) } @allowed_keys;
+    if ( my @bad_keys = grep { !$is_allowed{$_} } keys(%$params) ) {
+        croak "bad parameters: " . join( ", ", @bad_keys );
+    }
 }
 
 1;

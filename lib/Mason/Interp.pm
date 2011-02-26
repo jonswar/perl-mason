@@ -21,7 +21,7 @@ my $next_id = 0;
 
 # Passed attributes
 #
-has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] } );
+has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] }, trigger => sub { shift->allowed_globals_hash } );
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'autoextend_request_path'  => ( isa => 'Mason::Types::Autoextend', coerce => 1, default => sub { [ '.pm', '.m' ] } );
 has 'comp_root'                => ( isa => 'Mason::Types::CompRoot', coerce => 1 );
@@ -520,7 +520,7 @@ method _parse_global_spec () {
     my $spec = shift;
     croak "only scalar globals supported at this time (not '$spec')" if $spec =~ /^[@%]/;
     $spec =~ s/^\$//;
-    die "'$spec' is not a valid global var name" unless $spec =~ qr/[[:alpha:]_]\w*/;
+    die "'$spec' is not a valid global var name" unless $spec =~ qr/^[[:alpha:]_]\w*$/;
     return ( '$', $spec );
 }
 
@@ -535,7 +535,14 @@ method _add_default_wrap_method ($compc) {
         my $code = sub {
             my $self = shift;
             if ( $self->cmeta->path eq $path ) {
-                $self->main(@_);
+                if ( $self->can('main') ) {
+                    $self->main(@_);
+                }
+                else {
+                    die sprintf(
+                        "component '%s' ('%s') was called but has no main method - did you forget to define 'main' or 'handle'?",
+                        $path, $compc->cmeta->source_file );
+                }
             }
             else {
                 $compc->_inner();
