@@ -41,7 +41,6 @@ has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
 # Derived attributes
 #
 has 'allowed_globals_hash'  => ( init_arg => undef, lazy_build => 1 );
-has 'autobase_regex'        => ( init_arg => undef, lazy_build => 1 );
 has 'code_cache'            => ( init_arg => undef, lazy_build => 1 );
 has 'distinct_string_count' => ( init_arg => undef, default => 0 );
 has 'globals_package'       => ( init_arg => undef, lazy_build => 1 );
@@ -97,20 +96,8 @@ method _build_globals_package () {
     return "Mason::Globals" . $self->id;
 }
 
-method _build_ignore_file_regex () {
-    my $regex = '(/'
-      . join( "|", @{ $self->autobase_names }, @{ $self->dhandler_names }, @{ $self->index_names } )
-      . ')$';
-    return qr/$regex/;
-}
-
 method _build_autobase_names () {
     return [ "Base.m", "Base.pm" ];
-}
-
-method _build_autobase_regex () {
-    my $regex = '(' . join( "|", @{ $self->autobase_names } ) . ')$';
-    return qr/$regex/;
 }
 
 method _build_code_cache () {
