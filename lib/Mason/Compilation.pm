@@ -16,7 +16,9 @@ has 'interp'      => ( required => 1, weak_ref => 1 );
 has 'path'        => ( required => 1 );
 has 'source_file' => ( required => 1 );
 
-# Derived attributes
+# Derived attributes - most of these should be class attributes :(
+has 'bad_attribute_hash'  => ( lazy_build => 1, init_arg => undef );
+has 'bad_method_hash'     => ( lazy_build => 1, init_arg => undef );
 has 'dir_path'            => ( lazy_build => 1, init_arg => undef );
 has 'named_block_regex'   => ( lazy_build => 1, init_arg => undef );
 has 'unnamed_block_regex' => ( lazy_build => 1, init_arg => undef );
@@ -42,17 +44,25 @@ method BUILD () {
     $self->{is_pure_perl}   = $self->interp->is_pure_perl_comp_path( $self->path );
 }
 
+method _build_bad_attribute_hash () {
+    return { map { ( $_, 1 ) } @{ $self->bad_attribute_names } };
+}
+
+method _build_bad_method_hash () {
+    return { map { ( $_, 1 ) } @{ $self->bad_method_names } };
+}
+
 method _build_dir_path () {
     return dirname( $self->path );
 }
 
-method _build_unnamed_block_regex () {
-    my $re = join '|', @{ $self->unnamed_block_types };
+method _build_named_block_regex () {
+    my $re = join '|', @{ $self->named_block_types };
     return qr/$re/i;
 }
 
-method _build_named_block_regex () {
-    my $re = join '|', @{ $self->named_block_types };
+method _build_unnamed_block_regex () {
+    my $re = join '|', @{ $self->unnamed_block_types };
     return qr/$re/i;
 }
 
@@ -63,6 +73,14 @@ method _build_valid_flags_hash () {
 #
 # MODIFIABLE METHODS
 #
+
+method bad_attribute_names () {
+    return [qw(args m cmeta handle render wrap main)];
+}
+
+method bad_method_names () {
+    return [qw(args m cmeta)];
+}
 
 method compile () {
     $self->parse();
@@ -151,6 +169,8 @@ method _assert_not_nested ($block_type) {
 }
 
 method _attribute_declaration ($name, $params, $line_number) {
+    $self->_throw_syntax_error("'$name' is reserved and cannot be used as an attribute name")
+      if $self->bad_attribute_hash->{$name};
     return $self->_processed_perl_code(
         sprintf(
             "%shas '%s' => %s",
@@ -338,6 +358,9 @@ method _handle_init_block ($contents) {
 method _handle_method_block ( $contents, $name, $arglist ) {
     $self->_throw_syntax_error("Invalid method name '$name'")
       if $name !~ /^$identifier$/;
+
+    $self->_throw_syntax_error("'$name' is reserved and cannot be used as a method name")
+      if $self->bad_method_hash->{$name};
 
     $self->_throw_syntax_error("Duplicate definition of method '$name'")
       if exists $self->{methods}->{$name};
@@ -826,6 +849,19 @@ modify with method modifiers in plugins and subclasses. We will attempt to keep
 their APIs stable.
 
 =over
+
+=item bad_attribute_names ()
+
+A list of attribute names that should not be used because they are reserved for
+built-in attributes or methods: C<args>, C<m>, C<cmeta>, C<render>, C<main>,
+etc.
+
+=item bad_method_names ()
+
+A list of method names that should not be used because they are reserved for
+built-in attributes: C<args>, C<m>, C<cmeta>, etc. Not as extensive as
+bad_attribute_names above because methods like C<render> and C<main> can be
+overriden but make no sense as attributes.
 
 =item compile ()
 
