@@ -17,10 +17,16 @@ has 'path'        => ( required => 1 );
 has 'source_file' => ( required => 1 );
 
 # Derived attributes
-has 'dir_path' => ( lazy_build => 1, init_arg => undef );
+has 'dir_path'            => ( lazy_build => 1, init_arg => undef );
+has 'named_block_regex'   => ( lazy_build => 1, init_arg => undef );
+has 'unnamed_block_regex' => ( lazy_build => 1, init_arg => undef );
 
 # Valid Perl identifier
 my $identifier = qr/[[:alpha:]_]\w*/;
+
+#
+# BUILD
+#
 
 method BUILD () {
 
@@ -39,8 +45,37 @@ method _build_dir_path () {
     return dirname( $self->path );
 }
 
-# Parse the component source, or a single method block body
+method _build_unnamed_block_regex ($class:) {
+    my $re = join '|', @{ $class->unnamed_block_types };
+    return qr/$re/i;
+}
+
+method _build_named_block_regex ($class:) {
+    my $re = join '|', @{ $class->named_block_types };
+    return qr/$re/i;
+}
+
 #
+# MODIFIABLE METHODS
+#
+
+method compile () {
+    $self->parse();
+    return $self->_output_compiled_component();
+}
+
+method named_block_types () {
+    return [qw(after augment around before filter method override)];
+}
+
+method output_class_footer () {
+    return "";
+}
+
+method output_class_header () {
+    return "";
+}
+
 method parse () {
     $self->{last_code_type} = '';
 
@@ -61,75 +96,324 @@ method parse () {
         $self->_match_perl_line        && next;
         $self->_match_plain_text       && next;
 
-        $self->throw_syntax_error(
+        $self->_throw_syntax_error(
             "could not parse next element at position " . pos( $self->{source} ) );
     }
-}
-
-method _processed_perl_code ($code) {
-    my $coderef = \$code;
-    $self->process_perl_code($coderef);
-    return $$coderef;
 }
 
 method process_perl_code ($coderef) {
     return $coderef;
 }
 
-method _match_unnamed_block () {
-    $self->_match_block( $self->interp->unnamed_block_regex, 0 );
+method unnamed_block_types () {
+    return [qw(args class doc flags init perl shared text)];
 }
 
-method _match_named_block () {
-    $self->_match_block( $self->interp->named_block_regex, 1 );
-}
+#
+# PRIVATE METHODS
+#
 
-method _match_unknown_block () {
-    if ( $self->{source} =~ /\G(?:\n?)<%([A-Za-z_]+)>/gc ) {
-        $self->throw_syntax_error("unknown block '<%$1>'");
+method _add_to_class_block ($text) {
+
+    # Don't add a line number comment when following a perl-line.
+    # We know a perl-line is always _one_ line, so we know that the
+    # line numbers are going to match up as long as the first line in
+    # a series has a line number comment before it.  Adding a comment
+    # can break certain constructs like qw() list that spans multiple
+    # perl-lines.
+    if ( $self->{last_code_type} ne 'perl_line' ) {
+        $text = $self->_output_line_number_comment . $text;
     }
+    $self->{blocks}->{class} .= $text;
 }
 
-method _match_block ($block_regex, $named) {
-    my $regex = qr/
-               \G(\n?)
-               <% ($block_regex)
-               (?: \s+ ([^\s\(>]+) ([^>]*) )?
-               >
-    /x;
-    if ( $self->{source} =~ /$regex/gcs ) {
-        my ( $preceding_newline, $block_type, $name, $arglist ) = ( $1, $2, $3, $4 );
-
-        $self->throw_syntax_error("<%$block_type> block requires a name")
-          if ( $named && !defined($name) );
-
-        $self->throw_syntax_error("<%$block_type> block does not take a name")
-          if ( !$named && defined($name) );
-
-        my $block_method = "_handle_${block_type}_block";
-
-        $self->{line_number}++ if $preceding_newline;
-
-        my ( $block_contents, $nl ) = $self->_match_block_end($block_type);
-
-        $self->$block_method( $block_contents, $name, $arglist );
-
-        $self->{line_number} += $block_contents =~ tr/\n//;
-        $self->{line_number} += length($nl) if $nl;
-
-        return 1;
+method _add_to_current_method ($text) {
+    if ( $self->{last_code_type} ne 'perl_line' ) {
+        $text = $self->_output_line_number_comment . $text;
     }
-    return 0;
+
+    $self->{current_method}->{body} .= $text;
 }
 
-method _match_block_end ($block_type) {
-    my $re = qr,\G(.*?)</%\Q$block_type\E>(\n?\n?),is;
-    if ( $self->{source} =~ /$re/gc ) {
-        return ( $1, $2 );
+method _assert_not_nested ($block_type) {
+    $self->_throw_syntax_error(
+        "Cannot nest <%$block_type> block inside <%$self->{in_recursive_parse}> block")
+      if $self->{in_recursive_parse};
+}
+
+method _attribute_declaration ($name, $params, $line_number) {
+    return $self->_processed_perl_code(
+        sprintf(
+            "%shas '%s' => %s",
+            $self->_output_line_number_comment($line_number),
+            $name, $params
+        )
+    );
+}
+
+method _handle_after_block ()    { $self->_handle_method_modifier_block( 'after',    @_ ) }
+method _handle_around_block ()   { $self->_handle_method_modifier_block( 'around',   @_ ) }
+method _handle_augment_block ()  { $self->_handle_method_modifier_block( 'augment',  @_ ) }
+method _handle_before_block ()   { $self->_handle_method_modifier_block( 'before',   @_ ) }
+method _handle_override_block () { $self->_handle_method_modifier_block( 'override', @_ ) }
+
+method _handle_method_modifier_block ( $block_type, $contents, $name ) {
+    my $modifier = $block_type;
+
+    $self->_throw_syntax_error("Invalid method modifier name '$name'")
+      if $name !~ /^$identifier$/;
+
+    $self->_assert_not_nested($block_type);
+
+    my $method_key = "$block_type $name";
+
+    $self->_throw_syntax_error("Duplicate definition of method modifier '$method_key'")
+      if exists $self->{methods}->{"$method_key"};
+
+    my $method =
+      $self->_new_method_hash( name => $name, type => 'modifier', modifier => $modifier );
+    $self->{methods}->{"$method_key"} = $method;
+
+    $self->_recursive_parse( $block_type, $contents, $method );
+}
+
+method _handle_apply_filter ($filter_expr) {
+    my $rest = substr( $self->{source}, pos( $self->{source} ) );
+    my $method = $self->_new_method_hash( type => 'apply_filter' );
+    local $self->{end_parse} = undef;
+    $self->_recursive_parse( 'filter', $rest, $method );
+    if ( my $incr = $self->{end_parse} ) {
+        pos( $self->{source} ) += $incr;
     }
     else {
-        $self->throw_syntax_error("<%$block_type> without matching </%$block_type>");
+        $self->_throw_syntax_error("<% { %> without matching </%>");
     }
+    my $code = sprintf(
+        "\$self->m->_apply_filters_to_output([%s], %s);\n",
+        $self->_processed_perl_code($filter_expr),
+        $self->_output_method($method)
+    );
+    $self->_add_to_current_method($code);
+}
+
+method _handle_args_block ($contents) {
+    $self->_handle_attributes_list( $contents, 'args' );
+}
+
+method _handle_attributes_list ($contents, $attr_type) {
+    my @lines = split( "\n", $contents );
+    my @attributes;
+    my $line_number = $self->{line_number} - 1;
+    foreach my $line (@lines) {
+        $line_number++;
+        trim($line);
+        next if $line =~ /^\#/ || $line !~ /\S/;
+        if (
+            my ( $name, $rest ) = (
+                $line =~ /
+                          ^
+                          (?: \$\.)?        # optional $. prefix
+                          ([^\W\d]\w*)      # valid Perl variable name
+                          (?:\s*=>\s*(.*))? # optional arrow then default or attribute params
+                         /x
+            )
+          )
+        {
+            my ($params);
+            if ( defined($rest) && length($rest) ) {
+                if ( $rest =~ /^\s*\(/ ) {
+                    $params = "$rest\n;";
+                }
+                else {
+                    $params = sprintf( "(default => %s\n);", $rest );
+                }
+            }
+            else {
+                $params = '();';
+            }
+            if ( $attr_type eq 'shared' ) {
+                $params = '(' . 'init_arg => undef, ' . substr( $params, 1 );
+            }
+            push( @attributes, $self->_attribute_declaration( $name, $params, $line_number ) );
+        }
+        else {
+            $self->{line_number} = $line_number;
+            $self->_throw_syntax_error("Invalid attribute line '$line'");
+        }
+    }
+    $self->{blocks}->{attributes} .= join( "\n", @attributes ) . "\n";
+}
+
+method _handle_class_block ($contents) {
+    $self->{blocks}->{class} .=
+      $self->_output_line_number_comment . $self->_processed_perl_code($contents);
+}
+
+method _handle_component_call ($contents) {
+    my ( $prespace, $call, $postspace ) = ( $contents =~ /(\s*)(.*)(\s*)/s );
+    if ( $call =~ m,^[\w/.], ) {
+        my $comma = index( $call, ',' );
+        $comma = length $call if $comma == -1;
+        ( my $comp = substr( $call, 0, $comma ) ) =~ s/\s+$//;
+        $call = "'$comp'" . substr( $call, $comma );
+    }
+    my $code = "\$m->comp( $prespace $call $postspace \n); ";
+
+    $self->_add_to_current_method($code);
+
+    $self->{last_code_type} = 'component_call';
+}
+
+method _handle_doc_block () {
+
+    # Don't do anything - just discard the comment.
+}
+
+method _handle_filter_block ($contents, $name, $arglist) {
+    my $new_contents = join( '',
+        '<%perl>',
+        'return Mason::DynamicFilter->new(',
+        'filter => sub {',
+        'my $yield = shift;',
+        '$m->capture(sub {',
+        '</%perl>', $contents, '<%perl>}); });</%perl>',
+    );
+    $self->_handle_method_block( $new_contents, $name, $arglist );
+}
+
+method _handle_flags_block ($contents) {
+    my $ending = qr, (?: \n |           # newline or
+                         (?= </%flags> ) )   # end of block (don't consume it)
+                   ,ix;
+
+    while (
+        $contents =~ /
+                      \G
+                      [ \t]*
+                      ([\w_]+)          # identifier
+                      [ \t]*=>[ \t]*    # separator
+                      (\S[^\n]*?)       # value ( must start with a non-space char)
+                      $ending
+                      |
+                      \G\n              # a plain empty line
+                      |
+                      \G
+                      [ \t]*            # an optional comment
+                      \#
+                      [^\n]*
+                      $ending
+                      |
+                      \G[ \t]+?
+                      $ending
+                     /xgc
+      )
+    {
+        my ( $flag, $value ) = ( $1, $2 );
+        if ( defined $flag && defined $value && length $flag && length $value ) {
+            if ( $self->interp->valid_flags_hash->{$flag} ) {
+                $self->{blocks}->{flags}->{$flag} = eval($value);
+                die $@ if $@;
+            }
+            else {
+                $self->_throw_syntax_error("Invalid flag '$flag'");
+            }
+        }
+    }
+}
+
+method _handle_init_block ($contents) {
+    $self->{current_method}->{init} =
+      $self->_output_line_number_comment . $self->_processed_perl_code($contents);
+}
+
+method _handle_method_block ( $contents, $name, $arglist ) {
+    $self->_throw_syntax_error("Invalid method name '$name'")
+      if $name !~ /^$identifier$/;
+
+    $self->_throw_syntax_error("Duplicate definition of method '$name'")
+      if exists $self->{methods}->{$name};
+
+    $self->_assert_not_nested('method');
+
+    my $method = $self->_new_method_hash( name => $name, arglist => $arglist );
+    $self->{methods}->{$name} = $method;
+
+    $self->_recursive_parse( 'method', $contents, $method );
+}
+
+method _handle_perl_block ($contents) {
+    $self->_add_to_current_method( $self->_processed_perl_code($contents) );
+
+    $self->{last_code_type} = 'perl_block';
+}
+
+method _handle_perl_line ($type, $contents) {
+    my $code = $self->_processed_perl_code( $contents . "\n" );
+
+    if ( $type eq 'perl' ) {
+        $self->_add_to_current_method($code);
+    }
+    else {
+        $self->_add_to_class_block($code);
+    }
+
+    $self->{last_code_type} = 'perl_line';
+}
+
+method _handle_plain_text ($text) {
+
+    # Escape single quotes and backslashes
+    #
+    $text =~ s,([\'\\]),\\$1,g;
+
+    my $code = "\$\$_m_buffer .= '$text';\n";
+    $self->_add_to_current_method($code);
+}
+
+method _handle_shared_block ($contents) {
+    $self->_handle_attributes_list( $contents, 'shared' );
+}
+
+method _handle_substitution ( $text, $filter_list ) {
+
+    # This is a comment tag if all lines of text contain only whitespace
+    # or start with whitespace and a comment marker, e.g.
+    #
+    #   <%
+    #     #
+    #     # foo
+    #   %>
+    #
+    my @lines = split( /\n/, $text );
+    unless ( grep { /^\s*[^\s\#]/ } @lines ) {
+        $self->{last_code_type} = 'substitution';
+        return;
+    }
+
+    $text = $self->_processed_perl_code($text);
+
+    if ($filter_list) {
+        if ( my @filters = grep { /\S/ } split( /\s*,\s*/, $filter_list ) ) {
+            my $filter_call_list = join( ", ", map { "\$self->$_()" } @filters );
+            $text =
+              sprintf( '$self->m->_apply_filters([%s], sub { %s })', $filter_call_list, $text );
+        }
+    }
+
+    my $code = "for (scalar($text)) { \$\$_m_buffer .= \$_ if defined }\n";
+
+    $self->_add_to_current_method($code);
+
+    $self->{last_code_type} = 'substitution';
+}
+
+method _handle_text_block ($contents) {
+    $contents =~ s/^\n//;
+    $contents =~ s,([\'\\]),\\$1,g;
+
+    $self->_add_to_current_method("\$\$_m_buffer .= '$contents';\n");
+
+    $self->{last_code_type} = 'text';
 }
 
 method _match_apply_filter () {
@@ -156,42 +440,55 @@ method _match_apply_filter () {
     return 0;
 }
 
-method _match_substitution () {
-
-    return 0 unless $self->{source} =~ /\G<%/gcs;
-
-    if (
-        $self->{source} =~ m{
-           \G
-           (\s*)                # Initial whitespace
-           (.+?)                # Substitution body ($1)
-           (
-            \s*
-            (?<!\|)             # Not preceded by a '|'
-            \|                  # A '|'
-            \s*
-            (                   # (Start $3)
-             $identifier            # A filter name
-             (?:\s*,\s*$identifier)*  # More filter names, with comma separators
-            )
-           )?
-           (\s*)                # Final whitespace
-           %>                   # Closing tag
-          }xcigs
-      )
+method _match_apply_filter_end () {
+    if (   $self->{current_method}->{type} eq 'apply_filter'
+        && $self->{source} =~ /\G (?: (?: <% [ \t]* \} [ \t]* %> ) | (?: <\/%> ) ) (\n?\n?)/gcx )
     {
-        my ( $start_ws, $body, $after_body, $filters, $end_ws ) = ( $1, $2, $3, $4, $5 );
-        $self->throw_syntax_error("whitespace required after '<%'") unless length($start_ws);
-        $self->{line_number} += tr/\n//
-          foreach grep defined, ( $start_ws, $body, $after_body, $end_ws );
-        $self->throw_syntax_error("whitespace required before '%>'") unless length($end_ws);
+        $self->{end_parse} = pos( $self->{source} );
+        return 1;
+    }
+    return 0;
+}
 
-        $self->_handle_substitution( $body, $filters );
+method _match_block ($block_regex, $named) {
+    my $regex = qr/
+               \G(\n?)
+               <% ($block_regex)
+               (?: \s+ ([^\s\(>]+) ([^>]*) )?
+               >
+    /x;
+    if ( $self->{source} =~ /$regex/gcs ) {
+        my ( $preceding_newline, $block_type, $name, $arglist ) = ( $1, $2, $3, $4 );
+
+        $self->_throw_syntax_error("<%$block_type> block requires a name")
+          if ( $named && !defined($name) );
+
+        $self->_throw_syntax_error("<%$block_type> block does not take a name")
+          if ( !$named && defined($name) );
+
+        my $block_method = "_handle_${block_type}_block";
+
+        $self->{line_number}++ if $preceding_newline;
+
+        my ( $block_contents, $nl ) = $self->_match_block_end($block_type);
+
+        $self->$block_method( $block_contents, $name, $arglist );
+
+        $self->{line_number} += $block_contents =~ tr/\n//;
+        $self->{line_number} += length($nl) if $nl;
 
         return 1;
     }
+    return 0;
+}
+
+method _match_block_end ($block_type) {
+    my $re = qr,\G(.*?)</%\Q$block_type\E>(\n?\n?),is;
+    if ( $self->{source} =~ /$re/gc ) {
+        return ( $1, $2 );
+    }
     else {
-        $self->throw_syntax_error("'<%' without matching '%>'");
+        $self->_throw_syntax_error("<%$block_type> without matching </%$block_type>");
     }
 }
 
@@ -205,20 +502,32 @@ method _match_component_call () {
             return 1;
         }
         else {
-            $self->throw_syntax_error("'<&' without matching '&>'");
+            $self->_throw_syntax_error("'<&' without matching '&>'");
         }
     }
+}
+
+method _match_end () {
+    if ( $self->{source} =~ /(\G\z)/gcs ) {
+        $self->{line_number} += $1 =~ tr/\n//;
+        return defined $1 && length $1 ? $1 : 1;
+    }
+    return 0;
+}
+
+method _match_named_block () {
+    $self->_match_block( $self->named_block_regex, 1 );
 }
 
 method _match_perl_line () {
     if ( $self->{source} =~ /\G(?<=^)(%%?)([^\n]*)(?:\n|\z)/gcm ) {
         my ( $percents, $line ) = ( $1, $2 );
         if ( length($line) && $line !~ /^\s/ ) {
-            $self->throw_syntax_error("$percents must be followed by whitespace or EOL");
+            $self->_throw_syntax_error("$percents must be followed by whitespace or EOL");
         }
         if ( $percents eq '%%' ) {
             if ( $line =~ /\{\s*$/ && $self->{source} =~ /\G(?!%%)/gcm ) {
-                $self->throw_syntax_error("%%-lines cannot be used to surround content");
+                $self->_throw_syntax_error("%%-lines cannot be used to surround content");
             }
         }
         $self->_handle_perl_line( ( $percents eq '%' ? 'perl' : 'class' ), $line );
@@ -274,59 +583,68 @@ method _match_plain_text () {
     return 0;
 }
 
-method _match_end () {
-    if ( $self->{source} =~ /(\G\z)/gcs ) {
-        $self->{line_number} += $1 =~ tr/\n//;
-        return defined $1 && length $1 ? $1 : 1;
-    }
-    return 0;
-}
+method _match_substitution () {
 
-method _match_apply_filter_end () {
-    if (   $self->{current_method}->{type} eq 'apply_filter'
-        && $self->{source} =~ /\G (?: (?: <% [ \t]* \} [ \t]* %> ) | (?: <\/%> ) ) (\n?\n?)/gcx )
+    return 0 unless $self->{source} =~ /\G<%/gcs;
+
+    if (
+        $self->{source} =~ m{
+           \G
+           (\s*)                # Initial whitespace
+           (.+?)                # Substitution body ($1)
+           (
+            \s*
+            (?<!\|)             # Not preceded by a '|'
+            \|                  # A '|'
+            \s*
+            (                   # (Start $3)
+             $identifier            # A filter name
+             (?:\s*,\s*$identifier)*  # More filter names, with comma separators
+            )
+           )?
+           (\s*)                # Final whitespace
+           %>                   # Closing tag
+          }xcigs
+      )
     {
-        $self->{end_parse} = pos( $self->{source} );
+        my ( $start_ws, $body, $after_body, $filters, $end_ws ) = ( $1, $2, $3, $4, $5 );
+        $self->_throw_syntax_error("whitespace required after '<%'") unless length($start_ws);
+        $self->{line_number} += tr/\n//
+          foreach grep defined, ( $start_ws, $body, $after_body, $end_ws );
+        $self->_throw_syntax_error("whitespace required before '%>'") unless length($end_ws);
+
+        $self->_handle_substitution( $body, $filters );
+
         return 1;
     }
-    return 0;
+    else {
+        $self->_throw_syntax_error("'<%' without matching '%>'");
+    }
 }
 
-method compile () {
-    $self->parse();
-    return $self->output_compiled_component();
+method _match_unknown_block () {
+    if ( $self->{source} =~ /\G(?:\n?)<%([A-Za-z_]+)>/gc ) {
+        $self->_throw_syntax_error("unknown block '<%$1>'");
+    }
 }
 
-method output_compiled_component () {
-    return join(
-        "\n",
-        map { trim($_) } grep { defined($_) && length($_) } (
-            $self->_output_flag_comment,        $self->_output_class_header,
-            $self->_output_global_declarations, $self->_output_cmeta,
-            $self->_output_attributes,          $self->_output_class_block,
-            $self->_output_methods,             $self->_output_class_footer,
-        )
-    ) . "\n";
+method _match_unnamed_block () {
+    $self->_match_block( $self->unnamed_block_regex, 0 );
+}
+
+method _new_method_hash () {
+    return { body => '', init => '', type => 'method', @_ };
 }
 
 method _output_attributes () {
     return $self->{blocks}->{attributes} || '';
 }
 
-method _output_flag_comment () {
-    if ( my $flags = $self->{blocks}->{flags} ) {
-        if (%$flags) {
-            my $json = JSON->new->indent(0);
-            return "# FLAGS: " . $json->encode($flags) . "\n\n";
-        }
-    }
+method _output_class_block () {
+    return $self->{blocks}->{class} || '';
 }
 
-method _output_class_footer () {
-    return "";
-}
-
-method _output_class_header () {
+method _output_class_initialization () {
     return join(
         "\n",
         "BEGIN { " . $self->interp->component_moose_class . "->import; }",
@@ -361,8 +679,26 @@ method _output_cmeta () {
         'sub _class_cmeta { $_class_cmeta }' );
 }
 
-method _output_class_block () {
-    return $self->{blocks}->{class} || '';
+method _output_compiled_component () {
+    return join(
+        "\n",
+        map { trim($_) } grep { defined($_) && length($_) } (
+            $self->_output_flag_comment, $self->_output_class_initialization,
+            $self->output_class_header,  $self->_output_global_declarations,
+            $self->_output_cmeta,        $self->_output_attributes,
+            $self->_output_class_block,  $self->_output_methods,
+            $self->output_class_footer,
+        )
+    ) . "\n";
+}
+
+method _output_flag_comment () {
+    if ( my $flags = $self->{blocks}->{flags} ) {
+        if (%$flags) {
+            my $json = JSON->new->indent(0);
+            return "# FLAGS: " . $json->encode($flags) . "\n\n";
+        }
+    }
 }
 
 method _output_global_declaration ($spec) {
@@ -376,14 +712,15 @@ method _output_global_declarations () {
       join( "\n", map { $self->_output_global_declaration($_) } @{ $self->interp->allow_globals } );
 }
 
-method _output_methods () {
-
-    # Sort methods so that modifiers come after
-    #
-    my @sorted_methods_keys = sort { ( index( $a, ' ' ) <=> index( $b, ' ' ) ) || $a cmp $b }
-      keys( %{ $self->{methods} } );
-    return
-      join( "\n", map { $self->_output_method( $self->{methods}->{$_} ) } @sorted_methods_keys );
+method _output_line_number_comment ($line_number) {
+    if ( !$self->interp->no_source_line_numbers ) {
+        $line_number ||= $self->{line_number};
+        if ($line_number) {
+            my $comment = sprintf( qq{#line %s "%s"\n}, $line_number, $self->source_file );
+            return $comment;
+        }
+    }
+    return "";
 }
 
 method _output_method ($method) {
@@ -418,93 +755,27 @@ method _output_method ($method) {
     );
 }
 
-method _output_line_number_comment ($line_number) {
-    if ( !$self->interp->no_source_line_numbers ) {
-        $line_number ||= $self->{line_number};
-        if ($line_number) {
-            my $comment = sprintf( qq{#line %s "%s"\n}, $line_number, $self->source_file );
-            return $comment;
-        }
-    }
-    return "";
+method _output_methods () {
+
+    # Sort methods so that modifiers come after
+    #
+    my @sorted_methods_keys = sort { ( index( $a, ' ' ) <=> index( $b, ' ' ) ) || $a cmp $b }
+      keys( %{ $self->{methods} } );
+    return
+      join( "\n", map { $self->_output_method( $self->{methods}->{$_} ) } @sorted_methods_keys );
 }
 
-method _handle_args_block ($contents) {
-    $self->_handle_attributes_list( $contents, 'args' );
+method _processed_perl_code ($code) {
+    my $coderef = \$code;
+    $self->process_perl_code($coderef);
+    return $$coderef;
 }
 
-method _handle_shared_block ($contents) {
-    $self->_handle_attributes_list( $contents, 'shared' );
-}
-
-method _handle_attributes_list ($contents, $attr_type) {
-    my @lines = split( "\n", $contents );
-    my @attributes;
-    my $line_number = $self->{line_number} - 1;
-    foreach my $line (@lines) {
-        $line_number++;
-        trim($line);
-        next if $line =~ /^\#/ || $line !~ /\S/;
-        if (
-            my ( $name, $rest ) = (
-                $line =~ /
-                          ^
-                          (?: \$\.)?        # optional $. prefix
-                          ([^\W\d]\w*)      # valid Perl variable name
-                          (?:\s*=>\s*(.*))? # optional arrow then default or attribute params
-                         /x
-            )
-          )
-        {
-            my ($params);
-            if ( defined($rest) && length($rest) ) {
-                if ( $rest =~ /^\s*\(/ ) {
-                    $params = "$rest\n;";
-                }
-                else {
-                    $params = sprintf( "(default => %s\n);", $rest );
-                }
-            }
-            else {
-                $params = '();';
-            }
-            if ( $attr_type eq 'shared' ) {
-                $params = '(' . 'init_arg => undef, ' . substr( $params, 1 );
-            }
-            push( @attributes, $self->_attribute_declaration( $name, $params, $line_number ) );
-        }
-        else {
-            $self->{line_number} = $line_number;
-            $self->throw_syntax_error("Invalid attribute line '$line'");
-        }
-    }
-    $self->{blocks}->{attributes} .= join( "\n", @attributes ) . "\n";
-}
-
-method _attribute_declaration ($name, $params, $line_number) {
-    return $self->_processed_perl_code(
-        sprintf(
-            "%shas '%s' => %s",
-            $self->_output_line_number_comment($line_number),
-            $name, $params
-        )
-    );
-}
-
-method _handle_class_block ($contents) {
-    $self->{blocks}->{class} .=
-      $self->_output_line_number_comment . $self->_processed_perl_code($contents);
-}
-
-method _handle_init_block ($contents) {
-    $self->{current_method}->{init} =
-      $self->_output_line_number_comment . $self->_processed_perl_code($contents);
-}
-
-# Save current regex position, then locally set source to the contents and
-# recursively parse.
-#
 method _recursive_parse ($block_type, $contents, $method) {
+
+    # Save current regex position, then locally set source to the contents and
+    # recursively parse.
+    #
     local $self->{in_recursive_parse} = $block_type;
 
     my $save_pos = pos( $self->{source} );
@@ -516,244 +787,65 @@ method _recursive_parse ($block_type, $contents, $method) {
     }
 }
 
-method _assert_not_nested ($block_type) {
-    $self->throw_syntax_error(
-        "Cannot nest <%$block_type> block inside <%$self->{in_recursive_parse}> block")
-      if $self->{in_recursive_parse};
-}
-
-method _handle_apply_filter ($filter_expr) {
-    my $rest = substr( $self->{source}, pos( $self->{source} ) );
-    my $method = $self->_new_method_hash( type => 'apply_filter' );
-    local $self->{end_parse} = undef;
-    $self->_recursive_parse( 'filter', $rest, $method );
-    if ( my $incr = $self->{end_parse} ) {
-        pos( $self->{source} ) += $incr;
-    }
-    else {
-        $self->throw_syntax_error("<% { %> without matching </%>");
-    }
-    my $code = sprintf(
-        "\$self->m->_apply_filters_to_output([%s], %s);\n",
-        $self->_processed_perl_code($filter_expr),
-        $self->_output_method($method)
-    );
-    $self->_add_to_current_method($code);
-}
-
-method _handle_method_block ( $contents, $name, $arglist ) {
-    $self->throw_syntax_error("Invalid method name '$name'")
-      if $name !~ /^$identifier$/;
-
-    $self->throw_syntax_error("Duplicate definition of method '$name'")
-      if exists $self->{methods}->{$name};
-
-    $self->_assert_not_nested('method');
-
-    my $method = $self->_new_method_hash( name => $name, arglist => $arglist );
-    $self->{methods}->{$name} = $method;
-
-    $self->_recursive_parse( 'method', $contents, $method );
-}
-
-method _handle_after_block ()    { $self->_handle_method_modifier_block( 'after',    @_ ) }
-method _handle_around_block ()   { $self->_handle_method_modifier_block( 'around',   @_ ) }
-method _handle_augment_block ()  { $self->_handle_method_modifier_block( 'augment',  @_ ) }
-method _handle_before_block ()   { $self->_handle_method_modifier_block( 'before',   @_ ) }
-method _handle_override_block () { $self->_handle_method_modifier_block( 'override', @_ ) }
-
-method _handle_method_modifier_block ( $block_type, $contents, $name ) {
-    my $modifier = $block_type;
-
-    $self->throw_syntax_error("Invalid method modifier name '$name'")
-      if $name !~ /^$identifier$/;
-
-    $self->_assert_not_nested($block_type);
-
-    my $method_key = "$block_type $name";
-
-    $self->throw_syntax_error("Duplicate definition of method modifier '$method_key'")
-      if exists $self->{methods}->{"$method_key"};
-
-    my $method =
-      $self->_new_method_hash( name => $name, type => 'modifier', modifier => $modifier );
-    $self->{methods}->{"$method_key"} = $method;
-
-    $self->_recursive_parse( $block_type, $contents, $method );
-}
-
-method _handle_filter_block ($contents, $name, $arglist) {
-    my $new_contents = join( '',
-        '<%perl>',
-        'return Mason::DynamicFilter->new(',
-        'filter => sub {',
-        'my $yield = shift;',
-        '$m->capture(sub {',
-        '</%perl>', $contents, '<%perl>}); });</%perl>',
-    );
-    $self->_handle_method_block( $new_contents, $name, $arglist );
-}
-
-method _handle_doc_block () {
-
-    # Don't do anything - just discard the comment.
-}
-
-method _handle_flags_block ($contents) {
-    my $ending = qr, (?: \n |           # newline or
-                         (?= </%flags> ) )   # end of block (don't consume it)
-                   ,ix;
-
-    while (
-        $contents =~ /
-                      \G
-                      [ \t]*
-                      ([\w_]+)          # identifier
-                      [ \t]*=>[ \t]*    # separator
-                      (\S[^\n]*?)       # value ( must start with a non-space char)
-                      $ending
-                      |
-                      \G\n              # a plain empty line
-                      |
-                      \G
-                      [ \t]*            # an optional comment
-                      \#
-                      [^\n]*
-                      $ending
-                      |
-                      \G[ \t]+?
-                      $ending
-                     /xgc
-      )
-    {
-        my ( $flag, $value ) = ( $1, $2 );
-        if ( defined $flag && defined $value && length $flag && length $value ) {
-            if ( $self->interp->valid_flags_hash->{$flag} ) {
-                $self->{blocks}->{flags}->{$flag} = eval($value);
-                die $@ if $@;
-            }
-            else {
-                $self->throw_syntax_error("Invalid flag '$flag'");
-            }
-        }
-    }
-}
-
-method _handle_perl_block ($contents) {
-    $self->_add_to_current_method( $self->_processed_perl_code($contents) );
-
-    $self->{last_code_type} = 'perl_block';
-}
-
-method _handle_text_block ($contents) {
-    $contents =~ s/^\n//;
-    $contents =~ s,([\'\\]),\\$1,g;
-
-    $self->_add_to_current_method("\$\$_m_buffer .= '$contents';\n");
-
-    $self->{last_code_type} = 'text';
-}
-
-method _handle_substitution ( $text, $filter_list ) {
-
-    # This is a comment tag if all lines of text contain only whitespace
-    # or start with whitespace and a comment marker, e.g.
-    #
-    #   <%
-    #     #
-    #     # foo
-    #   %>
-    #
-    my @lines = split( /\n/, $text );
-    unless ( grep { /^\s*[^\s\#]/ } @lines ) {
-        $self->{last_code_type} = 'substitution';
-        return;
-    }
-
-    $text = $self->_processed_perl_code($text);
-
-    if ($filter_list) {
-        if ( my @filters = grep { /\S/ } split( /\s*,\s*/, $filter_list ) ) {
-            my $filter_call_list = join( ", ", map { "\$self->$_()" } @filters );
-            $text =
-              sprintf( '$self->m->_apply_filters([%s], sub { %s })', $filter_call_list, $text );
-        }
-    }
-
-    my $code = "for (scalar($text)) { \$\$_m_buffer .= \$_ if defined }\n";
-
-    $self->_add_to_current_method($code);
-
-    $self->{last_code_type} = 'substitution';
-}
-
-method _handle_component_call ($contents) {
-    my ( $prespace, $call, $postspace ) = ( $contents =~ /(\s*)(.*)(\s*)/s );
-    if ( $call =~ m,^[\w/.], ) {
-        my $comma = index( $call, ',' );
-        $comma = length $call if $comma == -1;
-        ( my $comp = substr( $call, 0, $comma ) ) =~ s/\s+$//;
-        $call = "'$comp'" . substr( $call, $comma );
-    }
-    my $code = "\$m->comp( $prespace $call $postspace \n); ";
-
-    $self->_add_to_current_method($code);
-
-    $self->{last_code_type} = 'component_call';
-}
-
-method _handle_perl_line ($type, $contents) {
-    my $code = $self->_processed_perl_code( $contents . "\n" );
-
-    if ( $type eq 'perl' ) {
-        $self->_add_to_current_method($code);
-    }
-    else {
-        $self->_add_to_class_block($code);
-    }
-
-    $self->{last_code_type} = 'perl_line';
-}
-
-method _handle_plain_text ($text) {
-
-    # Escape single quotes and backslashes
-    #
-    $text =~ s,([\'\\]),\\$1,g;
-
-    my $code = "\$\$_m_buffer .= '$text';\n";
-    $self->_add_to_current_method($code);
-}
-
-method _new_method_hash () {
-    return { body => '', init => '', type => 'method', @_ };
-}
-
-# Don't add a line number comment when following a perl-line.
-# We know a perl-line is always _one_ line, so we know that the
-# line numbers are going to match up as long as the first line in
-# a series has a line number comment before it.  Adding a comment
-# can break certain constructs like qw() list that spans multiple
-# perl-lines.
-method _add_to_class_block ($text) {
-    if ( $self->{last_code_type} ne 'perl_line' ) {
-        $text = $self->_output_line_number_comment . $text;
-    }
-    $self->{blocks}->{class} .= $text;
-}
-
-method _add_to_current_method ($text) {
-    if ( $self->{last_code_type} ne 'perl_line' ) {
-        $text = $self->_output_line_number_comment . $text;
-    }
-
-    $self->{current_method}->{body} .= $text;
-}
-
-method throw_syntax_error ($msg) {
+method _throw_syntax_error ($msg) {
     die sprintf( "%s at %s line %d\n", $msg, $self->source_file, $self->{line_number} );
 }
 
 __PACKAGE__->meta->make_immutable();
 
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Mason::Compilation - Performs compilation of a single component
+
+=head1 DESCRIPTION
+
+A new C<Mason::Compilation> object is created by L<Mason::Interp> to compile
+each component.
+
+This class has no public API at this time.
+
+=head1 MODIFIABLE METHODS
+
+These methods are not intended to be called externally, but may be useful to
+modify with method modifiers in plugins and subclasses. We will attempt to keep
+their APIs stable.
+
+=over
+
+=item compile ()
+
+The top-level method called to compile the component. Returns the generated
+component class.
+
+=item named_block_types ()
+
+An arrayref of valid named block types: C<after>, C<filter>, C<method>, etc.
+Add to this list if you want to create your own named blocks (i.e. blocks that
+take a name argument).
+
+=item output_class_footer ()
+
+Perl code to be added at the bottom of the class. Empty by default.
+
+=item output_class_header ()
+
+Perl code to be added at the top of the class, just after initialization of
+Moose, C<$m> and other required pieces. Empty by default.
+
+=item process_perl_code ($coderef)
+
+This method is called on each distinct piece of Perl code in the component.
+C<$coderef> is a reference to a string containing the code; the method can
+modify the code as desired. See L<Mason::Plugin::DollarDot> for a sample usage.
+
+=item unnamed_block_types ()
+
+An arrayref of valid unnamed block types: C<args>, C<class>, C<init>, etc. Add
+to this list if you want to create your own unnamed blocks.
+
