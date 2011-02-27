@@ -4,6 +4,12 @@ Revision history for Mason
 
 2.05  Feb 26, 2011
 
+* Improvements
+  - Forbid reserved names such as 'cmeta' in new method and attribute declarations
+
+* Testing
+  - Stop using test counts (http://stackoverflow.com/questions/690342/)
+
 2.04  Feb 26, 2011
 
 * Fixes
