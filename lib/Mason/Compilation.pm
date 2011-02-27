@@ -858,3 +858,8 @@ modify the code as desired. See L<Mason::Plugin::DollarDot> for a sample usage.
 An arrayref of valid unnamed block types: C<args>, C<class>, C<init>, etc. Add
 to this list if you want to create your own unnamed blocks.
 
+=item valid_flags ()
+
+An arrayref of valid flags: contains only C<extends> at time of writing. Add to
+this list if you want to create your own flags.
+
