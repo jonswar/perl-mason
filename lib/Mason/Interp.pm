@@ -46,15 +46,9 @@ has 'distinct_string_count' => ( init_arg => undef, default => 0 );
 has 'globals_package'       => ( init_arg => undef, lazy_build => 1 );
 has 'id'                    => ( init_arg => undef, default => sub { $next_id++ } );
 has 'match_request_path'    => ( init_arg => undef, lazy_build => 1 );
-has 'named_block_regex'     => ( init_arg => undef, lazy_build => 1 );
-has 'named_block_types'     => ( init_arg => undef, lazy_build => 1 );
 has 'pure_perl_regex'       => ( lazy_build => 1 );
 has 'request_params'        => ( init_arg => undef );
 has 'top_level_regex'       => ( lazy_build => 1 );
-has 'unnamed_block_regex'   => ( init_arg => undef, lazy_build => 1 );
-has 'unnamed_block_types'   => ( init_arg => undef, lazy_build => 1 );
-has 'valid_flags'           => ( init_arg => undef, lazy_build => 1 );
-has 'valid_flags_hash'      => ( init_arg => undef, lazy_build => 1 );
 
 # Class overrides
 #
@@ -120,15 +114,6 @@ method _build_index_names () {
     return [ map { "index" . $_ } @{ $self->top_level_extensions } ];
 }
 
-method _build_named_block_regex () {
-    my $re = join '|', @{ $self->named_block_types };
-    return qr/$re/i;
-}
-
-method _build_named_block_types () {
-    return [qw(after augment around before filter method override)];
-}
-
 method _build_pure_perl_regex () {
     my $extensions = $self->pure_perl_extensions;
     if ( !@$extensions ) {
@@ -155,23 +140,6 @@ method _build_top_level_regex () {
         $regex = '(?:' . $regex . ')$';
         return qr/$regex/;
     }
-}
-
-method _build_unnamed_block_regex () {
-    my $re = join '|', @{ $self->unnamed_block_types };
-    return qr/$re/i;
-}
-
-method _build_unnamed_block_types () {
-    return [qw(args class doc flags init perl shared text)];
-}
-
-method _build_valid_flags () {
-    return [qw(extends)];
-}
-
-method _build_valid_flags_hash () {
-    return { map { ( $_, 1 ) } @{ $self->valid_flags } };
 }
 
 #

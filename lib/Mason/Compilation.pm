@@ -20,6 +20,7 @@ has 'source_file' => ( required => 1 );
 has 'dir_path'            => ( lazy_build => 1, init_arg => undef );
 has 'named_block_regex'   => ( lazy_build => 1, init_arg => undef );
 has 'unnamed_block_regex' => ( lazy_build => 1, init_arg => undef );
+has 'valid_flags_hash'    => ( lazy_build => 1, init_arg => undef );
 
 # Valid Perl identifier
 my $identifier = qr/[[:alpha:]_]\w*/;
@@ -45,14 +46,18 @@ method _build_dir_path () {
     return dirname( $self->path );
 }
 
-method _build_unnamed_block_regex ($class:) {
-    my $re = join '|', @{ $class->unnamed_block_types };
+method _build_unnamed_block_regex () {
+    my $re = join '|', @{ $self->unnamed_block_types };
     return qr/$re/i;
 }
 
-method _build_named_block_regex ($class:) {
-    my $re = join '|', @{ $class->named_block_types };
+method _build_named_block_regex () {
+    my $re = join '|', @{ $self->named_block_types };
     return qr/$re/i;
+}
+
+method _build_valid_flags_hash () {
+    return { map { ( $_, 1 ) } @{ $self->valid_flags } };
 }
 
 #
@@ -107,6 +112,10 @@ method process_perl_code ($coderef) {
 
 method unnamed_block_types () {
     return [qw(args class doc flags init perl shared text)];
+}
+
+method valid_flags () {
+    return [qw(extends)];
 }
 
 #
@@ -310,7 +319,7 @@ method _handle_flags_block ($contents) {
     {
         my ( $flag, $value ) = ( $1, $2 );
         if ( defined $flag && defined $value && length $flag && length $value ) {
-            if ( $self->interp->valid_flags_hash->{$flag} ) {
+            if ( $self->valid_flags_hash->{$flag} ) {
                 $self->{blocks}->{flags}->{$flag} = eval($value);
                 die $@ if $@;
             }
