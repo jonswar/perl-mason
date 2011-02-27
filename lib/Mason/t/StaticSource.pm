@@ -28,7 +28,7 @@ sub remove_comp {
     unlink($source_file);
 }
 
-sub test_change_no_ss : Test(2) {
+sub test_change_no_ss : Tests {
     my $self = shift;
     $self->test_comp(
         src    => '<& /ss/change_component.m &>',
@@ -42,7 +42,7 @@ sub test_change_no_ss : Test(2) {
     );
 }
 
-sub test_change_and_touch_ss : Test(3) {
+sub test_change_and_touch_ss : Tests {
     my $self       = shift;
     my $touch_file = $self->temp_dir . "/purge.dat";
     $self->setup_interp( static_source => 1, static_source_touch_file => $touch_file );
@@ -64,7 +64,7 @@ sub test_change_and_touch_ss : Test(3) {
     );
 }
 
-sub test_remove_no_ss : Test(2) {
+sub test_remove_no_ss : Tests {
     my $self = shift;
     $self->test_comp(
         src    => '<& /ss/remove_component.m &>',
@@ -77,7 +77,7 @@ sub test_remove_no_ss : Test(2) {
     );
 }
 
-sub test_remove_and_touch_ss : Test(3) {
+sub test_remove_and_touch_ss : Tests {
     my $self       = shift;
     my $touch_file = $self->temp_dir . "/purge.dat";
     $self->setup_interp( static_source => 1, static_source_touch_file => $touch_file );

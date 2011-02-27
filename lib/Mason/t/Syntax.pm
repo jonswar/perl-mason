@@ -1,7 +1,7 @@
 package Mason::t::Syntax;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_replace : Test(1) {
+sub test_replace : Tests {
     shift->test_comp(
         src => <<'EOF',
 <BODY>
@@ -16,7 +16,7 @@ EOF
     );
 }
 
-sub test_percent : Test(1) {
+sub test_percent : Tests {
     shift->test_comp(
         src => <<'EOF',
 <BODY>
@@ -32,7 +32,7 @@ EOF
     );
 }
 
-sub test_fake_percent : Test(1) {
+sub test_fake_percent : Tests {
     shift->test_comp(
         src => <<'EOF',
 some text, a %, and some text
@@ -43,7 +43,7 @@ EOF
     );
 }
 
-sub test_empty_percents : Test(1) {
+sub test_empty_percents : Tests {
     shift->test_comp(
         src => <<'EOF',
 some text,
@@ -57,7 +57,7 @@ EOF
     );
 }
 
-sub test_empty_percents2 : Test(1) {
+sub test_empty_percents2 : Tests {
     shift->test_comp(
         src => <<'EOF',
 some text,
@@ -73,7 +73,7 @@ EOF
     );
 }
 
-sub test_double_percent : Test(1) {
+sub test_double_percent : Tests {
     shift->test_comp(
         src => <<'EOF',
 <%class>
@@ -97,7 +97,7 @@ EOF
     );
 }
 
-sub test_pure_perl : Test(1) {
+sub test_pure_perl : Tests {
     shift->test_comp(
         path   => '/pureperl.pm',
         src    => 'sub main { print "hello from main" }',
@@ -105,7 +105,7 @@ sub test_pure_perl : Test(1) {
     );
 }
 
-sub test_attr : Test(1) {
+sub test_attr : Tests {
     my $self = shift;
     $self->add_comp(
         path => '/attr.m',
@@ -146,7 +146,7 @@ g = 8
     );
 }
 
-sub test_multiline_comment : Test(1) {
+sub test_multiline_comment : Tests {
     my $self = shift;
 
     $self->test_comp(
@@ -162,7 +162,7 @@ hi<%
     );
 }
 
-sub test_shared : Test(3) {
+sub test_shared : Tests {
     shift->test_parse(
         src => '
 <%shared>
@@ -179,7 +179,7 @@ $.baz => ( isa => "Num", default => 5 )
     );
 }
 
-sub test_dollar_dot : Test(1) {
+sub test_dollar_dot : Tests {
     shift->test_comp(
         src => '
 <%args>
@@ -208,7 +208,7 @@ bar = 6
     );
 }
 
-sub test_dollar_m : Test(1) {
+sub test_dollar_m : Tests {
     my $self = shift;
     $self->test_comp(
         src => '

@@ -1,7 +1,7 @@
 package Mason::t::Errors;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_comp_errors : Test(31) {
+sub test_comp_errors : Tests {
     my $self = shift;
     my $try  = sub {
         my ( $src, $expect_error, %extra ) = @_;
@@ -58,13 +58,13 @@ sub test_comp_errors : Test(31) {
     $try->( 'die "blargh";',   qr/blargh/, path => '/blargh.pm' );
 }
 
-sub test_bad_allow_globals : Test(2) {
+sub test_bad_allow_globals : Tests {
     my $self = shift;
     throws_ok { $self->create_interp( allow_globals => ['@p'] ) } qr/only scalar globals supported/;
     throws_ok { $self->create_interp( allow_globals => ['i-'] ) } qr/not a valid/;
 }
 
-sub test_non_comp_errors : Test(1) {
+sub test_non_comp_errors : Tests {
     my $self = shift;
     throws_ok( sub { $self->interp->_make_request()->current_comp_class },
         qr/cannot determine current_comp_class/ );

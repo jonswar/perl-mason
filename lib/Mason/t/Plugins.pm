@@ -3,7 +3,7 @@ use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture_merged);
 use Mason::Util qw(dump_one_line);
 
-sub test_notify_plugin : Test(5) {
+sub test_notify_plugin : Tests {
     my $self = shift;
 
     $self->setup_interp(
@@ -26,7 +26,7 @@ sub test_notify_plugin : Test(5) {
     $like->(qr/starting compilation parse - \/test_plugin.m/);
 }
 
-sub test_strict_plugin : Test(2) {
+sub test_strict_plugin : Tests {
     my $self = shift;
 
     $self->setup_interp(
@@ -79,7 +79,7 @@ sub test_strict_plugin : Test(2) {
     }
 }
 
-sub test_plugin_specs : Test(9) {
+sub test_plugin_specs : Tests {
     my $self = shift;
 
     require Mason::PluginBundle::Default;

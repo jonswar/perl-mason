@@ -1,7 +1,7 @@
 package Mason::t::ComponentMeta;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_cmeta : Test(11) {
+sub test_cmeta : Tests {
     my $self = shift;
     $self->run_test_in_comp(
         path => '/component/meta.m',

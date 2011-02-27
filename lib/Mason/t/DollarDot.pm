@@ -1,7 +1,7 @@
 package Mason::t::DollarDot;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_dollardot : Test(1) {
+sub test_dollardot : Tests {
     my $self = shift;
     $self->test_comp(
         src => '

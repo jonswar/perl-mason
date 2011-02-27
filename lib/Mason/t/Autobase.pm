@@ -1,7 +1,7 @@
 package Mason::t::Autobase;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_autobase : Test(24) {
+sub test_autobase : Tests {
     my $self   = shift;
     my $interp = $self->interp;
 
@@ -93,10 +93,9 @@ sub test_autobase : Test(24) {
     $check_parent->( '/foo/bar/comp.m',     $base_class );
     $check_parent->( '/foo/bar/baz/comp.m', '/foo/bar/baz/Base.m' );
     $check_parent->( '/foo/bar/baz/Base.m', $base_class );
-
 }
 
-sub test_wrapping : Tests(2) {
+sub test_wrapping : Tests {
     my $self = shift;
 
     $self->add_comp(
@@ -167,7 +166,7 @@ sub _test_no_main_in_autobase {
     );
 }
 
-sub test_recompute_inherit : Test(1) {
+sub test_recompute_inherit : Tests {
     my $self   = shift;
     my $interp = $self->interp;
 

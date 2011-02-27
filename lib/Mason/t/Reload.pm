@@ -1,7 +1,7 @@
 package Mason::t::Reload;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_reload : Test(12) {
+sub test_reload : Tests {
     my $self = shift;
     my $class;
 
@@ -43,7 +43,7 @@ EOF
     ok( $class->can('baz'),  "can call baz after reload" );
 }
 
-sub test_reload_parent : Test(6) {
+sub test_reload_parent : Tests {
     my $self   = shift;
     my $interp = $self->interp;
 
@@ -87,7 +87,7 @@ sub test_reload_parent : Test(6) {
     $self->test_existing_comp( path => '/foo/bar/baz.m', expect => 'wrap2' );
 }
 
-sub test_no_unnecessary_reload : Test(1) {
+sub test_no_unnecessary_reload : Tests {
     my $self   = shift;
     my $interp = $self->interp;
 

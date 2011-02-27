@@ -4,13 +4,13 @@ use Capture::Tiny qw(capture);
 
 { package MyInterp; use Moose; extends 'Mason::Interp' }
 
-sub test_base_interp_class : Test(1) {
+sub test_base_interp_class : Tests {
     my $self = shift;
     my $interp = $self->create_interp( base_interp_class => 'MyInterp' );
     is( ref($interp), 'MyInterp' );
 }
 
-sub test_find_paths : Test(7) {
+sub test_find_paths : Tests {
     my $self   = shift;
     my $r1     = $self->temp_dir . "/r1";
     my $r2     = $self->temp_dir . "/r2";
@@ -46,7 +46,7 @@ sub test_find_paths : Test(7) {
     cmp_set( [ $interp->glob_paths("/foo/d*") ], [], "glob_paths(/foo/d*)" );
 }
 
-sub test_component_class_prefix : Test(6) {
+sub test_component_class_prefix : Tests {
     my $self = shift;
 
     my $check_prefix = sub {
@@ -71,18 +71,18 @@ sub test_component_class_prefix : Test(6) {
     $check_prefix->( $interp[2] );
 }
 
-sub test_no_data_dir : Test(1) {
+sub test_no_data_dir : Tests {
     my $self = shift;
     my $interp = Mason->new( comp_root => $self->comp_root );
     ok( -d $interp->data_dir );
 }
 
-sub test_bad_param : Test(1) {
+sub test_bad_param : Tests {
     my $self = shift;
     throws_ok { $self->create_interp( foo => 5 ) } qr/Found unknown attribute/;
 }
 
-sub test_comp_exists : Test(3) {
+sub test_comp_exists : Tests {
     my $self = shift;
 
     $self->add_comp( path => '/comp_exists/one.m', src => 'hi' );
@@ -92,7 +92,7 @@ sub test_comp_exists : Test(3) {
     throws_ok { $interp->comp_exists('one.m') } qr/not an absolute/;
 }
 
-sub test_out_method : Test(15) {
+sub test_out_method : Tests {
     my $self = shift;
 
     $self->add_comp( path => '/out_method/hi.m', src => 'hi' );
@@ -120,7 +120,7 @@ sub test_out_method : Test(15) {
     $try->( undef, '', '', 'ih', 'print reverse' );
 }
 
-sub test_no_source_line_numbers : Test(2) {
+sub test_no_source_line_numbers : Tests {
     my $self = shift;
 
     $self->test_parse( src => "hi\n<%init>my \$d = 0</%init>", expect => [qr/\#line/] );

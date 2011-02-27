@@ -1,7 +1,7 @@
 package Mason::t::ResolveURI;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_resolve : Tests(35) {
+sub test_resolve : Tests {
     my $self = shift;
 
     my @interp_params = ();
@@ -88,7 +88,7 @@ sub test_resolve : Tests(35) {
     $try->( $run_path, [ '/foo/bar/baz/index2', '/foo/bar/baz/index' ], '/foo/bar/baz/index', '' );
 }
 
-sub test_decline : Tests(7) {
+sub test_decline : Tests {
     my $self = shift;
 
     my @existing_paths =

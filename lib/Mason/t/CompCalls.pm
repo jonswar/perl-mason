@@ -1,7 +1,7 @@
 package Mason::t::CompCalls;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_ampersand : Test(2) {
+sub test_ampersand : Tests {
     my $self = shift;
 
     $self->add_comp(

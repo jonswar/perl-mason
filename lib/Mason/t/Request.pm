@@ -8,7 +8,7 @@ sub _get_current_comp_class {
     return $m->current_comp_class;
 }
 
-sub test_add_cleanup : Test(2) {
+sub test_add_cleanup : Tests {
     my $self = shift;
     my $foo  = 1;
     $self->test_comp(
@@ -23,7 +23,7 @@ foo = <% $$ref %>
     is( $foo, 2, "foo now 2" );
 }
 
-sub test_capture : Test(1) {
+sub test_capture : Tests {
     my $self = shift;
     $self->run_test_in_comp(
         test => sub {
@@ -34,7 +34,7 @@ sub test_capture : Test(1) {
     );
 }
 
-sub test_comp_exists : Test(1) {
+sub test_comp_exists : Tests {
     my $self = shift;
 
     $self->add_comp( path => '/comp_exists/one.m', src => 'hi' );
@@ -56,7 +56,7 @@ three.m: no
     );
 }
 
-sub test_current_comp_class : Test(1) {
+sub test_current_comp_class : Tests {
     shift->test_comp(
         path   => '/current_comp_class.m',
         src    => '<% ' . __PACKAGE__ . '::_get_current_comp_class($m)->cmeta->path %>',
@@ -64,7 +64,7 @@ sub test_current_comp_class : Test(1) {
     );
 }
 
-sub test_id : Test(3) {
+sub test_id : Tests {
     my $self = shift;
     $self->setup_dirs;
     $self->add_comp( path => '/id.m', src => 'id=<% $m->id %>' );
@@ -73,7 +73,7 @@ sub test_id : Test(3) {
     ok( $id1 != $id2 );
 }
 
-sub test_log : Test(1) {
+sub test_log : Tests {
     my $self = shift;
     $self->add_comp( path => '/log/one.m', src => '% $m->log->info("message one")' );
     $self->run_test_in_comp(
@@ -87,7 +87,7 @@ sub test_log : Test(1) {
     );
 }
 
-sub test_notes : Test(1) {
+sub test_notes : Tests {
     my $self = shift;
     $self->add_comp(
         path => '/show',
@@ -107,7 +107,7 @@ sub test_notes : Test(1) {
     );
 }
 
-sub test_page : Test(1) {
+sub test_page : Tests {
     my $self = shift;
     $self->add_comp( path => '/page/other.mi', src => '<% $m->page->cmeta->path %>' );
     $self->test_comp(
@@ -117,7 +117,7 @@ sub test_page : Test(1) {
     );
 }
 
-sub test_result_data : Test(1) {
+sub test_result_data : Tests {
     my $self = shift;
     $self->test_comp(
         src         => '% $m->result->data->{color} = "red"',
@@ -125,7 +125,7 @@ sub test_result_data : Test(1) {
     );
 }
 
-sub test_scomp : Test(2) {
+sub test_scomp : Tests {
     my $self = shift;
     $self->add_comp( path => '/str', src => 'abcde' );
     $self->run_test_in_comp(
@@ -138,7 +138,7 @@ sub test_scomp : Test(2) {
     );
 }
 
-sub test_subrequest : Test(6) {
+sub test_subrequest : Tests {
     my $self = shift;
 
     my $reset_id = sub { Mason::Request->_reset_next_id };

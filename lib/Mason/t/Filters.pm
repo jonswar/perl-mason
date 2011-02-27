@@ -1,7 +1,7 @@
 package Mason::t::Filters;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
-sub test_filters : Test(1) {
+sub test_filters : Tests {
     my $self = shift;
     $self->test_comp(
         src => '
@@ -29,7 +29,7 @@ hello world!
     );
 }
 
-sub test_filter_block : Test(1) {
+sub test_filter_block : Tests {
     my $self = shift;
     $self->test_comp(
         src => '
@@ -59,7 +59,7 @@ print(uc($content));
     );
 }
 
-sub test_lexical : Test(1) {
+sub test_lexical : Tests {
     my $self = shift;
     $self->test_comp(
         src => <<'EOF',
@@ -72,7 +72,7 @@ EOF
     );
 }
 
-sub test_repeat : Test(1) {
+sub test_repeat : Tests {
     my $self = shift;
     $self->test_comp(
         src => <<'EOF',
@@ -89,7 +89,7 @@ EOF
     );
 }
 
-sub test_nested : Test(1) {
+sub test_nested : Tests {
     my $self = shift;
     $self->test_comp(
         src => <<'EOF',
@@ -115,7 +115,7 @@ EOF
     );
 }
 
-sub test_misc_standard_filters : Test(2) {
+sub test_misc_standard_filters : Tests {
     my $self = shift;
 
     $self->test_comp(
@@ -154,7 +154,7 @@ EOF
     );
 }
 
-sub test_around : Test(1) {
+sub test_around : Tests {
     my $self = shift;
     $self->test_comp(
         src => <<'EOF',
