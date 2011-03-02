@@ -52,7 +52,7 @@ be curried:
 A simple filter is just a subroutine that takes text as input and return the
 new text. Thus you can create one-off filters with anonymous subroutines:
 
-   <% sub { reverse($_[0]) } %>Hello</%>
+   <% sub { reverse($_[0]) } { %>Hello</%>
 
      ==> olleH
 
