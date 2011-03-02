@@ -24,7 +24,7 @@ my $next_id = 0;
 has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] }, trigger => sub { shift->allowed_globals_hash } );
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'autoextend_request_path'  => ( isa => 'Mason::Types::Autoextend', coerce => 1, default => sub { [ '.pm', '.m' ] } );
-has 'comp_root'                => ( isa => 'Mason::Types::CompRoot', coerce => 1 );
+has 'comp_root'                => ( required => 1, isa => 'Mason::Types::CompRoot', coerce => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
 has 'dhandler_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
@@ -757,9 +757,9 @@ list, or a false value, means do no autoextending.
 
 =item comp_root
 
-The component root marks the top of your component hierarchy and defines how
-component paths are translated into real file paths. For example, if your
-component root is F</usr/local/httpd/docs>, a component path of
+Required. The component root marks the top of your component hierarchy and
+defines how component paths are translated into real file paths. For example,
+if your component root is F</usr/local/httpd/docs>, a component path of
 F</products/sales.m> translates to the file
 F</usr/local/httpd/docs/products/sales.m>.
 

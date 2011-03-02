@@ -68,8 +68,9 @@ sub test_bad_allow_globals : Tests {
 
 sub test_non_comp_errors : Tests {
     my $self = shift;
-    throws_ok( sub { $self->interp->_make_request()->current_comp_class },
-        qr/cannot determine current_comp_class/ );
+    throws_ok { $self->interp->_make_request()->current_comp_class }
+    qr/cannot determine current_comp_class/;
+    throws_ok { Mason->new() } qr/Attribute \(comp_root\) is required/;
 }
 
 1;

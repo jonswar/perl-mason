@@ -4,11 +4,14 @@ Revision history for Mason
 
 2.05  Feb 26, 2011
 
+* Fixes
+  - Require comp_root parameter to Mason->new (cxreg)
+
 * Improvements
   - Forbid reserved names such as 'cmeta' in new method and attribute declarations
 
 * Testing
-  - Stop using test counts (http://stackoverflow.com/questions/690342/)
+  - Stop using test counts - see http://bit.ly/eISu3R
 
 2.04  Feb 26, 2011
 
