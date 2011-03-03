@@ -105,17 +105,17 @@ sub test_pure_perl : Tests {
     );
 }
 
-sub test_attr : Tests {
+sub test_args : Tests {
     my $self = shift;
     $self->add_comp(
-        path => '/attr.m',
+        path => '/args.m',
         src  => '
 <%args>
 a
 b # comment
 
 # comment
-c=>5
+ c=>5
 d => 6
 e => "foo" # comment
 
@@ -133,7 +133,7 @@ g = <% $.g %>
 ',
     );
     $self->test_comp(
-        src    => '<& /attr.m, a => 3, b => 4 &>',
+        src    => '<& /args.m, a => 3, b => 4 &>',
         expect => '
 a = 3
 b = 4
@@ -166,9 +166,10 @@ sub test_shared : Tests {
     shift->test_parse(
         src => '
 <%shared>
-$.foo
-$.bar => "something"
+$.foo  # a comment
+ $.bar => "something"
 $.baz => ( isa => "Num", default => 5 )
+# another comment
 </%shared>
 ',
         expect => [

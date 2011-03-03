@@ -84,12 +84,15 @@ Blocks that do not take a name argument.
 Contains one or more attribute declarations, one per line. Each line starts
 with the attribute name, followed optionally by a comma operator (C<< => >>)
 and either a scalar value (which becomes the default) or a list (which becomes
-the Moose attribute properties). e.g. this block
+the Moose attribute properties). The line may be prefixed with whitespace and
+followed with a comment; you can also have comments on their own lines. e.g.
+this block
 
     <%args>
     a
-    b => 'default value'
+    b => 'default value'   # a comment
     c => (isa => 'Str', default => 'something')
+    # another comment
     </%args>
 
 is equivalent to

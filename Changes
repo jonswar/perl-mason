@@ -6,6 +6,7 @@ Revision history for Mason
 
 * Fixes
   - Require comp_root parameter to Mason->new (cxreg)
+  - Ignore whitespace at beginning of a <%args> and <%shared> line (cxreg)
 
 * Improvements
   - Forbid reserved names such as 'cmeta' in new method and attribute declarations

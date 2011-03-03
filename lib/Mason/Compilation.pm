@@ -241,6 +241,7 @@ method _handle_attributes_list ($contents, $attr_type) {
             my ( $name, $rest ) = (
                 $line =~ /
                           ^
+                          \s*               # optional whitespace
                           (?: \$\.)?        # optional $. prefix
                           ([^\W\d]\w*)      # valid Perl variable name
                           (?:\s*=>\s*(.*))? # optional arrow then default or attribute params
