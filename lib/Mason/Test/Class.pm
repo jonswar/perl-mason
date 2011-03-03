@@ -85,7 +85,7 @@ method remove_comp (%params) {
 method _gen_comp_path () {
     my $caller = ( caller(2) )[3];
     my ($caller_base) = ( $caller =~ /([^:]+)$/ );
-    my $path = "/$caller_base" . ( ++$gen_path_count ) . ".m";
+    my $path = "/$caller_base" . ( ++$gen_path_count ) . ".mc";
     return $path;
 }
 
@@ -110,7 +110,7 @@ method test_existing_comp (%params) {
     my $expect_data  = $params{expect_data};
     my $verbose      = $params{v} || $params{verbose};
     my $args         = $params{args} || {};
-    ( my $request_path = $path ) =~ s/\.(m|pm)$//;
+    ( my $request_path = $path ) =~ s/\.m[cpi]$//;
 
     my @run_params = ( $request_path, %$args );
     local $current_test_object = $self;
@@ -140,7 +140,7 @@ method run_test_in_comp (%params) {
     my $args = delete( $params{args} ) || {};
     $params{path} ||= $self->_gen_comp_path;
     $self->add_comp( %params, src => '% $.args->{_test}->($self);' );
-    ( my $request_path = $params{path} ) =~ s/\.m$//;
+    ( my $request_path = $params{path} ) =~ s/\.m[cpi]$//;
     my @run_params = ( $request_path, %$args );
     $self->interp->run( @run_params, _test => $test );
 }

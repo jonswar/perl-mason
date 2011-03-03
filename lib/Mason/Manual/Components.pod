@@ -47,7 +47,7 @@ that all component files live under. Thereafter, any component will be referred
 to by its virtual I<path> relative to the root, rather than its full filename.
 
 For example, if the component root is '/opt/web/comps', then the component path
-'/foo/bar.m' refers to the file '/opt/web/comps/foo/bar.m'.
+'/foo/bar.mcc' refers to the file '/opt/web/comps/foo/bar.mc'.
 
 It is also possible to specify multiple component roots, ala Perl's C<@INC>, in
 which case a component path might refer to one of several files.
@@ -59,7 +59,7 @@ components.
 
 =over
 
-=item .m - top-level component
+=item .mc - top-level component
 
 A top-level component can serve as the page component in a request.
 
@@ -67,7 +67,7 @@ A top-level component can serve as the page component in a request.
 
 An internal component can only be accessed from other components.
 
-=item .pm - pure-perl component
+=item .mp - pure-perl component
 
 A pure-perl component contains only code; it is parsed as if its entire content
 was within a L<%class|Mason::Manual::Syntax/E<lt>%classE<gt>> block. You do not
@@ -78,6 +78,9 @@ include: controller logic, web form handlers, and L<autobase
 components|Autobase components>.
 
 =back
+
+These extensions are configurable via L<Mason::Interp/pure_perl_extensions> and
+L<Mason::Interp/top_level_extensions>.
 
 =head1 CALLING COMPONENTS
 
@@ -311,20 +314,20 @@ not work reliably.
 
 Autobase components are specially named components that automatically become
 the superclass of all components in their directory and subdirectories. The
-default names are "Base.pm" and "Base.m" - you can customize this with the
+default names are "Base.mp" and "Base.mc" - you can customize this with the
 C<autobase_names> parameter.
 
 For example, in this directory hierarchy,
 
-    Base.pm
-    main.m
+    Base.mp
+    main.mc
     colors/
-       red.m
-       blue.m
+       red.mc
+       blue.mc
     flavors/
-       Base.m
-       vanilla.m
-       chocolate.m
+       Base.mc
+       vanilla.mc
+       chocolate.mc
 
 assuming that no components have C<extends> flags,
 
@@ -332,18 +335,18 @@ assuming that no components have C<extends> flags,
 
 =item *
 
-/Base.pm is the superclass of /main.m, /colors/red.m, /colors/blue.m, and
-/flavors/Base.m.
+/Base.mp is the superclass of /main.mc, /colors/red.mc, /colors/blue.mc, and
+/flavors/Base.mc.
 
 =item *
 
-/flavors/Base.m is the superclass of vanilla.m and chocolate.m.
+/flavors/Base.mc is the superclass of vanilla.mc and chocolate.mc.
 
 =back
 
-If C<Base.pm> and C<Base.m> appear in the same directory, they will both be
-recognized; everything below will inherit from C<Base.m>, and C<Base.m> will
-inherit from C<Base.pm>. This might be useful for separating L<Content
+If C<Base.mp> and C<Base.mc> appear in the same directory, they will both be
+recognized; everything below will inherit from C<Base.mc>, and C<Base.mc> will
+inherit from C<Base.mp>. This might be useful for separating L<Content
 wrapping> from shared method definitions, for example.
 
 =head1 GENERATED CLASS
@@ -358,10 +361,10 @@ Mason writes the generated class into an I<object file>, located in
     <mason_data_directory>/obj/<component_path>.mobj
 
 For example if your L<data directory|Mason::Interp/data_dir> is
-F</home/myapp/data> and the component path is F</foo/bar.m>, the corresponding
+F</home/myapp/data> and the component path is F</foo/bar.mc>, the corresponding
 object file will be
 
-    /home/myapp/data/obj/foo/bar.m.mobj
+    /home/myapp/data/obj/foo/bar.mc.mobj
 
 The object file is rewritten whenever Mason detects a change in the source
 file.
@@ -400,18 +403,18 @@ C<TidyObjectFiles>:
     12          'interp'       => $interp,
     13          'is_top_level' => '1',
     14          'object_file'  => __FILE__,
-    15          'path'         => '/hi.m',
-    16          'source_file'  => '/home/myapp/comps/hi.m',
+    15          'path'         => '/hi.mc',
+    16          'source_file'  => '/home/myapp/comps/hi.mc',
     17      );
     18  }
     19  sub _class_cmeta { $_class_cmeta }
     20  
     21  method main {
-    22  #line 1 "/home/myapp/comps/hi.m"
+    22  #line 1 "/home/myapp/comps/hi.mc"
     23      $$_m_buffer .= 'Hi there! The time is ';
-    24  #line 1 "/home/myapp/comps/hi.m"
+    24  #line 1 "/home/myapp/comps/hi.mc"
     25      for ( scalar( scalar(localtime) ) ) { $$_m_buffer .= $_ if defined }
-    26  #line 1 "/home/myapp/comps/hi.m"
+    26  #line 1 "/home/myapp/comps/hi.mc"
     27      $$_m_buffer .= '.
     28  ';
     29  

@@ -126,7 +126,7 @@ modules, declare attributes, and do other things on a class level.
 Text in this section is treated as a comment and ignored.
 
     <%doc>
-    Name: foo.m
+    Name: foo.mc
     Purpose: ...
     </%doc>
 

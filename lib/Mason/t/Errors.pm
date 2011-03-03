@@ -57,7 +57,7 @@ sub test_comp_errors : Tests {
     $try->( "<%flags>\nextends => %foo\n</%flags>", qr/Global symbol/ );
     $try->( '<% $foo %>',      qr/Global symbol "\$foo" requires explicit package name/ );
     $try->( '%% die "bleah";', qr/bleah/ );
-    $try->( 'die "blargh";',   qr/blargh/, path => '/blargh.pm' );
+    $try->( 'die "blargh";',   qr/blargh/, path => '/blargh.mp' );
 }
 
 sub test_bad_allow_globals : Tests {

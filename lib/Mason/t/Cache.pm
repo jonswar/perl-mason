@@ -6,7 +6,7 @@ __PACKAGE__->default_plugins( [ '@Default', 'Cache' ] );
 sub test_cache_defaults : Tests {
     my $self = shift;
     $self->run_test_in_comp(
-        path => '/cache/defaults.m',
+        path => '/cache/defaults.mc',
         test => sub {
             my $comp = shift;
             is( $comp->cache->label,     'File',             'cache->label' );
@@ -18,7 +18,7 @@ sub test_cache_defaults : Tests {
 sub test_cache_method : Tests {
     my $self = shift;
     $self->test_comp(
-        path => '/cache.m',
+        path => '/cache.mc',
         src  => '
 <%shared>
 $.count => 0
@@ -36,7 +36,7 @@ namespace: <% $.cache->namespace %>
 <% $.getset("foo") %>
 ',
         expect => '
-namespace: /cache.m
+namespace: /cache.mc
 foo1
 
 bar2

@@ -23,7 +23,7 @@ my $next_id = 0;
 #
 has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] }, trigger => sub { shift->allowed_globals_hash } );
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
-has 'autoextend_request_path'  => ( isa => 'Mason::Types::Autoextend', coerce => 1, default => sub { [ '.pm', '.m' ] } );
+has 'autoextend_request_path'  => ( isa => 'Bool', default => 1 );
 has 'comp_root'                => ( required => 1, isa => 'Mason::Types::CompRoot', coerce => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
@@ -33,10 +33,10 @@ has 'mason_root_class'         => ( required => 1 );
 has 'no_source_line_numbers'   => ( default => 0 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
-has 'pure_perl_extensions'     => ( default => sub { ['.pm'] } );
+has 'pure_perl_extensions'     => ( default => sub { ['.mp'] } );
 has 'static_source' => ( );
 has 'static_source_touch_file' => ( );
-has 'top_level_extensions'     => ( default => sub { ['.pm', '.m'] } );
+has 'top_level_extensions'     => ( default => sub { ['.mc', '.mp'] } );
 
 # Derived attributes
 #
@@ -91,7 +91,7 @@ method _build_globals_package () {
 }
 
 method _build_autobase_names () {
-    return [ "Base.m", "Base.pm" ];
+    return [ map { "Base" . $_ } @{ $self->top_level_extensions } ];
 }
 
 method _build_code_cache () {
@@ -424,11 +424,11 @@ method write_object_file ($object_file, $object_contents) {
 }
 
 # Given /foo/bar, look for (by default):
-#   /foo/bar/index.{pm,m},
-#   /foo/bar/dhandler.{pm,m},
-#   /foo/bar.{pm,m},
-#   /dhandler.{pm,m}
-#   /foo.{pm,m}
+#   /foo/bar/index.{mp,mc},
+#   /foo/bar/dhandler.{mp,mc},
+#   /foo/bar.{mp,mc},
+#   /dhandler.{mp,mc},
+#   /foo.{mp,mc}
 #
 method _build_match_request_path ($interp:) {
 
@@ -439,7 +439,7 @@ method _build_match_request_path ($interp:) {
       '(/' . join( "|", @{ $interp->autobase_names }, @{ $interp->dhandler_names } ) . ')$';
     $ignore_file_regex = qr/$ignore_file_regex/;
     my %is_dhandler_name = map { ( $_, 1 ) } @{ $interp->dhandler_names };
-    my @autoextensions = @{ $interp->autoextend_request_path };
+    my @autoextensions = $interp->autoextend_request_path ? @{ $interp->top_level_extensions } : ();
 
     return sub {
         my ( $request, $request_path ) = @_;
@@ -571,9 +571,9 @@ method _construct_distinct_string_for_number ($number) {
 
 method _default_parent_compc ($orig_path) {
 
-    # Given /foo/bar.m, look for (by default):
-    #   /foo/Base.pm, /foo/Base.m,
-    #   /Base.pm, /Base.m
+    # Given /foo/bar.mc, look for (by default):
+    #   /foo/Base.mp, /foo/Base.mc,
+    #   /Base.mp, /Base.mc
     #
     # Split path into dir_path and base_name - validate that it has a
     # starting slash and ends with at least one non-slash character
@@ -719,7 +719,237 @@ the cache of loaded components.
 
 =head1 PARAMETERS TO THE new() CONSTRUCTOR
 
-These are documented in L<Mason::Manual::Parameters>.
+=for html <a name="allow_globals" />
+
+=over
+
+=item allow_globals (varnames)
+
+List of one or more global variable names that will be available in all
+components, like C<< $m >> is by default.
+
+    allow_globals => [qw($dbh)]
+
+As in any programming environment, globals should be created sparingly (if at
+all) and only when other mechanisms (parameter passing, attributes, singletons)
+will not suffice. L<Catalyst::View::Mason2|Catalyst::View::Mason2>, for
+example, creates a C<< $c >> global set to the context object in each request.
+
+Set the values of globals with L<set_global|/set_global>.
+
+=for html <a name="autobase_names" />
+
+=item autobase_names
+
+Array reference of L<autobase|Mason::Manual/Autobase components> filenames to
+check in order when determining a component's superclass. Default is C<<
+["Base.mp", "Base.mc"] >>.
+
+=for html <a name="autoextend_request_path" />
+
+=item autoextend_request_path
+
+Whether to automatically add the L<top level extensions|/top_level_extensions>
+(by default ".mp" and ".mc") to the request path when searching for a matching
+page component. Defaults to true.
+
+=for html <a name="comp_root" />
+
+=item comp_root
+
+Required. The component root marks the top of your component hierarchy and
+defines how component paths are translated into real file paths. For example,
+if your component root is F</usr/local/httpd/docs>, a component path of
+F</products/sales.mc> translates to the file
+F</usr/local/httpd/docs/products/sales.mc>.
+
+This parameter may be either a single path or an array reference of paths. If
+it is an array reference, the paths will be searched in the provided order
+whenever a component path is resolved, much like Perl's C<< @INC >>.
+
+=for html <a name="component_class_prefix" />
+
+=item component_class_prefix
+
+Prefix to use in generated component classnames. Defaults to 'MC' plus the
+interpreter's count, e.g. MC0. So a component '/foo/bar' would get a classname
+like 'MC0::foo::bar'.
+
+=for html <a name="data_dir" />
+
+=item data_dir
+
+The data directory is a writable directory that Mason uses for various features
+and optimizations: for example, component object files and data cache files.
+Mason will create the directory on startup if necessary.
+
+Defaults to a temporary directory that will be cleaned up at process end. This
+will hurt performance as Mason will have to recompile components on each run.
+
+=for html <a name="dhandler_names" />
+
+=item dhandler_names
+
+Array reference of dhandler file names to check in order when resolving a
+top-level path. Default is C<< ["dhandler.mp", "dhandler.mc"] >>. An empty list
+disables this feature.
+
+=for html <a name="index_names" />
+
+=item index_names
+
+Array reference of index file names to check in order when resolving a
+top-level path. Default is C<< ["index.mp", "index.mc"] >>. An empty list
+disables this feature.
+
+=for html <a name="no_source_line_numbers" />
+
+=item no_source_line_numbers
+
+Do not put in source line number comments when generating code.  Setting this
+to true will cause error line numbers to reflect the real object file, rather
+than the source component.
+
+=for html <a name="object_file_extension" />
+
+=item object_file_extension
+
+Extension to add to the end of object files. Default is ".mobj".
+
+=for html <a name="plugins" />
+
+=item plugins
+
+A list of plugins and/or plugin bundles:
+
+    plugins => [
+      'OnePlugin', 
+      'AnotherPlugin',
+      '+My::Mason::Plugin::AThirdPlugin',
+      '@APluginBundle',
+      '-DontLikeThisPlugin',
+    ]);
+
+See L<Mason::Manual::Plugins>.
+
+=for html <a name="out_method" />
+
+=item out_method
+
+Default L<out_method|Request/out_method> passed to each new request.
+
+=for html <a name="pure_perl_extensions" />
+
+=item pure_perl_extensions
+
+A listref of file extensions of components to be considered as pure perl (see
+L<Pure Perl Components|Mason::Manual::Syntax/Pure_Perl_Components>). Default is
+C<< ['.mp'] >>. If an empty list is specified, then no components will be
+considered pure perl.
+
+=for html <a name="static_source" />
+
+=item static_source
+
+True or false, default is false. When false, Mason checks the timestamp of the
+component source file each time the component is used to see if it has changed.
+This provides the instant feedback for source changes that is expected for
+development.  However it does entail a file stat for each component executed.
+
+When true, Mason assumes that the component source tree is unchanging: it will
+not check component source files to determine if the memory cache or object
+file has expired.  This can save many file stats per request. However, in order
+to get Mason to recognize a component source change, you must touch the
+L<static_source_touch_file|/static_source_touch_file>.
+
+We recommend turning this mode on in your production sites if possible, if
+performance is of any concern.
+
+=for html <a name="static_source_touch_file" />
+
+=item static_source_touch_file
+
+Specifies a filename that Mason will check once at the beginning of every
+request when in L<static_source|/static_source> mode. When the file timestamp
+changes (indicating that a component has changed), Mason will clear its
+in-memory component cache and recheck existing object files.
+
+=for html <a name="top_level_extensions" />
+
+=item top_level_extensions
+
+A listref of file extensions of components to be considered "top level",
+accessible directly from C<< $interp->run >> or a web request. Default is C<<
+['.mp', '.mc'] >>. If an empty list is specified, then there will be I<no>
+restriction; that is, I<all> components will be considered top level.
+
+=back
+
+=head1 CUSTOM MASON CLASSES
+
+These parameters specify alternate classes to use instead of the default
+Mason:: classes.
+
+For example, to use your own Compilation base class:
+
+    my $interp = Mason->new(base_compilation_class => 'MyApp::Mason::Compilation', ...);
+
+L<Relevant plugins|Mason::Manual::Plugins>, if any, will applied to this class
+to create a final class, which you can get with
+
+    $interp->compilation_class
+
+=for html <a name="base_code_cache_class" />
+
+=over
+
+=item base_code_cache_class
+
+Specify alternate to L<Mason::CodeCache|Mason::CodeCache>
+
+=for html <a name="base_compilation_class" />
+
+=item base_compilation_class
+
+Specify alternate to L<Mason::Compilation|Mason::Compilation>
+
+=for html <a name="base_component_class" />
+
+=item base_component_class
+
+Specify alternate to L<Mason::Component|Mason::Component>
+
+=for html <a name="base_component_moose_class" />
+
+=item base_component_moose_class
+
+Specify alternate to L<Mason::Component::Moose|Mason::Component::Moose>
+
+=for html <a name="base_component_class_meta_class" />
+
+=item base_component_class_meta_class
+
+Specify alternate to L<Mason::Component::ClassMeta|Mason::Component::ClassMeta>
+
+=for html <a name="base_component_import_class" />
+
+=item base_component_import_class
+
+Specify alternate to L<Mason::Component::Import|Mason::Component::Import>
+
+=for html <a name="base_request_class" />
+
+=item base_request_class
+
+Specify alternate to L<Mason::Request|Mason::Request>
+
+=for html <a name="base_result_class" />
+
+=item base_result_class
+
+Specify alternate to L<Mason::Result|Mason::Result>
+
+=back
 
 =head1 PUBLIC METHODS
 
@@ -733,7 +963,7 @@ Returns a list of distinct component paths under I<dir_path>, which defaults to
 '/' if not provided.  For example,
 
    $interp->all_paths('/foo/bar')
-      => ('/foo/bar/baz.m', '/foo/bar/blargh.m')
+      => ('/foo/bar/baz.mc', '/foo/bar/blargh.mc')
 
 Note that these are all component paths, not filenames, and all component roots
 are searched if there are multiple ones.
@@ -764,8 +994,8 @@ Empties the component cache and removes all component classes.
 
 Returns a list of all component paths matching the glob I<pattern>. e.g.
 
-   $interp->glob_paths('/foo/b*.m')
-      => ('/foo/bar.m', '/foo/baz.m')
+   $interp->glob_paths('/foo/b*.mc')
+      => ('/foo/bar.mc', '/foo/baz.mc')
 
 Note that these are all component paths, not filenames, and all component roots
 are searched if there are multiple ones.

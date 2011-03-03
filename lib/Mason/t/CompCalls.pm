@@ -18,7 +18,7 @@ EOF
     );
 
     $self->test_comp(
-        path => '/support/amper_call.m',
+        path => '/support/amper_call.mc',
         src  => <<'EOF',
 <&/support/amper_test.mi&>
 <& amper_test.mi &>

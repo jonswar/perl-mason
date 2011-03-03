@@ -155,7 +155,7 @@ To use these in a component:
     ...
     </%>
 
-Or if you want them available to all components, put them in C<Base.pm> at the
+Or if you want them available to all components, put them in C<Base.mp> at the
 top of your component hierarchy, or in your application's C<Mason::Component>
 subclass.
 

@@ -37,54 +37,54 @@ sub test_resolve : Tests {
 
     my $run_path = '/foo/bar/baz';
 
-    $try->( $run_path, ['/foo/bar/baz.m'],          '/foo/bar/baz.m',          '' );
-    $try->( $run_path, ['/foo/bar/baz/dhandler.m'], '/foo/bar/baz/dhandler.m', '' );
-    $try->( $run_path, ['/foo/bar/baz/index.m'],    '/foo/bar/baz/index.m',    '' );
-    $try->( $run_path, ['/foo/bar.m=1'],            '/foo/bar.m',              'baz' );
-    $try->( $run_path, ['/foo/bar/dhandler.m'],     '/foo/bar/dhandler.m',     'baz' );
-    $try->( $run_path, ['/foo.m=1'],                '/foo.m',                  'bar/baz' );
-    $try->( $run_path, ['/foo/dhandler.m'],         '/foo/dhandler.m',         'bar/baz' );
-    $try->( $run_path, ['/dhandler.m'],             '/dhandler.m',             'foo/bar/baz' );
-    $try->( $run_path, [ '/dhandler.m',     '/foo/dhandler.m' ], '/foo/dhandler.m', 'bar/baz' );
-    $try->( $run_path, [ '/foo/dhandler.m', '/foo/bar.m=1' ],    '/foo/bar.m',      'baz' );
-    $try->( $run_path, [ '/foo/dhandler.m', '/foo/bar.m' ],      '/foo/dhandler.m', 'bar/baz' );
+    $try->( $run_path, ['/foo/bar/baz.mc'],          '/foo/bar/baz.mc',          '' );
+    $try->( $run_path, ['/foo/bar/baz/dhandler.mc'], '/foo/bar/baz/dhandler.mc', '' );
+    $try->( $run_path, ['/foo/bar/baz/index.mc'],    '/foo/bar/baz/index.mc',    '' );
+    $try->( $run_path, ['/foo/bar.mc=1'],            '/foo/bar.mc',              'baz' );
+    $try->( $run_path, ['/foo/bar/dhandler.mc'],     '/foo/bar/dhandler.mc',     'baz' );
+    $try->( $run_path, ['/foo.mc=1'],                '/foo.mc',                  'bar/baz' );
+    $try->( $run_path, ['/foo/dhandler.mc'],         '/foo/dhandler.mc',         'bar/baz' );
+    $try->( $run_path, ['/dhandler.mc'],             '/dhandler.mc',             'foo/bar/baz' );
+    $try->( $run_path, [ '/dhandler.mc',     '/foo/dhandler.mc' ], '/foo/dhandler.mc', 'bar/baz' );
+    $try->( $run_path, [ '/foo/dhandler.mc', '/foo/bar.mc=1' ],    '/foo/bar.mc',      'baz' );
+    $try->( $run_path, [ '/foo/dhandler.mc', '/foo/bar.mc' ],      '/foo/dhandler.mc', 'bar/baz' );
 
     # Not found
-    $try->( $run_path, ['/foo/bar.m'],                    undef );
-    $try->( $run_path, ['/foo.m'],                        undef );
-    $try->( $run_path, ['/foo/bar/baz/blarg.m'],          undef );
-    $try->( $run_path, ['/foo/bar/baz/blarg/dhandler.m'], undef );
-    $try->( $run_path, ['/foo/bar/baz'],                  undef );
-    $try->( $run_path, ['/foo/dhandler'],                 undef );
-    $try->( $run_path, ['/foo/bar/index.m'],              undef );
-    $try->( $run_path, ['/foo/blarg.m'],                  undef );
-    $try->( $run_path, ['/foo/blarg/dhandler.m'],         undef );
+    $try->( $run_path, ['/foo/bar.mc'],                    undef );
+    $try->( $run_path, ['/foo.mc'],                        undef );
+    $try->( $run_path, ['/foo/bar/baz/blarg.mc'],          undef );
+    $try->( $run_path, ['/foo/bar/baz/blarg/dhandler.mc'], undef );
+    $try->( $run_path, ['/foo/bar/baz'],                   undef );
+    $try->( $run_path, ['/foo/dhandler'],                  undef );
+    $try->( $run_path, ['/foo/bar/index.mc'],              undef );
+    $try->( $run_path, ['/foo/blarg.mc'],                  undef );
+    $try->( $run_path, ['/foo/blarg/dhandler.mc'],         undef );
 
     # Can't access autobase or dhandler directly, but can access index
-    $try->( '/foo/Base',     ['/foo/Base.m'],     undef );
-    $try->( '/foo/dhandler', ['/foo/dhandler.m'], '/foo/dhandler.m', 'dhandler' );
-    $try->( '/foo/index',    ['/foo/index.m'],    '/foo/index.m' );
+    $try->( '/foo/Base',     ['/foo/Base.mc'],     undef );
+    $try->( '/foo/dhandler', ['/foo/dhandler.mc'], '/foo/dhandler.mc', 'dhandler' );
+    $try->( '/foo/index',    ['/foo/index.mc'],    '/foo/index.mc' );
 
     # no autoextend_run_path
-    @interp_params = ( autoextend_request_path => [], top_level_extensions => ['.html'] );
+    @interp_params = ( autoextend_request_path => 0, top_level_extensions => ['.html'] );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
-    $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html.m'], undef );
-    $try->( "/foo.m/bar.mi",     ['/foo.m/bar.mi'],       undef );
-    @interp_params = ( autoextend_request_path => [], top_level_extensions => [] );
+    $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html.mc'], undef );
+    $try->( "/foo.mc/bar.mi",    ['/foo.mc/bar.mi'],       undef );
+    @interp_params = ( autoextend_request_path => 0, top_level_extensions => [] );
     $try->( '/foo/bar/baz.html', ['/foo/bar/baz.html'], '/foo/bar/baz.html', '' );
-    $try->( "/foo.m/bar.mi",     ['/foo.m/bar.mi'],     '/foo.m/bar.mi',     '' );
+    $try->( "/foo.mc/bar.mi",    ['/foo.mc/bar.mi'],    '/foo.mc/bar.mi',    '' );
 
     # dhandler_names
     @interp_params = ( dhandler_names => ['dhandler'] );
-    $try->( $run_path, ['/foo/bar/baz/dhandler.m'], undef );
-    $try->( $run_path, ['/foo/bar/baz/dhandler'],   '/foo/bar/baz/dhandler', '' );
-    $try->( $run_path, ['/foo/bar/dhandler'],       '/foo/bar/dhandler', 'baz' );
+    $try->( $run_path, ['/foo/bar/baz/dhandler.mc'], undef );
+    $try->( $run_path, ['/foo/bar/baz/dhandler'],    '/foo/bar/baz/dhandler', '' );
+    $try->( $run_path, ['/foo/bar/dhandler'],        '/foo/bar/dhandler', 'baz' );
 
     # index_names
     @interp_params = ( index_names => [ 'index', 'index2' ] );
-    $try->( $run_path, ['/foo/bar/baz/index.m'], undef );
-    $try->( $run_path, ['/foo/bar/baz/index'],   '/foo/bar/baz/index', '' );
-    $try->( $run_path, ['/foo/bar/baz/index2'],  '/foo/bar/baz/index2', '' );
+    $try->( $run_path, ['/foo/bar/baz/index.mc'], undef );
+    $try->( $run_path, ['/foo/bar/baz/index'],    '/foo/bar/baz/index', '' );
+    $try->( $run_path, ['/foo/bar/baz/index2'],   '/foo/bar/baz/index2', '' );
     $try->( $run_path, [ '/foo/bar/baz/index2', '/foo/bar/baz/index' ], '/foo/bar/baz/index', '' );
 }
 
@@ -92,7 +92,7 @@ sub test_decline : Tests {
     my $self = shift;
 
     my @existing_paths =
-      qw(/foo/bar.m /foo/bar/dhandler.m /foo/bar/index.m /foo.m /foo/dhandler.m /dhandler.m);
+      qw(/foo/bar.mc /foo/bar/dhandler.mc /foo/bar/index.mc /foo.mc /foo/dhandler.mc /dhandler.mc);
     my @paths_to_decline = ();
     my $run_path         = '/foo/bar';
 
@@ -110,7 +110,7 @@ sub test_decline : Tests {
                 path => $existing_path,
                 src  => $component,
             );
-            $self->add_comp( path => '/Base.pm', src => 'method allow_path_info { 1 }' );
+            $self->add_comp( path => '/Base.mp', src => 'method allow_path_info { 1 }' );
         }
         my $desc = sprintf( "declining: %s", join( ",", @paths_to_decline ) || '<nothing>' );
         if ( defined($resolve_path) ) {
@@ -128,12 +128,12 @@ sub test_decline : Tests {
     # Repeatedly try /foo/bar, test the expected page component, then add
     # that component to the decline list and try again.
     #
-    $try->( '/foo/bar.m',          '' );
-    $try->( '/foo/bar/index.m',    '' );
-    $try->( '/foo/bar/dhandler.m', '' );
-    $try->( '/foo.m',              'bar' );
-    $try->( '/foo/dhandler.m',     'bar' );
-    $try->( '/dhandler.m',         'foo/bar' );
+    $try->( '/foo/bar.mc',          '' );
+    $try->( '/foo/bar/index.mc',    '' );
+    $try->( '/foo/bar/dhandler.mc', '' );
+    $try->( '/foo.mc',              'bar' );
+    $try->( '/foo/dhandler.mc',     'bar' );
+    $try->( '/dhandler.mc',         'foo/bar' );
     $try->(undef);
 }
 

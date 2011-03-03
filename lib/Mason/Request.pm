@@ -579,14 +579,14 @@ the previously chosen page component(s) do not exist.
 
 For example, if the following components exist:
 
-    /news/sports.m
-    /news/dhandler.m
-    /dhandler.m
+    /news/sports.mc
+    /news/dhandler.mc
+    /dhandler.mc
 
 then a request for path C</news/sports> will initially resolve to
-C</news/sports.m>.  A call to C<< $m->decline >> would restart the request and
-resolve to C</news/dhandler.m>, a second C<< $m->decline >> would resolve to
-C</dhandler.m>, and a third would throw a "not found" error.
+C</news/sports.mc>.  A call to C<< $m->decline >> would restart the request and
+resolve to C</news/dhandler.mc>, a second C<< $m->decline >> would resolve to
+C</dhandler.mc>, and a third would throw a "not found" error.
 
 =for html <a name="flush_buffer" />
 
@@ -666,7 +666,7 @@ Returns the page component originally called in the request.
 
 Returns the remainder of the request path beyond the path of the page
 component, with no leading slash. e.g. If a request for '/foo/bar/baz' resolves
-to "/foo.m", the path_info is "bar/baz". For an exact match, it will contain
+to "/foo.mc", the path_info is "bar/baz". For an exact match, it will contain
 the empty string (never undef), so you can determine whether there's a
 path_info with
 

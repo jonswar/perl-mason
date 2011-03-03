@@ -108,8 +108,8 @@ set up a Mason psgi app:
 
     % mason_psgi_setup blog
     writing blog/app.psgi
-    writing blog/comps/Base.m
-    writing blog/comps/index.m
+    writing blog/comps/Base.mc
+    writing blog/comps/index.mc
     Run
 
         cd blog; plackup -r
@@ -231,7 +231,7 @@ See L<Mason::Manual::Components> for more information about components.
 
 =head2 Top-level page components, index files
 
-Here's our first component to serve the home page, C</index.m>:
+Here's our first component to serve the home page, C</index.mc>:
 
      1  <html>
      2    <head>
@@ -249,11 +249,11 @@ Here's our first component to serve the home page, C</index.m>:
     14    </body>
     15  </html>
 
-Any component with a C<.m> extension is considered a
+Any component with a C<.mc> extension is considered a
 L<top-level|Mason::Manual::Components/COMPONENT FILES> component, that is, it
 can be reached by an external URL.
 
-C<index.m> is a special path - it will match the URI of its directory, in this
+C<index.mc> is a special path - it will match the URI of its directory, in this
 case '/'. (For more special paths and details on how Mason finds page
 components, see L<Mason::Manual::RequestDispatch>.)
 
@@ -273,7 +273,7 @@ encapsulation, reuse, etc.
 
 =head2 Internal components, %-lines, substitution tags, <%init> blocks
 
-Because all_articles.mi has an C<.mi> extension (rather than C<.m>), it is an
+Because all_articles.mi has an C<.mi> extension (rather than C<.mc>), it is an
 L<internal|Mason::Manual::Components/Component file extensions> rather than a
 top-level component, and cannot be reached by an external URL. It can only be
 reached via a component call from another component.
@@ -385,7 +385,7 @@ filtering offends you. :)
 =head2 Templates / content wrapping, autobases, inheritance, method modifiers
 
 Now we have to handle the URL C</new_article>, linked from the home page. We do
-this with our second page component, C</new_article.m>. It contains only HTML
+this with our second page component, C</new_article.mc>. It contains only HTML
 (for now).
 
      1  <html>
@@ -407,11 +407,11 @@ this with our second page component, C</new_article.m>. It contains only HTML
     17    </body>
     18  </html>
 
-Notice that C</index.m> and C</new_article.m> have the same outer HTML
+Notice that C</index.mc> and C</new_article.mc> have the same outer HTML
 template; other pages will as well.  It's going to be tedious to repeat this
 everywhere. And of course, we don't have to. We take the common pieces out of
-the C</index.m> and C</new_article.m> and place them into a new component
-called C</Base.m>:
+the C</index.mc> and C</new_article.mc> and place them into a new component
+called C</Base.mc>:
 
      1  <%augment wrap>
      2    <html>
@@ -425,7 +425,7 @@ called C</Base.m>:
     10    </html>
     11  </%augment>
 
-When any page in our hierarchy is rendered, C</Base.m> will get control first.
+When any page in our hierarchy is rendered, C</Base.mc> will get control first.
 It will render the upper portion of the template (lines 2-7), then call the
 specific page component (line 8), then render the lower portion of the template
 (lines 9-10).
@@ -436,15 +436,15 @@ How does this magic work?
 
 =item 1.
 
-Any component named Base.m is an L<autobase|Mason::Manual::Components/Autobase
+Any component named Base.mc is an L<autobase|Mason::Manual::Components/Autobase
 components> component. It automatically becomes the superclass of any component
-in its directory and below. Thus, C</index.m> and C</node/view.m> both
-automatically inherit from C</Base.m>.
+in its directory and below. Thus, C</index.mc> and C</node/view.mc> both
+automatically inherit from C</Base.mc>.
 
 =item 2.
 
-When Mason dispatches to a page component like C</index.m> or
-C</new_article.m>, it doesn't call its C<main> method directly. Instead, it
+When Mason dispatches to a page component like C</index.mc> or
+C</new_article.mc>, it doesn't call its C<main> method directly. Instead, it
 calls this chain of methods:
 
     handle -> render -> wrap -> main
@@ -462,15 +462,15 @@ though in practice is most often used with C<< wrap >>. There are analagous
 blocks for each of Moose's L<method modifiers|Moose::Manual::MethodModifiers>:
 C<< <%before> >>, C<< <%after> >>, C<< <%around> >> and C<< <%override> >>.
 
-Now, we can remove those nine boilerplate lines from C</index.m> and
-C</node/view.m>.
+Now, we can remove those nine boilerplate lines from C</index.mc> and
+C</node/view.mc>.
 
 =head1 CHAPTER 7
 
 =head2 Form handling, pure-perl components, cmeta
 
-C</new_article.m> posts to C</article/publish>. Let's create a component to
-handle that, called C</article/publish.pm>. It will not output anything, but
+C</new_article.mc> posts to C</article/publish>. Let's create a component to
+handle that, called C</article/publish.mp>. It will not output anything, but
 will simply take action and redirect.
 
 I<< Note: if you're using an MVC framework, this code will be in a controller
@@ -493,12 +493,12 @@ rather than a Mason component. >>
     15      $m->redirect('/');
     16  }
 
-The C<.pm> extension indicates that this is a
+The C<.mp> extension indicates that this is a
 L<pure-perl|Mason::Manual::Components/Component file extensions> component.
 Other than the 'package' and 'use Moose' lines that are generated by Mason, it
 looks just like a regular Perl class. You could accomplish the same thing with
-a C<.m> component containing a single C<< <%class> >> block, but this is easier
-and more self-documenting.
+a C<.mc> component containing a single C<< <%class> >> block, but this is
+easier and more self-documenting.
 
 On lines 1 and 2 we declare incoming attributes. Because this is a top-level
 page component, the attributes will be populated with our POST parameters.
@@ -507,7 +507,7 @@ On line 4 we define a C<handle> method to validate the POST parameters, create
 the article, and redirect. Recall from the previous chapter that Mason
 initially calls C<handle> on top-level page components and that it usually
 defaults to calling C<render>. By defining C<handle> we ensure that the page
-will not output anything, even in the C</Base.m> wrapper.
+will not output anything, even in the C</Base.mc> wrapper.
 
 The C<method> keyword comes from L<Method::Signatures::Simple>, which is
 imported into components by default; see L<Mason::Component::Moose>.
@@ -517,7 +517,7 @@ object; there is an analagous C<< $m->res >> for the Plack response object.
 
 On lines 7 and 14, we set a message in the Plack session that we want to
 display on the next page. Rather than just making this work for a specific
-page, let's add generic code to the template in C<Base.m>:
+page, let's add generic code to the template in C<Base.mc>:
 
      7      <body>
  =>  8  % if (my $message = delete($m->req->session->{message})) {
@@ -537,7 +537,7 @@ component attribute that contains all the arguments passed to the component.
 
 =head2 Filters
 
-We need to change C<< /new_article.m >> to repopulate the form with the
+We need to change C<< /new_article.mc >> to repopulate the form with the
 submitted values when validation fails.
 
      1  <h2>Add an article</h2>

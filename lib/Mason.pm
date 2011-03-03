@@ -35,7 +35,7 @@ Mason - Powerful, high-performance templating for the web and beyond
 
 =head1 SYNOPSIS
 
-  foo.m:
+  foo.mc:
     % my $name = "Mason";
     Hello world! Welcome to <% $name %>.
 

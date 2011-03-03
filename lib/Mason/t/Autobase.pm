@@ -33,73 +33,73 @@ sub test_autobase : Tests {
     # Add components with no autobases, make sure they inherit from
     # Mason::Component
     #
-    $add->('/comp.m');
-    $add->('/foo/comp.m');
-    $add->('/foo/bar/comp.m');
-    $add->('/foo/bar/baz/comp.m');
+    $add->('/comp.mc');
+    $add->('/foo/comp.mc');
+    $add->('/foo/bar/comp.mc');
+    $add->('/foo/bar/baz/comp.mc');
 
     my $base_class = $self->interp->component_class;
 
-    $check_parent->( '/comp.m',             $base_class );
-    $check_parent->( '/foo/comp.m',         $base_class );
-    $check_parent->( '/foo/bar/comp.m',     $base_class );
-    $check_parent->( '/foo/bar/baz/comp.m', $base_class );
+    $check_parent->( '/comp.mc',             $base_class );
+    $check_parent->( '/foo/comp.mc',         $base_class );
+    $check_parent->( '/foo/bar/comp.mc',     $base_class );
+    $check_parent->( '/foo/bar/baz/comp.mc', $base_class );
 
     # Add autobases, test the parents of the components and autobases
     #
-    $add->('/Base.m');
-    $add->('/foo/Base.m');
-    $add->('/foo/bar/baz/Base.m');
+    $add->('/Base.mc');
+    $add->('/foo/Base.mc');
+    $add->('/foo/bar/baz/Base.mc');
     $self->interp->_flush_load_cache();
 
-    $check_parent->( '/Base.m',             $base_class );
-    $check_parent->( '/foo/Base.m',         '/Base.m' );
-    $check_parent->( '/foo/bar/baz/Base.m', '/foo/Base.m' );
-    $check_parent->( '/comp.m',             '/Base.m' );
+    $check_parent->( '/Base.mc',             $base_class );
+    $check_parent->( '/foo/Base.mc',         '/Base.mc' );
+    $check_parent->( '/foo/bar/baz/Base.mc', '/foo/Base.mc' );
+    $check_parent->( '/comp.mc',             '/Base.mc' );
 
-    $check_parent->( '/foo/comp.m',         '/foo/Base.m' );
-    $check_parent->( '/foo/bar/comp.m',     '/foo/Base.m' );
-    $check_parent->( '/foo/bar/baz/comp.m', '/foo/bar/baz/Base.m' );
+    $check_parent->( '/foo/comp.mc',         '/foo/Base.mc' );
+    $check_parent->( '/foo/bar/comp.mc',     '/foo/Base.mc' );
+    $check_parent->( '/foo/bar/baz/comp.mc', '/foo/bar/baz/Base.mc' );
 
-    $add->( '/foo/bar/baz/none.m', "undef" );
-    $check_parent->( '/foo/bar/baz/none.m', $base_class );
+    $add->( '/foo/bar/baz/none.mc', "undef" );
+    $check_parent->( '/foo/bar/baz/none.mc', $base_class );
 
-    $add->( '/foo/bar/baz/top.m', "'/Base.m'" );
-    $check_parent->( '/foo/bar/baz/top.m', '/Base.m' );
+    $add->( '/foo/bar/baz/top.mc', "'/Base.mc'" );
+    $check_parent->( '/foo/bar/baz/top.mc', '/Base.mc' );
 
-    $add->( '/foo/bar/baz/top2.m', "'../../Base.m'" );
-    $check_parent->( '/foo/bar/baz/top2.m', '/foo/Base.m' );
+    $add->( '/foo/bar/baz/top2.mc', "'../../Base.mc'" );
+    $check_parent->( '/foo/bar/baz/top2.mc', '/foo/Base.mc' );
 
     # Multiple autobases same directory
-    $add->('/Base.pm');
-    $add->('/foo/Base.pm');
+    $add->('/Base.mp');
+    $add->('/foo/Base.mp');
     $self->interp->_flush_load_cache();
-    $check_parent->( '/Base.pm',     $base_class );
-    $check_parent->( '/Base.m',      '/Base.pm' );
-    $check_parent->( '/foo/Base.pm', '/Base.m' );
-    $check_parent->( '/foo/Base.m',  '/foo/Base.pm' );
-    $check_parent->( '/foo/comp.m',  '/foo/Base.m' );
+    $check_parent->( '/Base.mp',     $base_class );
+    $check_parent->( '/Base.mc',     '/Base.mp' );
+    $check_parent->( '/foo/Base.mp', '/Base.mc' );
+    $check_parent->( '/foo/Base.mc', '/foo/Base.mp' );
+    $check_parent->( '/foo/comp.mc', '/foo/Base.mc' );
 
     # Remove most autobases, test parents again
     #
-    $remove->('/Base.pm');
-    $remove->('/Base.m');
-    $remove->('/foo/Base.pm');
-    $remove->('/foo/Base.m');
+    $remove->('/Base.mp');
+    $remove->('/Base.mc');
+    $remove->('/foo/Base.mp');
+    $remove->('/foo/Base.mc');
     $self->interp->_flush_load_cache();
 
-    $check_parent->( '/comp.m',             $base_class );
-    $check_parent->( '/foo/comp.m',         $base_class );
-    $check_parent->( '/foo/bar/comp.m',     $base_class );
-    $check_parent->( '/foo/bar/baz/comp.m', '/foo/bar/baz/Base.m' );
-    $check_parent->( '/foo/bar/baz/Base.m', $base_class );
+    $check_parent->( '/comp.mc',             $base_class );
+    $check_parent->( '/foo/comp.mc',         $base_class );
+    $check_parent->( '/foo/bar/comp.mc',     $base_class );
+    $check_parent->( '/foo/bar/baz/comp.mc', '/foo/bar/baz/Base.mc' );
+    $check_parent->( '/foo/bar/baz/Base.mc', $base_class );
 }
 
 sub test_wrapping : Tests {
     my $self = shift;
 
     $self->add_comp(
-        path => '/wrap/Base.m',
+        path => '/wrap/Base.mc',
         src  => '
 <%augment wrap>
 <html>
@@ -109,7 +109,7 @@ sub test_wrapping : Tests {
 '
     );
     $self->add_comp(
-        path => '/wrap/subdir/Base.m',
+        path => '/wrap/subdir/Base.mc',
         src  => '
 
 <%method hello>
@@ -119,7 +119,7 @@ Hello world
 '
     );
     $self->add_comp(
-        path => '/wrap/subdir/subdir2/Base.m',
+        path => '/wrap/subdir/subdir2/Base.mc',
         src  => '
 <%augment wrap>
 <body>
@@ -129,7 +129,7 @@ Hello world
 '
     );
     $self->test_comp(
-        path   => '/wrap/subdir/subdir2/wrap_me.m',
+        path   => '/wrap/subdir/subdir2/wrap_me.mc',
         src    => '<% $self->hello %>',
         expect => '
 <html>
@@ -142,7 +142,7 @@ Hello world
 '
     );
     $self->test_comp(
-        path => '/wrap/subdir/subdir2/dont_wrap_me.m',
+        path => '/wrap/subdir/subdir2/dont_wrap_me.mc',
         src  => '
 %% method wrap { $.main() }
 <% $self->hello() %>
@@ -156,7 +156,7 @@ sub _test_no_main_in_autobase {
     my $self = shift;
 
     $self->test_comp(
-        path => '/wrap/Base.m',
+        path => '/wrap/Base.mc',
         src  => '
 <body>
 % inner();
@@ -170,7 +170,7 @@ sub test_recompute_inherit : Tests {
     my $self   = shift;
     my $interp = $self->interp;
 
-    # Test that /comp.m class can be recomputed without garbage collection issues.
+    # Test that /comp.mc class can be recomputed without garbage collection issues.
     #
     my $remove = sub {
         my ($path) = @_;
@@ -178,11 +178,11 @@ sub test_recompute_inherit : Tests {
         $self->remove_comp( path => $path, );
     };
 
-    $self->add_comp( path => '/comp.m', src => ' ' );
-    $self->interp->load('/comp.m');
-    $self->add_comp( path => '/Base.m', src => ' ' );
+    $self->add_comp( path => '/comp.mc', src => ' ' );
+    $self->interp->load('/comp.mc');
+    $self->add_comp( path => '/Base.mc', src => ' ' );
     $self->interp->_flush_load_cache();
-    $self->interp->load('/comp.m');
+    $self->interp->load('/comp.mc');
     ok(1);
 
     return;

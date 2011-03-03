@@ -99,7 +99,7 @@ EOF
 
 sub test_pure_perl : Tests {
     shift->test_comp(
-        path   => '/pureperl.pm',
+        path   => '/pureperl.mp',
         src    => 'sub main { print "hello from main" }',
         expect => 'hello from main',
     );
@@ -108,7 +108,7 @@ sub test_pure_perl : Tests {
 sub test_args : Tests {
     my $self = shift;
     $self->add_comp(
-        path => '/args.m',
+        path => '/args.mc',
         src  => '
 <%args>
 a
@@ -133,7 +133,7 @@ g = <% $.g %>
 ',
     );
     $self->test_comp(
-        src    => '<& /args.m, a => 3, b => 4 &>',
+        src    => '<& /args.mc, a => 3, b => 4 &>',
         expect => '
 a = 3
 b = 4

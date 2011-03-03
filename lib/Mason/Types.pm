@@ -16,6 +16,6 @@ subtype 'Mason::Types::RegexpRefOrStr' => as 'RegexpRef';
 coerce 'Mason::Types::RegexpRefOrStr' => from 'Str' => via { qr/$/ };
 
 subtype 'Mason::Types::Autoextend' => as 'ArrayRef[Str]';
-coerce 'Mason::Types::Autoextend' => from 'Bool' => via { $_ ? [ '.pm', '.m' ] : [] };
+coerce 'Mason::Types::Autoextend' => from 'Bool' => via { $_ ? [ '.mp', '.mc' ] : [] };
 
 1;

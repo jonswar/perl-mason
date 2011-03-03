@@ -13,7 +13,7 @@ sub test_notify_plugin : Tests {
     $self->add_comp( path => '/test_plugin_support.mi', src => 'hi' );
     my $output = capture_merged {
         $self->test_comp(
-            path   => '/test_plugin.m',
+            path   => '/test_plugin.mc',
             src    => '<& test_plugin_support.mi &>',
             expect => 'hi'
         );
@@ -23,7 +23,7 @@ sub test_notify_plugin : Tests {
     $like->(qr/starting interp run/);
     $like->(qr/starting request run - \/test_plugin/);
     $like->(qr/starting request comp - test_plugin_support.mi/);
-    $like->(qr/starting compilation parse - \/test_plugin.m/);
+    $like->(qr/starting compilation parse - \/test_plugin.mc/);
 }
 
 sub test_strict_plugin : Tests {
@@ -31,7 +31,7 @@ sub test_strict_plugin : Tests {
 
     $self->setup_interp(
         base_component_moose_class => 'Mason::Test::Overrides::Component::StrictMoose', );
-    $self->add_comp( path => '/test_strict_plugin.m', src => 'hi' );
+    $self->add_comp( path => '/test_strict_plugin.mc', src => 'hi' );
     lives_ok { $self->interp->run('/test_strict_plugin') };
     throws_ok { $self->interp->run( '/test_strict_plugin', foo => 5 ) } qr/Found unknown attribute/;
 }
@@ -87,7 +87,7 @@ sub test_plugin_specs : Tests {
       or die "no default plugins";
     my $test = sub {
         my ( $plugin_list, $expected_plugins ) = @_;
-        my $interp = Mason->new( plugins => $plugin_list );
+        my $interp = Mason->new( comp_root => $self->comp_root, plugins => $plugin_list );
         my $got_plugins =
           [ map { /Mason::Plugin::/ ? substr( $_, 15 ) : $_ } @{ $interp->plugins } ];
         cmp_deeply(
