@@ -1,0 +1,92 @@
+
+=head1 NAME
+
+Mason::Manual::Intro - Getting started with Mason
+
+=head1 DESCRIPTION
+
+A few quick examples to get your feet wet with Mason.  See
+L<Mason::Manual::Tutorial> for a more expansive tour of building a web site
+with Mason.
+
+=head1 EXAMPLE 1
+
+=head2 Hello world (from command-line)
+
+After installing Mason, you should have a C<mason> command in your installation
+path (e.g. C</usr/local/bin>). Try this:
+
+    % mason
+    Hello! The local time is <% scalar(localtime) %>.
+    ^D
+
+(where '^D' means ctrl-D or EOF). You should see something like
+
+    Hello! The local time is Wed Mar  2 17:11:54 2011.
+
+The C<mason> command reads in a Mason I<component> (template), runs it, and
+prints the result to standard output. Notice that the tag
+
+    <% scalar(localtime) %>
+
+was replaced with the value of its expression. This is called a I<substitution
+tag> and is a central piece of Mason syntax.
+
+=head1 EXAMPLE 2
+
+=head2 Email generator (from script)
+
+The command line is good for trying quick things, but eventually you're going
+to want to put your Mason components in files.
+
+In a test directory, create a directory C<comps> and create a file C<email.mcc>
+with the following:
+
+    <%args>
+    $.amount
+    $.name
+    </%args>
+
+    Dear <% $.name %>,
+
+        We are pleased to inform you that you have won $<% sprintf(".2f", $.amount) %>!
+
+    Sincerely,
+    The Lottery Commission
+
+    <%init>
+    die "amount must be a positive value!" unless $.amount > 0;
+    </%init>
+
+In addition to the substitution tag we've seen before, we declare two
+I<attributes>, C<$.amount> and C<$.name>, to be passed into the component; and
+we declare a piece of initialization code to validate the amount.
+
+In the same test directory, create a script C<test.pl> with the following:
+
+     1  #!/usr/local/bin/perl
+     2  use Mason;
+     3  my $interp = Mason->new(comp_root => 'comps', data_dir => 'data');
+     4  print $interp->run('/email', name => 'Joe', amount => '1500')->output;
+
+Line 3 creates a I<Mason interpreter>, the main Mason object. It specifies two
+parameters: a I<component root>, indicating the directory hierarchy where your
+components will live; and a I<data directory>, which Mason will use for
+internal purposes such as class generation and caching.
+
+Line 4 runs the template - notice that the C<.mcc> extension is added
+automatically - passing values for the C<name> and C<amount> attributes.
+
+Run C<test.pl>, and you should see
+
+    Dear Joe,
+
+        We are pleased to inform you that you have won $1500.00!
+
+    Sincerely,
+    The Lottery Commission
+
+=head1 SEE ALSO
+
+L<Mason::Manual::Tutorial>, L<Mason::Manual>
+
