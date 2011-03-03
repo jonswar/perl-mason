@@ -14,6 +14,9 @@ Revision history for Mason
 * Testing
   - Stop using test counts - see http://bit.ly/eISu3R
 
+* Documentation
+  - Move Mason->new parameters to Mason/Manual/Parameters.pod
+
 2.04  Feb 26, 2011
 
 * Fixes

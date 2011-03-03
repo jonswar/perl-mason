@@ -25,6 +25,10 @@ All about components, the building blocks of Mason.
 
 A full reference of syntax that can be used in components.
 
+=item L<Mason::Manual::Parameters>
+
+A full reference of parameters that can be passed to the Mason constructor.
+
 =item L<Mason::Manual::RequestDispatch>
 
 How request paths get mapped to page components.
