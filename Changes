@@ -5,8 +5,8 @@ Revision history for Mason
 2.05  Feb 26, 2011
 
 ** Incompatible changes
-  - Change default component file extensions, due to conflict with Objective C's .m
-    (reported by jomo). New extensions:
+  - Change default component file extensions due to conflict with Objective C's .m
+    (suggested by jomo). New extensions:
     .mc - top-level component
     .mi - internal component
     .mp - pure-perl component
