@@ -11,7 +11,7 @@ use Mason::Request;
 use Mason::Result;
 use Mason::Types;
 use Mason::Util
-  qw(catdir catfile find_wanted first_index is_absolute mason_canon_path touch_file uniq write_file);
+  qw(catdir catfile combine_similar_paths find_wanted first_index is_absolute mason_canon_path touch_file uniq write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
@@ -447,6 +447,7 @@ method _build_match_request_path ($interp:) {
         my $declined_paths = $request->declined_paths;
         my @index_subpaths = map { "/$_" } @{ $interp->index_names };
         my $path           = $request_path;
+        my @tried_paths;
 
         while (1) {
             my @candidate_paths =
@@ -456,6 +457,7 @@ method _build_match_request_path ($interp:) {
                 ( grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions ),
                 ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
               );
+            push( @tried_paths, @candidate_paths );
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
                 if ( my $compc = $interp->load($candidate_path) ) {
@@ -471,7 +473,7 @@ method _build_match_request_path ($interp:) {
                     }
                 }
             }
-            return undef if $path eq '/';
+            $interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
             my $name = basename($path);
             $path_info = length($path_info) ? "$name/$path_info" : $name;
             $path = dirname($path);
@@ -649,6 +651,20 @@ method _source_file_for_path ($path) {
         return $source_file if -f $source_file;
     }
     return undef;
+}
+
+method _top_level_not_found ($path, $tried_paths) {
+    my @combined_paths = combine_similar_paths(@$tried_paths);
+    Mason::Exception::TopLevelNotFound->throw(
+        error => sprintf(
+            "could not resolve request path '%s'; searched for components (%s) under %s\n",
+            $path,
+            join( ", ", map { "'$_'" } @combined_paths ),
+            @{ $self->comp_root } > 1
+            ? "component roots " . join( ", ", map { "'$_'" } @{ $self->comp_root } )
+            : "component root '" . $self->comp_root->[0] . "'"
+        )
+    );
 }
 
 #

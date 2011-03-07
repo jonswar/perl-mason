@@ -244,7 +244,7 @@ method catch_abort ($code) {
 }
 
 method match_request_path ($request_path) {
-    return $self->interp->match_request_path->( $self, $request_path );
+    $self->interp->match_request_path->( $self, $request_path );
 }
 
 method run () {
@@ -252,6 +252,7 @@ method run () {
     # Get path and either hash or hashref of arguments
     #
     my $request_path = shift;
+    $self->interp->_assert_absolute_path($request_path);
     my $request_args;
     if ( @_ == 1 && reftype( $_[0] ) eq 'HASH' ) {
         $request_args = shift;
@@ -290,8 +291,7 @@ method run () {
     # Turn request path into a page component
     #
   match_request_path:
-    my $page_path = $self->match_request_path($request_path)
-      or $self->request_path_not_found($request_path);
+    my $page_path  = $self->match_request_path($request_path);
     my $page_compc = $self->interp->load($page_path);
     $log->debugf( "starting request with component '%s'", $page_path )
       if $log->is_debug;
@@ -327,15 +327,6 @@ method run () {
     $self->flush_buffer;
 
     return $self->result;
-}
-
-method request_path_not_found ($path) {
-    Mason::Exception::TopLevelNotFound->throw(
-        error => sprintf(
-            "could not find component for request path '%s' - component root is [%s]\n",
-            $path, join( ", ", @{ $self->interp->comp_root } )
-        )
-    );
 }
 
 method with_tied_print ($code) {

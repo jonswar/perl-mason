@@ -30,7 +30,7 @@ sub test_resolve : Tests {
         }
         else {
             throws_ok { $self->interp->run($run_path)->output }
-            qr/could not find component for request path/,
+            qr/could not resolve request path/,
               $desc;
         }
     };
@@ -119,7 +119,7 @@ sub test_decline : Tests {
         }
         else {
             throws_ok { $self->interp->run($run_path)->output }
-            qr/could not find component for request path/,
+            qr/could not resolve request path/,
               $desc;
         }
         push( @paths_to_decline, $resolve_path );
