@@ -11,7 +11,7 @@ use warnings;
 use base qw(Exporter);
 
 our @EXPORT_OK =
-  qw(can_load catdir catfile checksum dump_one_line find_wanted first_index is_absolute mason_canon_path read_file touch_file trim uniq write_file);
+  qw(can_load catdir catfile checksum combine_similar_paths dump_one_line find_wanted first_index is_absolute mason_canon_path read_file touch_file trim uniq write_file);
 
 my $Fetch_Flags          = O_RDONLY | O_BINARY;
 my $Store_Flags          = O_WRONLY | O_CREAT | O_BINARY;
@@ -59,6 +59,50 @@ sub checksum {
         $s2 = ( $s2 + $s1 ) % 65521;
     }
     return ( $s2 << 16 ) + $s1;
+}
+
+# Convert /foo/bar.m, /foo/bar.pm, /foo.m, /foo.pm to
+# /foo/bar.{m,pm}, /foo.{m,pm}. I have no idea why this takes
+# so much code.
+#
+sub combine_similar_paths {
+    my @paths = @_;
+    my ( @final, $current_base, @current_exts );
+    foreach my $path (@paths) {
+        if ( my ( $base, $ext ) = ( $path =~ /^(.*)\.(.*)$/ ) ) {
+            if ( defined($current_base) && $current_base ne $base ) {
+                push(
+                    @final,
+                    "$current_base."
+                      . (
+                        ( @current_exts == 1 )
+                        ? $current_exts[0]
+                        : sprintf( '{%s}', join( ',', @current_exts ) )
+                      )
+                );
+                @current_exts = ($ext);
+            }
+            else {
+                push( @current_exts, $ext );
+            }
+            $current_base = $base;
+        }
+        else {
+            push( @final, $path );
+        }
+    }
+    if ( defined($current_base) ) {
+        push(
+            @final,
+            "$current_base."
+              . (
+                ( @current_exts == 1 )
+                ? $current_exts[0]
+                : sprintf( '{%s}', join( ',', @current_exts ) )
+              )
+        );
+    }
+    return @final;
 }
 
 sub delete_package {
