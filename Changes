@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.05  Feb 26, 2011
+2.05  Mar 6, 2011
 
 ** Incompatible changes
   - Change default component file extensions due to conflict with Objective C's .m
