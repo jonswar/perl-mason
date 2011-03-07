@@ -13,10 +13,12 @@ Revision history for Mason
 
 * Fixes
   - Require comp_root parameter to Mason->new (cxreg)
+  - Require that request path is absolute
   - Ignore whitespace at beginning of a <%args> and <%shared> line (cxreg)
 
 * Improvements
   - Forbid reserved names such as 'cmeta' in new method and attribute declarations
+  - Improve error message when request path not found - list all component paths searched
 
 * Testing
   - Stop using test counts - see http://bit.ly/eISu3R
