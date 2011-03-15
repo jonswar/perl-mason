@@ -12,6 +12,7 @@
 ^depends
 ^dist\.ini
 ^docs
+^eg/blog/data
 ^git
 ^htdocs
 ^inc/\.author
