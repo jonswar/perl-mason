@@ -73,7 +73,24 @@ Uses C<< $m->capture >> to capture the content in I<$ref>.
 
 Calls the component with I<path> and I<@args>, just as with C<< $m->scomp >>,
 with an additional coderef argument C<yield> that can be invoked to generate
-the content.
+the content. Arguments passed to C<yield> can be accessed inside the content
+via C<@_>. This is the replacement for Mason 1's L<Components With
+Content|http://search.cpan.org/perldoc?HTML::Mason::Devel#Component_Calls_with_Content>.
+
+  In index.mc:
+    <% $.CompCall ('list_items.mi', items => \@items) { %>
+    <li><% $_[0] %></li>
+    <% } %>
+
+  In list_items.mi:
+    <%args>
+    $.items
+    $.yield
+    </%args>
+
+    % foreach my $item (@items) {
+    <% $.yield->($item) %>
+    % }
 
 =item NoBlankLines
 

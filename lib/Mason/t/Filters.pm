@@ -123,7 +123,7 @@ sub test_misc_standard_filters : Tests {
         expect => 'the quick brown fox'
     );
     $self->test_comp(
-        src => <<'EOF',
+        src => '
 <% $.Capture(\my $buf) { %>
 2 + 2 = <% 2+2 %>
 </%>
@@ -141,8 +141,8 @@ two
 
 </%>
 ---
-EOF
-        expect => <<'EOF',
+',
+        expect => '
 4 = 2 + 2
 
 ---
@@ -150,7 +150,39 @@ one
 two
 ---
 
-EOF
+',
+    );
+}
+
+sub test_compcall_filter : Tests {
+    my $self = shift;
+
+    $self->add_comp(
+        path => '/list_items.mi',
+        src  => '
+<%args>
+$.items
+$.yield
+</%args>
+
+% foreach my $item (@{$.items}) {
+<% $.yield->($item) %>
+% }
+',
+    );
+    $self->test_comp(
+        src => '
+<% $.CompCall ("list_items.mi", items => [1,2,3]) { %>
+<li><% $_[0] %></li>
+<% } %>
+',
+        expect => '
+<li>1</li>
+
+<li>2</li>
+
+<li>3</li>
+',
     );
 }
 

@@ -354,7 +354,8 @@ method _apply_filters ($filters, $yield) {
 
 method _apply_filters_to_output ($filters, $output_method) {
     my $yield = sub {
-        $self->capture( sub { $output_method->() } );
+        my @args = @_;
+        $self->capture( sub { $output_method->(@args) } );
     };
     my $filtered_output = $self->_apply_filters( $filters, $yield );
     $self->print($filtered_output);
