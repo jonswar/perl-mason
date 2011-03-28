@@ -95,6 +95,35 @@ sub test_autobase : Tests {
     $check_parent->( '/foo/bar/baz/Base.mc', $base_class );
 }
 
+sub test_cycles : Tests {
+    my $self = shift;
+
+    # An inheritance cycle
+    #
+    $self->add_comp(
+        path => '/cycle/Base.mc',
+        src  => "<%flags>\nextends => '/cycle/c/index.mc'\n</%flags>\n",
+    );
+    $self->test_comp(
+        path         => '/cycle/c/index.mc',
+        src          => "ok",
+        expect_error => qr/inheritance cycle/,
+    );
+
+    # This isn't a cycle but a bug that tried to preload default parent was causing
+    # it to infinite loop
+    #
+    $self->add_comp(
+        path => '/pseudo/Base.mc',
+        src  => "<%flags>\nextends => '/pseudo/c/index.mc'\n</%flags>\n",
+    );
+    $self->test_comp(
+        path   => '/pseudo/c/index.mc',
+        src    => "<%flags>\nextends => undef\n</%flags>\nok",
+        expect => 'ok',
+    );
+}
+
 sub test_wrapping : Tests {
     my $self = shift;
 
