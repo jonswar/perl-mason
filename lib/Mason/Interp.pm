@@ -17,7 +17,8 @@ use Moose::Util::TypeConstraints;
 use Mason::Moose;
 
 my $default_out = sub { print( $_[0] ) };
-my $next_id = 0;
+my $next_id     = 0;
+my $max_depth   = 16;
 
 # Passed attributes
 #
@@ -159,7 +160,14 @@ method all_paths ($dir_path) {
 }
 
 method comp_exists ($path) {
-    return $self->_source_file_for_path( Mason::Util::mason_canon_path($path) );
+
+    # Canonicalize path
+    #
+    croak "path required" if !defined($path);
+    $path = Mason::Util::mason_canon_path($path);
+
+    return ( ( $self->static_source && $self->code_cache->get($path) )
+          || $self->_source_file_for_path($path) ) ? 1 : 0;
 }
 
 method flush_code_cache () {
@@ -179,6 +187,8 @@ method glob_paths ($glob_pattern) {
     );
 }
 
+our $in_load = 0;
+
 method load ($path) {
 
     my $code_cache = $self->code_cache;
@@ -196,10 +206,16 @@ method load ($path) {
         }
     }
 
+    local $in_load = $in_load + 1;
+    if ( $in_load > $max_depth ) {
+        die ">$max_depth levels deep in inheritance determination (inheritance cycle?)"
+          if $in_load >= $max_depth;
+    }
+
     my $compile = 0;
     my (
-        $default_parent_compc, $source_file, $source_lastmod, $object_file,
-        $object_lastmod,       @source_stat, @object_stat
+        $default_parent_path, $source_file, $source_lastmod, $object_file,
+        $object_lastmod,      @source_stat, @object_stat
     );
 
     my $stat_source_file = sub {
@@ -227,7 +243,7 @@ method load ($path) {
 
     # Determine default parent comp
     #
-    $default_parent_compc = $self->_default_parent_compc($path);
+    $default_parent_path = $self->_default_parent_path($path);
 
     if ( $self->static_source ) {
 
@@ -260,7 +276,7 @@ method load ($path) {
         if ( my $entry = $code_cache->get($path) ) {
             if (   $entry->{source_lastmod} >= $source_lastmod
                 && $entry->{source_file} eq $source_file
-                && $entry->{default_parent_compc} eq $default_parent_compc )
+                && $entry->{default_parent_path} eq $default_parent_path )
             {
                 my $compc = $entry->{compc};
                 if ( $entry->{superclass_signature} eq $self->_superclass_signature($compc) ) {
@@ -280,7 +296,7 @@ method load ($path) {
 
     my $compc = $self->_comp_class_for_path($path);
 
-    $self->_load_class_from_object_file( $compc, $object_file, $path, $default_parent_compc );
+    $self->_load_class_from_object_file( $compc, $object_file, $path, $default_parent_path );
     $compc->meta->make_immutable();
 
     # Save component class in the cache.
@@ -290,7 +306,7 @@ method load ($path) {
         {
             source_file          => $source_file,
             source_lastmod       => $source_lastmod,
-            default_parent_compc => $default_parent_compc,
+            default_parent_path  => $default_parent_path,
             compc                => $compc,
             superclass_signature => $self->_superclass_signature($compc),
         }
@@ -318,11 +334,12 @@ method _superclass_signature ($compc) {
     return join( ",", map { join( "-", $_, $_->cmeta ? $_->cmeta->id : 0 ) } @superclasses );
 }
 
-# Memoize load() - this helps both with components used multiple times in a
-# request, and with determining default parent components.  The memoize
-# cache is cleared at the beginning of each request, or in
-# static_source_mode, when the purge file is touched.
+# Memoize comp_exists() and load() - this helps both with components used
+# multiple times in a request, and with determining default parent
+# components.  The memoize cache is cleared at the beginning of each
+# request, or in static_source_mode, when the purge file is touched.
 #
+memoize('comp_exists');
 memoize('load');
 
 method object_dir () {
@@ -398,10 +415,10 @@ method is_top_level_comp_path ($path) {
     return ( $path =~ $self->top_level_regex ) ? 1 : 0;
 }
 
-method _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_compc ) {
+method _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_path ) {
     my $flags = $self->_extract_flags_from_object_file($object_file);
     my $parent_compc = $self->_determine_parent_compc( $path, $flags )
-      || $default_parent_compc;
+      || $self->load($default_parent_path);
 
     eval(
         sprintf(
@@ -571,7 +588,7 @@ method _construct_distinct_string_for_number ($number) {
     return sprintf( "%s%d%s", $distinct_delimeter, $number, $distinct_delimeter );
 }
 
-method _default_parent_compc ($orig_path) {
+method _default_parent_path ($orig_path) {
 
     # Given /foo/bar.mc, look for (by default):
     #   /foo/Base.mp, /foo/Base.mc,
@@ -594,8 +611,8 @@ method _default_parent_compc ($orig_path) {
             splice( @candidate_paths, 0, $index + 1 );
         }
         foreach my $candidate_path (@candidate_paths) {
-            if ( my $compc = $self->load($candidate_path) ) {
-                return $compc;
+            if ( $self->comp_exists($candidate_path) ) {
+                return $candidate_path;
             }
         }
         if ( $path eq '/' ) {
@@ -633,6 +650,7 @@ method _extract_flags_from_object_file ($object_file) {
 }
 
 method _flush_load_cache () {
+    Memoize::flush_cache('comp_exists');
     Memoize::flush_cache('load');
 }
 
