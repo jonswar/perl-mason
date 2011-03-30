@@ -884,6 +884,14 @@ Perl code to be added at the bottom of the class. Empty by default.
 Perl code to be added at the top of the class, just after initialization of
 Moose, C<$m> and other required pieces. Empty by default.
 
+    # Add to the top of every component class:
+    #   use Foo;
+    #   use Bar qw(baz);
+    #
+    override 'output_class_header' => sub {
+        return join("\n", super(), 'use Foo;', 'use Bar qw(baz);');
+    };
+
 =item process_perl_code ($coderef)
 
 This method is called on each distinct piece of Perl code in the component.
