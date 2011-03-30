@@ -132,8 +132,8 @@ automatically applying a filter to the current component.
 
 =item *
 
-C<< Components with content >> has been eliminated; use
-L<filters|Mason::Manual::Filters> instead.
+C<< Components with content >> syntax has been eliminated; use the
+L<CompCall|Mason::Filters::Standard/CompCall> filter instead.
 
 =item *
 
