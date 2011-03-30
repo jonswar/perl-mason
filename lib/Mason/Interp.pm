@@ -417,7 +417,9 @@ method is_top_level_comp_path ($path) {
 
 method _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_path ) {
     my $flags = $self->_extract_flags_from_object_file($object_file);
-    my $parent_compc = $self->_determine_parent_compc( $path, $flags )
+    my $parent_compc =
+         $self->_determine_parent_compc( $path, $flags )
+      || ( $default_parent_path eq '/' && $self->component_class )
       || $self->load($default_parent_path);
 
     eval(
@@ -616,7 +618,7 @@ method _default_parent_path ($orig_path) {
             }
         }
         if ( $path eq '/' ) {
-            return $self->component_class;
+            return '/';
         }
         $path = dirname($path);
     }
