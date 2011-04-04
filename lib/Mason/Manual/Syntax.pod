@@ -279,13 +279,13 @@ generate the original content. e.g.
 
     <%filter Row ($class)>
     <tr class="<% $class %>">
-    % foreach my $item (split(/\s/, $yield->()) {
+    % foreach my $item (split(/\s/, $yield->())) {
        <td><% $item %></td>
     % }
     </tr>
     </%filter>
 
-    <% $.Row('std') %> First Second Third </%>
+    <% $.Row('std') { %> First Second Third </%>
 
 generates
 
