@@ -25,7 +25,9 @@ sub test_comp_errors : Tests {
     $try->( '<%blah>',                      qr/unknown block '<%blah>'/ );
     $try->( '<%init foo>',                  qr/<%init> block does not take a name/ );
     $try->( '<%',                           qr/'<%' without matching '%>'/ );
+    $try->( 'foo %>',                       qr/'%>' without matching '<%'/ );
     $try->( '<& foo',                       qr/'<&' without matching '&>'/ );
+    $try->( 'foo &>',                       qr/'&>' without matching '<&'/ );
     $try->( '%my $i = 1;',                  qr/% must be followed by whitespace/ );
     $try->( '%%my $i = 1;',                 qr/%% must be followed by whitespace/ );
     $try->( "%% if (1) {\nhi\n%% }",        qr/%%-lines cannot be used to surround content/ );

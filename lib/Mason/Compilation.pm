@@ -117,6 +117,7 @@ method parse () {
         $self->_match_substitution     && next;
         $self->_match_component_call   && next;
         $self->_match_perl_line        && next;
+        $self->_match_bad_close_tag    && next;
         $self->_match_plain_text       && next;
 
         $self->_throw_syntax_error(
@@ -586,6 +587,8 @@ method _match_plain_text () {
                                  |
                                  (?=<%\s)     # a substitution tag
                                  |
+                                 (?=[%&]>)    # an end substitution or component call
+                                 |
                                  (?=</?[%&])  # a block or call start or end
                                               # - don't consume
                                  |
@@ -663,6 +666,13 @@ method _match_unknown_block () {
 
 method _match_unnamed_block () {
     $self->_match_block( $self->unnamed_block_regex, 0 );
+}
+
+method _match_bad_close_tag () {
+    if ( my ($end_tag) = ( $self->{source} =~ /\G\s*(%>|&>)/gc ) ) {
+        ( my $begin_tag = reverse($end_tag) ) =~ s/>/</;
+        $self->_throw_syntax_error("'$end_tag' without matching '$begin_tag'");
+    }
 }
 
 method _new_method_hash () {
