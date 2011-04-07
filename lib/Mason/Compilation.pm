@@ -690,9 +690,12 @@ method _output_class_block () {
 method _output_class_initialization () {
     return join(
         "\n",
-        "BEGIN { " . $self->interp->component_moose_class . "->import; }",
-        "BEGIN { " . $self->interp->component_import_class . "->import; }",
-        "our (\$m, \$_m_buffer);",
+        "our (\$m, \$_m_buffer, \$_interp);",
+        "BEGIN { ",
+        "\$_interp = Mason::Interp->current_load_interp;",
+        "\$_interp->component_moose_class->import;",
+        "\$_interp->component_import_class->import;",
+        "}",
         "*m = \\\$Mason::Request::current_request;",
         "*_m_buffer = \\\$Mason::Request::current_buffer;",
 
