@@ -63,7 +63,8 @@ sub test_comp_errors : Tests {
 
     # Error line numbers
     #
-    $try->( "%\nb\n% die;", qr/Died at .* line 3/ );
+    $try->( "%\nb\n% die;",                               qr/Died at .* line 3/ );
+    $try->( "<%method foo>\n1\n2\n3\n</%method>\n% die;", qr/Died at .* line 6/ );
 }
 
 sub test_bad_allow_globals : Tests {

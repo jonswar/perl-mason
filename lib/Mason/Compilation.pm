@@ -818,6 +818,7 @@ method _recursive_parse ($block_type, $contents, $method) {
     {
         local $self->{source}         = $contents;
         local $self->{current_method} = $method;
+        local $self->{line_number}    = $self->{line_number};
         $self->parse();
     }
 }
