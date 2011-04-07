@@ -11,7 +11,7 @@ use Mason::Request;
 use Mason::Result;
 use Mason::Types;
 use Mason::Util
-  qw(catdir catfile combine_similar_paths find_wanted first_index is_absolute mason_canon_path touch_file uniq write_file);
+  qw(catdir catfile combine_similar_paths find_wanted first_index is_absolute mason_canon_path read_file touch_file uniq write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
@@ -54,6 +54,11 @@ has 'top_level_regex'       => ( lazy_build => 1 );
 # Class overrides
 #
 CLASS->_define_class_override_methods();
+
+# Allow access to current interp while in load()
+#
+our ($current_load_interp);
+method current_load_interp () { $current_load_interp }
 
 #
 # BUILD
@@ -190,6 +195,8 @@ method glob_paths ($glob_pattern) {
 our $in_load = 0;
 
 method load ($path) {
+
+    local $current_load_interp = $self;
 
     my $code_cache = $self->code_cache;
 
