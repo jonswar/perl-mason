@@ -60,6 +60,10 @@ sub test_comp_errors : Tests {
     $try->( '<% $foo %>',      qr/Global symbol "\$foo" requires explicit package name/ );
     $try->( '%% die "bleah";', qr/bleah/ );
     $try->( 'die "blargh";',   qr/blargh/, path => '/blargh.mp' );
+
+    # Error line numbers
+    #
+    $try->( "%\nb\n% die;", qr/Died at .* line 3/ );
 }
 
 sub test_bad_allow_globals : Tests {
