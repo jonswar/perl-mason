@@ -558,6 +558,7 @@ method _match_perl_line () {
 
         return 1;
     }
+    return 0;
 }
 
 method _match_plain_text () {
