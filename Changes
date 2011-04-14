@@ -7,6 +7,7 @@ Revision history for Mason
 * Improvements
   - Allow arguments to be passed to the content sub from a dynamic filter (e.g. CompCall)
   - Throw error on unmatched %> or &>
+  - Fix error line numbers after method sections and multiple text sections
 
 * Fixes
   - Prevent false inheritance loops when component overrides its default parent (Jozef Mojzis)
