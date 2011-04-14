@@ -47,7 +47,7 @@ that all component files live under. Thereafter, any component will be referred
 to by its virtual I<path> relative to the root, rather than its full filename.
 
 For example, if the component root is '/opt/web/comps', then the component path
-'/foo/bar.mcc' refers to the file '/opt/web/comps/foo/bar.mc'.
+'/foo/bar.mc' refers to the file '/opt/web/comps/foo/bar.mc'.
 
 It is also possible to specify multiple component roots, ala Perl's C<@INC>, in
 which case a component path might refer to one of several files.
