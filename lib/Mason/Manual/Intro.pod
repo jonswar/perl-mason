@@ -1,4 +1,3 @@
-
 =head1 NAME
 
 Mason::Manual::Intro - Getting started with Mason
@@ -74,7 +73,7 @@ parameters: a I<component root>, indicating the directory hierarchy where your
 components will live; and a I<data directory>, which Mason will use for
 internal purposes such as class generation and caching.
 
-Line 4 runs the template - notice that the C<.mcc> extension is added
+Line 4 runs the template - notice that the C<.mc> extension is added
 automatically - passing values for the C<name> and C<amount> attributes.
 
 Run C<test.pl>, and you should see
