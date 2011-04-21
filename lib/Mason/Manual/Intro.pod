@@ -39,7 +39,7 @@ tag> and is a central piece of Mason syntax.
 The command line is good for trying quick things, but eventually you're going
 to want to put your Mason components in files.
 
-In a test directory, create a directory C<comps> and create a file C<email.mcc>
+In a test directory, create a directory C<comps> and create a file C<email.mc>
 with the following:
 
     <%args>
@@ -74,7 +74,7 @@ parameters: a I<component root>, indicating the directory hierarchy where your
 components will live; and a I<data directory>, which Mason will use for
 internal purposes such as class generation and caching.
 
-Line 4 runs the template - notice that the C<.mcc> extension is added
+Line 4 runs the template - notice that the C<.mc> extension is added
 automatically - passing values for the C<name> and C<amount> attributes.
 
 Run C<test.pl>, and you should see
