@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.07  Mar 14, 2011
+2.07  Apr 21, 2011
 
 * Improvements
   - Allow arguments to be passed to the content sub from a dynamic filter (e.g. CompCall)
