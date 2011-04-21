@@ -11,6 +11,7 @@ Revision history for Mason
 
 * Fixes
   - Prevent false inheritance loops when component overrides its default parent (Jozef Mojzis)
+  - Fix compatibility with JSON version 1.x
 
 2.06  Mar 14, 2011
 

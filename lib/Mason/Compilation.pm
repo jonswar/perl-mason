@@ -5,11 +5,9 @@
 package Mason::Compilation;
 use File::Basename qw(dirname);
 use Guard;
-use JSON;
 use Mason::Component::ClassMeta;
-use Mason::Util qw(dump_one_line read_file);
+use Mason::Util qw(dump_one_line json_encode read_file trim);
 use Mason::Moose;
-use Mason::Util qw(trim);
 
 # Passed attributes
 has 'interp'      => ( required => 1, weak_ref => 1 );
@@ -731,8 +729,8 @@ method _output_compiled_component () {
 method _output_flag_comment () {
     if ( my $flags = $self->{blocks}->{flags} ) {
         if (%$flags) {
-            my $json = JSON->new->indent(0);
-            return "# FLAGS: " . $json->encode($flags) . "\n\n";
+            ( my $json = json_encode($flags) ) =~ s/\n//g;
+            return "# FLAGS: $json\n\n";
         }
     }
 }

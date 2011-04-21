@@ -5,13 +5,12 @@ use File::Basename;
 use File::Path;
 use File::Temp qw(tempdir);
 use Guard;
-use JSON;
 use Mason::CodeCache;
 use Mason::Request;
 use Mason::Result;
 use Mason::Types;
 use Mason::Util
-  qw(catdir catfile combine_similar_paths find_wanted first_index is_absolute mason_canon_path read_file touch_file uniq write_file);
+  qw(catdir catfile combine_similar_paths find_wanted first_index is_absolute json_decode mason_canon_path read_file touch_file uniq write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
@@ -653,7 +652,7 @@ method _extract_flags_from_object_file ($object_file) {
     open( my $fh, "<", $object_file ) or die "could not open '$object_file': $!";
     my $line = <$fh>;
     if ( my ($flags_str) = ( $line =~ /\# FLAGS: (.*)/ ) ) {
-        $flags = JSON->new->decode($flags_str);
+        $flags = json_decode($flags_str);
     }
     return $flags;
 }
