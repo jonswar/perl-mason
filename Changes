@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.08  Apr 21, 2011
+2.08  Apr 25, 2011
 
 * Fixes
   - Really fix compatibility with JSON version 1.x
