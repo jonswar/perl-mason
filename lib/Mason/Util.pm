@@ -18,6 +18,11 @@ my $Fetch_Flags          = O_RDONLY | O_BINARY;
 my $Store_Flags          = O_WRONLY | O_CREAT | O_BINARY;
 my $File_Spec_Using_Unix = $File::Spec::ISA[0] eq 'File::Spec::Unix';
 
+# Map null, true and false to real Perl values
+if ( JSON->VERSION < 2 ) {
+    $JSON::UnMapping = 1;
+}
+
 sub can_load {
 
     # Load $class_name if possible. Return 1 if successful, 0 if it could not be
