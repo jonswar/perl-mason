@@ -86,6 +86,10 @@ method apply_filter ($filter, $yield) {
     return $filtered_output;
 }
 
+method cache () {
+    die 'caching is now in the cache plugin (Mason::Plugin::Cache)';
+}
+
 method capture ($code) {
     my $output;
     {
