@@ -6,7 +6,7 @@ package Mason::Compilation;
 use File::Basename qw(dirname);
 use Guard;
 use Mason::Component::ClassMeta;
-use Mason::Util qw(dump_one_line json_encode read_file trim);
+use Mason::Util qw(dump_one_line json_encode read_file taint_is_on trim);
 use Mason::Moose;
 
 # Passed attributes
@@ -98,13 +98,22 @@ method output_class_header () {
 }
 
 method parse () {
+
+    # We need to untaint the component source or else the regexes may fail.
+    #
+    ( $self->{source} ) = ( ( delete $self->{source} ) =~ /(.*)/s )
+      if taint_is_on();
+
     if ( $self->{is_pure_perl} ) {
         $self->{source} = "<%class> " . $self->{source} . " </%class>";
         delete( $self->{methods}->{main} );
     }
 
-    my $lm = '';
+    my $lm   = '';
+    my $iter = 0;
     while (1) {
+        $self->_throw_syntax_error("parse loop iterated >1000 times - infinite loop?")
+          if ++$iter > 1000;
         $self->{last_match} = $lm;
         $self->_match_end              && last;
         $self->_match_apply_filter_end && last;
