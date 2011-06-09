@@ -227,8 +227,8 @@ $yield->() >> to generate the original content. e.g.
     <li class="<% $class %>"><% $yield->() %></li>
     </%filter>
 
-    <% $.Item('std') %> First </%>
-    <% $.Item('std') %> Second </%>
+    <% $.Item('std') { %> First </%>
+    <% $.Item('std') { %> Second </%>
 
 generates
 
