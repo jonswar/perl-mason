@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.08  Apr 25, 2011
+2.08  Jun 8, 2011
 
 * Fixes
   - Fix $. notation inside <& &>
