@@ -6,8 +6,9 @@ Revision history for Mason
 
 * Fixes
   - Fix $. notation inside <& &>
-  - Really fix compatibility with JSON version 1.x
-  - Untaint component source when in taint mode as in Mason 1, otherwise compiler regexes may fail
+  - Re-fix compatibility with JSON version 1.x
+  - Untaint component source when in taint mode (e.g. mod_perl) as in Mason 1, otherwise
+    compiler regexes may fail
 
 2.07  Apr 21, 2011
 
