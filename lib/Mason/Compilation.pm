@@ -295,6 +295,7 @@ method _handle_component_call ($contents) {
         ( my $comp = substr( $call, 0, $comma ) ) =~ s/\s+$//;
         $call = "'$comp'" . substr( $call, $comma );
     }
+    $call = $self->_processed_perl_code($call);
     my $code = "\$m->comp( $prespace $call $postspace \n); ";
 
     $self->_add_to_current_method($code);
