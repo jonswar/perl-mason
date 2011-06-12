@@ -93,8 +93,4 @@ The component source file.
 
 =back
 
-=head1 SEE ALSO
-
-L<Mason|Mason>
-
 =cut

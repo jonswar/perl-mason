@@ -235,4 +235,8 @@ generates
     <li class="std"> First </li>
     <li class="std"> Second </li>
 
+=head1 SEE ALSO
+
+L<Mason::Filters::Standard|Mason::Filters::Standard>, L<Mason|Mason>
+
 =cut

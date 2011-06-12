@@ -115,6 +115,6 @@ Remove whitespace from the beginning and end of the content.
 
 =head1 SEE ALSO
 
-L<Mason|Mason>
+L<Mason::Manual::Filters|Mason::Manual::Filters>, L<Mason|Mason>
 
 =cut
