@@ -1,6 +1,20 @@
 package Mason::t::Filters;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
+sub test_basic : Tests {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+% sub { ucfirst(shift) } {{
+<% "hello world?" %>
+% }}
+',
+        expect => '
+Hello world?
+',
+    );
+}
+
 sub test_filters : Tests {
     my $self = shift;
     $self->test_comp(
@@ -9,17 +23,17 @@ sub test_filters : Tests {
 method Upper () { sub { uc(shift) } }
 </%class>
 
-<% $.Upper { %>
+% $.Upper {{
 Hello World.
-</%>
+% }}
 
-<% sub { ucfirst(shift) } { %>
+% sub { ucfirst(shift) } {{
 <% "hello world?" %>
-</%>
+% }}
 
-<% sub { lc(shift) } { %>
+% sub { tr/A-Z/a-z/; $_ } {{
 Hello World!
-</%>
+% }}
 ',
         expect => '
 HELLO WORLD.
@@ -40,12 +54,12 @@ sub test_filter_block : Tests {
 </%filter>
 
 % my $count = 0;
-<% $.MyRepeat(3) { %>
+% $.MyRepeat(3) {{
 count = <% ++$count %>
-</%>
+% }}
 
 <%perl>
-my $content = $m->apply_filter($.MyRepeat(2), sub { "count == " . ++$count . "\n" });
+my $content = $m->filter($.MyRepeat(2), sub { "count == " . ++$count . "\n" });
 print(uc($content));
 </%perl>
 ',
@@ -64,9 +78,9 @@ sub test_lexical : Tests {
     $self->test_comp(
         src => <<'EOF',
 % my $msg = "Hello World";
-<% sub { lc(shift) } { %>
+% sub { lc(shift) } {{
 <% $msg %>
-</%>
+% }}
 EOF
         expect => 'hello world',
     );
@@ -77,9 +91,9 @@ sub test_repeat : Tests {
     $self->test_comp(
         src => <<'EOF',
 % my $i = 1;
-<% $.Repeat(3) { %>
+% $.Repeat(3) {{
 i = <% $i++ %>
-</%>
+% }}
 EOF
         expect => <<'EOF',
 i = 1
@@ -93,24 +107,26 @@ sub test_nested : Tests {
     my $self = shift;
     $self->test_comp(
         src => <<'EOF',
-<% sub { ucfirst(shift) } { %>
-<% sub { lc(shift) } { %>
-<% sub { Mason::Util::trim(shift) } { %>
-   HELLO
-</%>
-</%>
-</%>
+% sub { ucfirst(shift) } {{
+%   sub { tr/e/a/; $_ } {{
+%     sub { lc(shift) } {{
+HELLO
+%     }}
+%   }}
+% }}
 goodbye
 
-<% sub { ucfirst(shift) }, sub { lc(shift) }, sub { Mason::Util::trim(shift) } { %>
-   HELLO
-</%>
+% sub { ucfirst(shift) }, sub { tr/e/a/; $_ }, sub { lc(shift) } {{
+HELLO
+% }}
 goodbye
 EOF
         expect => <<'EOF',
-Hellogoodbye
+Hallo
+goodbye
 
-Hellogoodbye
+Hallo
+goodbye
 EOF
     );
 }
@@ -119,18 +135,18 @@ sub test_misc_standard_filters : Tests {
     my $self = shift;
 
     $self->test_comp(
-        src    => 'the <% $.Trim { %>    quick brown     </%> fox',
+        src    => 'the <% $m->filter($.Trim, "   quick brown   ") %> fox',
         expect => 'the quick brown fox'
     );
     $self->test_comp(
         src => '
-<% $.Capture(\my $buf) { %>
+% $.Capture(\my $buf) {{
 2 + 2 = <% 2+2 %>
-</%>
+% }}
 <% reverse($buf) %>
 
 ---
-<% $.NoBlankLines { %>
+% $.NoBlankLines {{
 
 one
 
@@ -139,7 +155,7 @@ one
 
 two
 
-</%>
+% }}
 ---
 ',
         expect => '
@@ -172,9 +188,9 @@ $.yield
     );
     $self->test_comp(
         src => '
-<% $.CompCall ("list_items.mi", items => [1,2,3]) { %>
+% $.CompCall ("list_items.mi", items => [1,2,3]) {{
 <li><% $_[0] %></li>
-<% } %>
+% }}
 ',
         expect => '
 <li>1</li>
@@ -193,9 +209,9 @@ sub test_around : Tests {
 hello
 
 <%around main>
-<% sub { uc($_[0]) } { %>
-% $self->$orig();
-</%>
+% sub { uc($_[0]) } {{
+%   $self->$orig();
+% }}
 </%around>
 
 EOF

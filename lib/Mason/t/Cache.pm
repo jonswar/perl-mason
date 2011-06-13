@@ -55,9 +55,9 @@ sub test_cache_filter : Tests {
         src => '
 % my $i = 1;
 % foreach my $key (qw(foo bar)) {
-<% $.Repeat(3), $.Cache($key) { %>
+% $.Repeat(3), $.Cache($key) {{
 i = <% $i++ %>
-</%>
+% }}
 % }
 ',
         expect => '
@@ -74,9 +74,9 @@ i = 2
         src => '
 % my $i = 1;
 % foreach my $key (qw(foo foo)) {
-<% $.Cache($key), $.Repeat(3) { %>
+% $.Cache($key), $.Repeat(3) {{
 i = <% $i++ %>
-</%>
+% }}
 % }
 ',
         expect => '

@@ -70,22 +70,6 @@ method add_cleanup ($code) {
     push( @{ $self->{cleanups} }, $code );
 }
 
-method apply_filter ($filter, $yield) {
-    my $filtered_output;
-    $yield = sub { $yield }
-      if !ref($yield);
-    if ( ref($filter) eq 'CODE' ) {
-        $filtered_output = $filter->( $yield->() );
-    }
-    elsif ( blessed($filter) && $filter->can('apply_filter') ) {
-        $filtered_output = $filter->apply_filter($yield);
-    }
-    else {
-        die "'$filter' is neither a code ref nor a filter object";
-    }
-    return $filtered_output;
-}
-
 method cache () {
     die 'caching is now in the cache plugin (Mason::Plugin::Cache)';
 }
@@ -142,6 +126,10 @@ method current_comp_class () {
 method decline () {
     $self->declined(1);
     $self->clear_and_abort;
+}
+
+method filter () {
+    $self->_apply_filters(@_);
 }
 
 method flush_buffer () {
@@ -345,23 +333,47 @@ method with_tied_print ($code) {
 # PRIVATE METHODS
 #
 
-method _apply_filters ($filters, $yield) {
-    if ( !@$filters ) {
+method _apply_one_filter ($filter, $yield) {
+    my $filtered_output;
+    if ( ref($yield) ne 'CODE' ) {
+        my $orig_yield = $yield;
+        $yield = sub { $orig_yield };
+    }
+    if ( ref($filter) eq 'CODE' ) {
+        local $_ = $yield->();
+        $filtered_output = $filter->($_);
+    }
+    elsif ( blessed($filter) && $filter->can('apply_filter') ) {
+        $filtered_output = $filter->apply_filter($yield);
+    }
+    else {
+        die "'$filter' is neither a code ref nor a filter object";
+    }
+    return $filtered_output;
+}
+
+method _apply_filters () {
+    my $yield = pop(@_);
+    if ( ref($yield) ne 'CODE' ) {
+        my $orig_yield = $yield;
+        $yield = sub { $orig_yield };
+    }
+    if ( !@_ ) {
         return $yield->();
     }
     else {
-        my @filters = @$filters;
-        my $filter  = pop(@filters);
-        return $self->_apply_filters( \@filters, sub { $self->apply_filter( $filter, $yield ) } );
+        my $filter = pop(@_);
+        return $self->_apply_filters( @_, sub { $self->_apply_one_filter( $filter, $yield ) } );
     }
 }
 
-method _apply_filters_to_output ($filters, $output_method) {
-    my $yield = sub {
+method _apply_filters_to_output () {
+    my $output_method = pop(@_);
+    my $yield         = sub {
         my @args = @_;
         $self->capture( sub { $output_method->(@args) } );
     };
-    my $filtered_output = $self->_apply_filters( $filters, $yield );
+    my $filtered_output = $self->_apply_filters( @_, $yield );
     $self->print($filtered_output);
 }
 
@@ -585,6 +597,10 @@ resolve to C</news/dhandler.mc>, a second C<< $m->decline >> would resolve to
 C</dhandler.mc>, and a third would throw a "not found" error.
 
 =for html <a name="flush_buffer" />
+
+=item filter (filter_expr, [filter_expr...], string|coderef)
+
+Applies one or more filters to a string or to a coderef that returns a string.
 
 =item flush_buffer ()
 

@@ -18,10 +18,10 @@ request
     <head>
     <title><% $m->defer(sub { $m->page->title }) %></title>
 
-    <% $.Defer { %>
-    % my $content = join(", ", @{ $m->page->meta_content });
+    % $.Defer {{
+    %   my $content = join(", ", @{ $m->page->meta_content });
     <meta name="description" content="<% $content %>">
-    </%>
+    % }}
 
     <body>
     ...
@@ -54,10 +54,10 @@ associated code. e.g.
 
 Applies C<< $m->defer >> to the content block. e.g.
 
-    <% $.Defer { %>
-    % my $content = join(", ", @{ $m->page->meta_content });
+    % $.Defer {{
+    %   my $content = join(", ", @{ $m->page->meta_content });
     <meta name="description" content="<% $content %>">
-    </%>
+    % }}
 
 =back
 

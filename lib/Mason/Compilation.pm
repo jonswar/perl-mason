@@ -120,9 +120,9 @@ method parse () {
         $self->_match_unnamed_block    && ( $lm = 'unnamed_block' ) && next;
         $self->_match_named_block      && ( $lm = 'named_block' ) && next;
         $self->_match_unknown_block    && ( $lm = 'unknown_block' ) && next;
-        $self->_match_apply_filter     && ( $lm = 'apply_filter' ) && next;
         $self->_match_substitution     && ( $lm = 'substitution' ) && next;
         $self->_match_component_call   && ( $lm = 'component_call' ) && next;
+        $self->_match_apply_filter     && ( $lm = 'apply_filter' ) && next;
         $self->_match_perl_line        && ( $lm = 'perl_line' ) && next;
         $self->_match_bad_close_tag    && ( $lm = 'bad_close_tag' ) && next;
         $self->_match_plain_text       && ( $lm = 'plain_text' ) && next;
@@ -223,10 +223,10 @@ method _handle_apply_filter ($filter_expr) {
         pos( $self->{source} ) += $incr;
     }
     else {
-        $self->_throw_syntax_error("<% { %> without matching </%>");
+        $self->_throw_syntax_error("'{{' without matching '}}'");
     }
     my $code = sprintf(
-        "\$self->m->_apply_filters_to_output([%s], %s);\n",
+        "\$self->m->_apply_filters_to_output(%s, %s);\n",
         $self->_processed_perl_code($filter_expr),
         $self->_output_method($method)
     );
@@ -450,33 +450,24 @@ method _handle_text_block ($contents) {
 method _match_apply_filter () {
     my $pos = pos( $self->{source} );
 
-    # Match <% ... { %>
-    if ( $self->{source} =~ /\G(\n)? <% (.+?) (\s*\{\s*) %>(\n)?/xcgs ) {
-        my ( $preceding_newline, $filter_expr, $opening_brace, $following_newline ) =
-          ( $1, $2, $3, $4 );
-
-        # and make sure we didn't go through a %>
-        if ( $filter_expr !~ /%>/ ) {
-            for ( $preceding_newline, $filter_expr, $following_newline ) {
-                $self->{line_number} += tr/\n// if defined($_);
-            }
-            $self->_handle_apply_filter($filter_expr);
-
-            return 1;
-        }
-        else {
-            pos( $self->{source} ) = $pos;
-        }
+    # Match % ... {{ at beginning of line
+    if ( $self->{source} =~ / \G (?<=^) % ([^\n]*) \{\{ \n /gcmx ) {
+        my ($filter_expr) = ($1);
+        $self->_handle_apply_filter($filter_expr);
+        return 1;
     }
     return 0;
 }
 
 method _match_apply_filter_end () {
-    if (   $self->{current_method}->{type} eq 'apply_filter'
-        && $self->{source} =~ /\G (?: (?: <% [ \t]* \} [ \t]* %> ) | (?: <\/%> ) ) (\n?\n?)/gcx )
-    {
-        $self->{end_parse} = pos( $self->{source} );
-        return 1;
+    if ( $self->{source} =~ / \G (?<=^) % [ \t]+ \}\} (?:\n\n?|\z) /gmcx ) {
+        if ( $self->{current_method}->{type} eq 'apply_filter' ) {
+            $self->{end_parse} = pos( $self->{source} );
+            return 1;
+        }
+        else {
+            $self->_throw_syntax_error("'}}' without matching '{{'");
+        }
     }
     return 0;
 }

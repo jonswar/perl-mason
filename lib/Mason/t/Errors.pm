@@ -36,7 +36,8 @@ sub test_comp_errors : Tests {
     $try->( "<%args>\n\$\$abc\n</%args>",   qr/Invalid attribute line '\$\$abc' at .* line 2/ );
     $try->( "<%args>\na\nb\n123\n</%args>", qr/Invalid attribute line '123' at .* line 4/ );
     $try->( "<%args>\nargs\n</%args>",      qr/'args' is reserved.*attribute name/ );
-    $try->( '<% $.Upper { %>Hi',       qr/<% { %> without matching <\/%>/ );
+    $try->( "% \$.Upper {{\nHi",       qr/'{{' without matching '}}'/ );
+    $try->( "Hi\n% }}",                     qr/'}}' without matching '{{'/ );
     $try->( '<%method 1a>Hi</%method>',     qr/Invalid method name '1a'/ );
     $try->( '<%method cmeta>Hi</%method>',  qr/'cmeta' is reserved.*method name/ );
     $try->(
@@ -52,7 +53,7 @@ sub test_comp_errors : Tests {
         '<%method b><%after main>Hi</%after></%method>',
         qr/Cannot nest <%after> block inside <%method> block/
     );
-    $try->( '<% "foobar" { %>Hi</%>',        qr/'foobar' is neither a code ref/ );
+    $try->( "% 'foobar' {{\nHi\n% }}\n",     qr/'foobar' is neither a code ref/ );
     $try->( "<%flags>\nfoo => 1\n</%flags>", qr/Invalid flag 'foo'/ );
     $try->( "<%flags>\nextends => 'blah'\n</%flags>",
         qr/could not load '\/blah' for extends flag/ );

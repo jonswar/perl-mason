@@ -15,9 +15,9 @@ my ($title, $subtitle);
 
 Title is <% $m->defer(sub { $title }) %>
 
-<% $.Defer { %>
+% $.Defer {{
 Subtitle is <% $subtitle %>
-</%>
+% }}
 
 <%perl>
 $title = 'foo';

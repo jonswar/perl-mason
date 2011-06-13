@@ -17,64 +17,75 @@ on CPAN, and it is easy to create your own.
 
 Here's the standard way of invoking a filter:
 
-   <% $.Trim { %>
-   This string will be trimmed
-   </%>
+   % $.Trim {{
+     This string will be trimmed
+   % }}
 
-An open brace at the end of a C<< <% %> >> tag denotes a filter call.  The
-filtered content begins just afterwards and ends at the C<< </%> >> tag.
+A double open brace (C<< {{ >>) at the end of a C<< %-line >> denotes a filter
+call.  The filtered content begins just afterwards and ends at the C<< }} >>.
 
 The expression C<< $.Trim >>, aka C<< $self->Trim >>, is a method call on the
-component object which returns a filter. In general everything before the brace
-is evaluated and is expected to return a filter or list of filters.
+component object which returns a filter. In general everything before the C<<
+{{ >> is evaluated and is expected to return a filter or list of filters.
 
 By convention, and to avoid name clashes with other component methods, filters
 use CamelCase rather than traditional underscore names.
 
 Filters can take arguments:
 
-   <% $.Repeat(3) { %>
+   % $.Repeat(3) {{
      There's no place like home.
-   </%>
+   % }}
 
      ==>  There's no place like home.
           There's no place like home.
           There's no place like home.
 
-Again, the expression C<< $.Repeat(3) >> returns a filter, meaning that it can
-be curried:
+Since the expression C<< $.Repeat(3) >> returns a filter, it can be curried:
 
    % my $repeat_three = $.Repeat(3);
-   <% $repeat_three { %>
+   % $repeat_three {{
      There's no place like home.
-   </%>
+   % }}
 
-A simple filter is just a subroutine that takes text as input and return the
-new text. Thus you can create one-off filters with anonymous subroutines:
+You can create one-off filters with anonymous subroutines. The subroutine
+receives the content in both C<< $_[0] >> and C<< $_ >>, and should return the
+filtered content.
 
-   <% sub { reverse($_[0]) } { %>Hello</%>
+   % sub { reverse($_[0]) } {{
+     Hello
+   % }}
 
      ==> olleH
 
-Filters can be nested, with separate tags:
 
-   <% $.Trim { %>
-     <% sub { uc($_[0]) } { %>
-       This string will be trimmed and uppercased
-     </%>
-   </%>
+   % sub { s/ //g; $_[0] } {{
+     A bunch of words
+   % }}
 
-or within a single tag:
+     ==> Abunchofwords
 
-   <% $.Trim, sub { uc($_[0]) } { %>
+Filters can be nested, with separate lines:
+
+   % $.Trim {{
+   %   sub { uc($_[0]) } {{
+     This string will be trimmed and uppercased
+   %   }}
+   % }}
+
+or on a single line:
+
+   % $.Trim, sub { uc($_[0]) } {{
      This will be trimmed and uppercased
-   </%>
+   % }}
 
 Multiple filters within the same tag are applied, intuitively, in reverse order
 with the last one being innermost. e.g. in this block
 
    % my $i = 1;
-   <% $.Repeat(3), $.Cache($key, '1 hour') { %> <% $i++ %> </%>
+   % $.Repeat(3), $.Cache($key, '1 hour') {{
+     <% $i++ %>
+   % }}
 
       => 1 1 1
 
@@ -82,7 +93,9 @@ the output of C<< <% $i++ %> >> is cached, and then repeated three times,
 whereas in this block
 
    % my $i = 1;
-   <% $.Cache($key, '1 hour'), $.Repeat(3) { %> <% $i++ %> </%>
+   % $.Cache($key, '1 hour'), $.Repeat(3) {{
+     <% $i++ %>
+   % }}
 
       => 1 2 3
 
@@ -112,8 +125,13 @@ C<HTML> filter in L<Mason::Plugin::HTMLFilters|Mason::Plugin::HTMLFilters>:
 
 =head2 Manual invocation
 
-L<apply_filter|Mason::Request/apply_filter> can be used to manually apply a
-filter to a string. It returns the filtered output.
+L<$m-E<gt>filter|Mason::Request/filter> can be used to manually apply filter(s)
+to a string. It returns the filtered output. e.g.
+
+    <%init>
+    ...
+    my $filtered_string = $m->filter($.Trim, $string);
+    </%init>
 
 =head1 CREATING A FILTER
 
@@ -151,9 +169,9 @@ To use these in a component:
     with 'MyApp::Filters';
     </%class> 
 
-    <% $.Upper { %>
+    % $.Upper {{
     ...
-    </%>
+    % }}
 
 Or if you want them available to all components, put them in C<Base.mp> at the
 top of your component hierarchy, or in your application's C<Mason::Component>
@@ -161,8 +179,8 @@ subclass.
 
 =head2 Simple vs. dynamic filters
 
-A I<simple filter> is a code ref which takes a string and returns the output.
-Your filter method should return this code ref. e.g.
+A I<simple filter> is a code ref which takes a string (via either $_[0] and $_)
+and returns the output.  Your filter method should return this code ref. e.g.
 
     method Rot13 () {
         return sub {
@@ -227,13 +245,21 @@ $yield->() >> to generate the original content. e.g.
     <li class="<% $class %>"><% $yield->() %></li>
     </%filter>
 
-    <% $.Item('std') { %> First </%>
-    <% $.Item('std') { %> Second </%>
+    % $.Item('std') {{
+      First
+    % }}
+    % $.Item('std') {{
+      Second
+    % }}
 
 generates
 
-    <li class="std"> First </li>
-    <li class="std"> Second </li>
+    <li class="std">
+      First
+    </li>
+    <li class="std">
+      Second
+    </li>
 
 =head1 SEE ALSO
 

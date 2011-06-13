@@ -542,14 +542,14 @@ submitted values when validation fails.
 
      1  <h2>Add an article</h2>
      2  
-     3  <% $.FillInForm($form_data) { %>
+     3  % $.FillInForm($form_data) {{
      4  <form action="/article/publish" method=post>
      5    <p>Title: <input type=text size=30 name=title></p>
      6    <p>Text:</p>
      7    <textarea name=content rows=20 cols=70></textarea>
      8    <p><input type=submit value="Publish"></p>
      9  </form>
-    10  </%>
+    10  % }}
     11  
     12  <%init>
     13  my $form_data = delete($m->req->session->{form_data});
