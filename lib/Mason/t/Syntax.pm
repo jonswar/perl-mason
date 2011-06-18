@@ -231,4 +231,13 @@ baz
     );
 }
 
+sub test_class_global : Tests {
+    my $self = shift;
+
+    $self->test_comp(
+        src    => '<% ref($self) eq CLASS ? 1 : 0 %> <% ref($self) eq $CLASS ? 1 : 0 %>',
+        expect => qr/1 1/,
+    );
+}
+
 1;
