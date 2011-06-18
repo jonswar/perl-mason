@@ -4,7 +4,20 @@ Revision history for Mason
 
 2.08  Jun 8, 2011
 
+** Incompatible changes
+  - Change apply filter syntax to
+     % $.Filter {{
+     ...
+     % }}
+    as it reduces tag soup and better matches the typical use of filtering a block of content
+
+* Improvements
+  - Add $m->filter to manually apply filters
+  - Add CLASS->no_wrap() as a convenient way to skip parent wrapping
+  - Set $_ as well as $_[0] to content for filtering, to make s// based filters easier
+
 * Fixes
+  - Define $CLASS as well as CLASS in components, ala CLASS module
   - Fix $. notation inside <& &>
   - Re-fix compatibility with JSON version 1.x
   - Untaint component source when in taint mode (e.g. mod_perl) as in Mason 1, otherwise
