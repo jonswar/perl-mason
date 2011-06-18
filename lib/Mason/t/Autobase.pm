@@ -178,6 +178,14 @@ Hello world
 ',
         expect => 'Hello world'
     );
+    $self->test_comp(
+        path => '/wrap/subdir/subdir2/dont_wrap_me_either.mc',
+        src  => '
+%% CLASS->no_wrap;
+<% $self->hello() %>
+',
+        expect => 'Hello world'
+    );
 }
 
 # not yet implemented
