@@ -48,6 +48,12 @@ method allow_path_info () {
     return 0;
 }
 
+# Shorcut for skipping wrap
+#
+method no_wrap ($class:) {
+    $class->meta->add_method( 'render' => sub { $_[0]->main(@_) } );
+}
+
 __PACKAGE__->meta->make_immutable();
 
 1;
@@ -132,8 +138,33 @@ AUGMENT> method, with each superclass calling the next subclass.  This is
 useful for cascading templates in which the top-most superclass generates the
 surrounding content.
 
+    <%augment wrap>
+      <h3>Subtitle section</h3>
+      <div class="main">
+        <% inner() %>
+      </div>
+    </%augment>
+
 By default, C<wrap> simply calls C<< inner() >> to go to the next subclass, and
 then L<main|/main> at the bottom subclass.
+
+To override a component's parent wrapper, a component can define its own
+C<wrap> using C<method> instead of C<augment>:
+
+    <%method wrap>
+      <h3>Parent wrapper will be ignored</h3>
+      <% inner() %>
+    </%method>
+
+To do no wrapping at all, a component could do:
+
+    <%method render>
+    % $.main();
+    </%method>
+
+or for convenience, the equivalent:
+
+    %% CLASS->no_wrap;
 
 =for html <a name="main" />
 
@@ -143,6 +174,26 @@ This method is invoked when a non-page component is called, and from the
 default L<wrap|/wrap> method as well. It consists of the code and output in the
 main part of the component that is not inside a C<< <%method> >> or C<<
 <%class> >> tag.
+
+=back
+
+=head1 CLASS METHODS
+
+=over
+
+=item no_wrap
+
+A convenience method that redefines L<render|/render> to call L<main|/main>
+instead of L<wrap|/wrap>, thus skipping any content wrapper inherited from
+parent.
+
+    %% CLASS->no_wrap;
+
+=item allow_path_info
+
+This method is called when the request path has a path_info portion, to
+determine whether the path_info is allowed. Default is false. See
+L<Mason::Manual::RequestDispatch/Partial Paths|Mason::Manual::RequestDispatch>.
 
 =back
 
