@@ -221,4 +221,34 @@ EOF
     );
 }
 
+# Test old filter syntax, still currently supported
+#
+sub test_old_syntax : Tests {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+<%class>
+method Upper () { sub { uc(shift) } }
+</%class>
+
+<% $.Upper { %>
+Hello World.
+</%>
+
+<% sub { ucfirst(shift) } { %>
+<% "hello world?" %>
+<% } %>
+
+<% sub { lc(shift) } { %>
+Hello World!
+</%>
+',
+        expect => '
+HELLO WORLD.
+Hello world?
+hello world!
+',
+    );
+}
+
 1;
