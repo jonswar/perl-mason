@@ -16,6 +16,7 @@ sub init_meta {
     {
         no strict 'refs';
         *{ $for_class . '::CLASS' } = sub () { $for_class };    # like CLASS.pm
+        *{ $for_class . '::CLASS' } = \$for_class;
     }
 }
 
