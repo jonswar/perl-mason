@@ -1,4 +1,4 @@
-package Mason::Plugin::Defer::t::Defer;
+package Mason::t::Defer;
 use Test::More;
 use strict;
 use warnings;

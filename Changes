@@ -2,7 +2,10 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.09  Jun 18, 2011
+2.09  Jun 20, 2011
+
+* Fixes
+  - Properly rename Mason::t::Defer test
 
 2.08  Jun 18, 2011
 
