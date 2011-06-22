@@ -6,7 +6,7 @@ Revision history for Mason
 
 * Fixes
   - Fix filter pipe syntax, broken in 2.09 - RT #69038 (MDIETRICH)
-  - Specify and fix execution order of multiple filters in pipe syntax
+  - Specify and test execution order of multiple filters in pipe syntax
 
 2.09  Jun 20, 2011
 

@@ -429,7 +429,7 @@ method _handle_substitution ( $text, $filter_list ) {
 
     if ($filter_list) {
         if ( my @filters = grep { /\S/ } split( /\s*,\s*/, $filter_list ) ) {
-            my $filter_call_list = join( ", ", map { "\$self->$_()" } reverse(@filters) );
+            my $filter_call_list = join( ", ", map { "\$self->$_()" } @filters );
             $text = sprintf( '$self->m->_apply_filters(%s, sub { %s })', $filter_call_list, $text );
         }
     }
