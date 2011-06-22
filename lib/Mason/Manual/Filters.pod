@@ -110,9 +110,10 @@ Filters can also appear in a limited way inside a regular C<< <% %> >> tag:
 
 The filter list appears after a << | >> character and must contain one or more
 comma-separated names. The names are treated as methods on the current
-component class. With this syntax you cannot use anonymous subroutines or
-variables as filters, or pass arguments to filters. However in a pinch you can
-define local filter methods to get around this, e.g.
+component class, and are applied in order from left to right. With this syntax
+you cannot use anonymous subroutines or variables as filters, or pass arguments
+to filters. However in a pinch you can define local filter methods to get
+around this, e.g.
 
     %% method Repeat3 { $.Repeat(3); }
     ...

@@ -15,6 +15,17 @@ Hello world?
     );
 }
 
+sub test_pipe_syntax : Tests {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+',
+        expect => '
+Hello world?
+',
+    );
+}
+
 sub test_filters : Tests {
     my $self = shift;
     $self->test_comp(
@@ -34,11 +45,41 @@ Hello World.
 % sub { tr/A-Z/a-z/; $_ } {{
 Hello World!
 % }}
+
 ',
         expect => '
 HELLO WORLD.
 Hello world?
 hello world!
+HELLO WORLD...
+',
+    );
+}
+
+sub test_filter_pipe : Tests {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+<%class>
+method Upper () { sub { uc(shift) } }
+method Lower () { sub { lc(shift) } }
+method UpFirst () { sub { ucfirst(shift) } }
+</%class>
+
+<% "HELLO" | Lower %>
+<% "hello" | UpFirst %>
+<% "HELLO" | Lower,UpFirst %>
+<% "hello" | UpFirst,  Lower %>
+<% "HeLlO" | Upper, Lower %>
+<% "HeLlO" | Lower, Upper %>
+',
+        expect => '
+hello
+Hello
+Hello
+hello
+hello
+HELLO
 ',
     );
 }
