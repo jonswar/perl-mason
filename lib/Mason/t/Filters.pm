@@ -34,7 +34,6 @@ Hello World.
 % sub { tr/A-Z/a-z/; $_ } {{
 Hello World!
 % }}
-
 ',
         expect => '
 HELLO WORLD.
