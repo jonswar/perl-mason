@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.10  Jun 20, 2011
+2.10  Jun 22, 2011
 
 * Fixes
   - Fix filter pipe syntax, broken in 2.09 - RT #69038 (MDIETRICH)
