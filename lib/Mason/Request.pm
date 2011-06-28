@@ -7,7 +7,7 @@ use Mason::Exceptions;
 use Mason::TieHandle;
 use Mason::Types;
 use Mason::Moose;
-use Scalar::Util qw(blessed reftype);
+use Scalar::Util qw(blessed reftype weaken);
 use Try::Tiny;
 
 my $default_out = sub { my ( $text, $self ) = @_; $self->result->_append_output($text) };
@@ -45,6 +45,8 @@ method current_request () { $current_request }
 
 method BUILD ($params) {
     $self->{orig_request_params} = $params;
+    weaken $self->{orig_request_params}->{interp};
+    return $self->{orig_request_params};
 }
 
 method _build_result () {
