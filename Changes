@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.11  Jun 23, 2011
+2.11  Jun 29, 2011
 
 * Fixes
   - Fix memory leaks between Interp, Request and Component; add test for leaks (StephenClouse)
