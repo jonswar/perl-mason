@@ -4,6 +4,9 @@ Revision history for Mason
 
 2.11  Jun 23, 2011
 
+* Fixes
+  - Fix memory leaks between Interp, Request and Component; add test for leaks (StephenClouse)
+
 2.10  Jun 23, 2011
 
 * Fixes
