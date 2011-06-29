@@ -498,7 +498,7 @@ method _build_match_request_path ($interp:) {
                     }
                 }
             }
-            $interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
+            $request->interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
             my $name = basename($path);
             $path_info = length($path_info) ? "$name/$path_info" : $name;
             $path = dirname($path);

@@ -25,7 +25,7 @@ method cmeta () {
 
 method _build_args () {
     my $orig_params = $self->{_orig_params};
-    return map { ( $_, $orig_params->{$_} ) } grep { $_ ne 'm' } keys(%$orig_params);
+    return { map { ( $_, $orig_params->{$_} ) } grep { $_ ne 'm' } keys(%$orig_params) };
 }
 
 # Default handle - call render
