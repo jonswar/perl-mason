@@ -468,6 +468,7 @@ method _build_match_request_path ($interp:) {
 
     return sub {
         my ( $request, $request_path ) = @_;
+        my $interp         = $request->interp;
         my $path_info      = '';
         my $declined_paths = $request->declined_paths;
         my @index_subpaths = map { "/$_" } @index_names;
@@ -485,7 +486,7 @@ method _build_match_request_path ($interp:) {
             push( @tried_paths, @candidate_paths );
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
-                if ( my $compc = $request->interp->load($candidate_path) ) {
+                if ( my $compc = $interp->load($candidate_path) ) {
                     if (
                         $compc->cmeta->is_top_level
                         && (   $path_info eq ''
@@ -498,7 +499,7 @@ method _build_match_request_path ($interp:) {
                     }
                 }
             }
-            $request->interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
+            $interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
             my $name = basename($path);
             $path_info = length($path_info) ? "$name/$path_info" : $name;
             $path = dirname($path);
