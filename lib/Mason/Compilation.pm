@@ -708,9 +708,9 @@ method _output_class_block () {
 method _output_class_initialization () {
     return join(
         "\n",
-        "our (\$m, \$_m_buffer, \$_interp);",
+        "our (\$_class_cmeta, \$m, \$_m_buffer, \$_interp);",
         "BEGIN { ",
-        "\$_interp = Mason::Interp->current_load_interp;",
+        "local \$_interp = Mason::Interp->current_load_interp;",
         "\$_interp->component_moose_class->import;",
         "\$_interp->component_import_class->import;",
         "}",
@@ -734,12 +734,12 @@ method _output_cmeta () {
         interp       => '$interp',
     );
     return join( "\n",
-        "my \$_class_cmeta;",
         "method _set_class_cmeta (\$interp) {",
         "\$_class_cmeta = \$interp->component_class_meta_class->new(",
         ( map { sprintf( "'%s' => %s,", $_, $cmeta_info{$_} ) } sort( keys(%cmeta_info) ) ),
         ');',
         '}',
+        'sub _unset_class_cmeta { undef $_class_cmeta }',
         'sub _class_cmeta { $_class_cmeta }' );
 }
 

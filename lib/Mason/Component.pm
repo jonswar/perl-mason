@@ -3,6 +3,7 @@ use Moose;    # no Mason::Moose - don't want StrictConstructor
 use MooseX::HasDefaults::RO;
 use Method::Signatures::Simple;
 use Log::Any;
+use Scalar::Util qw(weaken);
 
 with 'Mason::Filters::Standard';
 
@@ -12,7 +13,10 @@ has 'args' => ( init_arg => undef, lazy_build => 1 );
 has 'm'    => ( required => 1, weak_ref => 1 );
 
 method BUILD ($params) {
+                         # Make a copy of params and re-weaken m
+                         #
     $self->{_orig_params} = $params;
+    weaken $self->{_orig_params}->{m};
 }
 
 method cmeta () {
@@ -21,7 +25,7 @@ method cmeta () {
 
 method _build_args () {
     my $orig_params = $self->{_orig_params};
-    return { map { /^cmeta|m$/ ? () : ( $_, $orig_params->{$_} ) } keys(%$orig_params) };
+    return map { ( $_, $orig_params->{$_} ) } grep { $_ ne 'm' } keys(%$orig_params);
 }
 
 # Default handle - call render

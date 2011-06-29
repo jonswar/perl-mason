@@ -15,8 +15,9 @@ method set ( $key, $data ) {
 
 method remove ($key) {
     if ( my $entry = $self->{datastore}->{$key} ) {
-        my $compc = $entry->{compc};
         if ( !in_global_destruction() ) {
+            my $compc = $entry->{compc};
+            $compc->_unset_class_cmeta();
             $compc->meta->make_mutable();
             Mason::Util::delete_package($compc);
         }
