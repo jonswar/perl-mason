@@ -13,8 +13,9 @@ has 'args' => ( init_arg => undef, lazy_build => 1 );
 has 'm'    => ( required => 1, weak_ref => 1 );
 
 method BUILD ($params) {
-                         # Make a copy of params and re-weaken m
-                         #
+
+    # Make a copy of params and re-weaken m
+    #
     $self->{_orig_params} = $params;
     weaken $self->{_orig_params}->{m};
 }
