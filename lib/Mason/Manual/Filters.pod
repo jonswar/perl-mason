@@ -133,7 +133,7 @@ to a string. It returns the filtered output. e.g.
 
     <%init>
     ...
-    my $filtered_string = $m->filter($.Trim, $string);
+    my $filtered_string = $m->filter($.Trim, $.NoBlankLines, $string);
     </%init>
 
 =head1 CREATING A FILTER

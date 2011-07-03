@@ -613,6 +613,8 @@ C</dhandler.mc>, and a third would throw a "not found" error.
 
 Applies one or more filters to a string or to a coderef that returns a string.
 
+    my $filtered_string = $m->filter($.Trim, $.NoBlankLines, $string);
+
 =item flush_buffer ()
 
 Flushes the main output buffer. Anything currently in the buffer is sent to the
