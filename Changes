@@ -4,6 +4,9 @@ Revision history for Mason
 
 2.12  Jun 29, 2011
 
+* Fixes
+  - Fix $m->visit under PSGIHandler (Jozef Mojzis) and when initial out_method passed
+
 2.11  Jun 29, 2011
 
 * Fixes
