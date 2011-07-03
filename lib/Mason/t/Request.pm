@@ -138,19 +138,19 @@ sub test_scomp : Tests {
     );
 }
 
-sub test_subrequest : Tests {
+sub test_go : Tests {
     my $self = shift;
 
-    my $reset_id = sub { Mason::Request->_reset_next_id };
+    my ( $buf, $result );
 
-    $reset_id->();
+    reset_id();
     $self->add_comp(
         path => '/subreq/other.mc',
         src  => '
 id=<% $m->id %>
 <% $m->page->cmeta->path %>
 <% $m->request_path %>
-<% Mason::Util::dump_one_line($m->request_args) %>
+args: <% Mason::Util::dump_one_line($m->request_args) %>
 ',
     );
     $self->test_comp(
@@ -162,10 +162,10 @@ This should not get printed.
 id=1
 /subreq/other.mc
 /subreq/other
-{foo => 5}
+args: {foo => 5}
 ',
     );
-    $reset_id->();
+    reset_id();
     $self->test_comp(
         path => '/subreq/go_with_req_params.mc',
         src  => '
@@ -173,7 +173,35 @@ This should not get printed.
 <%perl>my $buf; $m->go({out_method => \$buf}, "/subreq/other", foo => 5)</%perl>',
         expect => '',
     );
-    $reset_id->();
+
+    reset_id();
+    $result = $self->interp->run( { out_method => \$buf }, '/subreq/go' );
+    is( $result->output, '', 'no output' );
+    is(
+        $buf, '
+id=1
+/subreq/other.mc
+/subreq/other
+args: {foo => 5}
+', 'output in buf'
+    );
+}
+
+sub test_visit : Tests {
+    my $self = shift;
+
+    my ( $buf, $result );
+
+    reset_id();
+    $self->add_comp(
+        path => '/subreq/other.mc',
+        src  => '
+id=<% $m->id %>
+<% $m->page->cmeta->path %>
+<% $m->request_path %>
+args: <% Mason::Util::dump_one_line($m->request_args) %>
+',
+    );
     $self->test_comp(
         path => '/subreq/visit.mc',
         src  => '
@@ -189,12 +217,13 @@ id=0
 id=1
 /subreq/other.mc
 /subreq/other
-{foo => 5}
+args: {foo => 5}
 id=0
 end
 ',
     );
-    $reset_id->();
+
+    reset_id();
     $self->test_comp(
         path => '/subreq/visit_with_req_params.mc',
         src  => '
@@ -210,23 +239,31 @@ id=0
 ID=1
 /SUBREQ/OTHER.MC
 /SUBREQ/OTHER
-{FOO => 5}
+ARGS: {FOO => 5}
 id=0
 end
 ',
     );
-    my $buf;
-    $reset_id->();
-    my $result = $self->interp->run( { out_method => \$buf }, '/subreq/go' );
+
+    reset_id();
+    $result = $self->interp->run( { out_method => \$buf }, '/subreq/visit' );
     is( $result->output, '', 'no output' );
     is(
         $buf, '
+begin
+id=0
 id=1
 /subreq/other.mc
 /subreq/other
-{foo => 5}
-', 'output in buf'
+args: {foo => 5}
+id=0
+end
+', 'visit with initial out_method'
     );
+}
+
+sub reset_id {
+    Mason::Request->_reset_next_id;
 }
 
 1;

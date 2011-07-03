@@ -44,10 +44,11 @@ method current_request () { $current_request }
 #
 
 method BUILD ($params) {
-                                               # Make a copy of params and re-weaken interp
-                                               #
+
+    # Make a copy of params sans interp
+    #
     $self->{orig_request_params} = $params;
-    weaken $self->{orig_request_params}->{interp};
+    delete( $self->{orig_request_params}->{interp} );
 }
 
 method _build_result () {
@@ -143,15 +144,12 @@ method flush_buffer () {
 }
 
 method go () {
-    my @extra_request_params;
-    while ( ref( $_[0] ) eq 'HASH' ) {
-        push( @extra_request_params, shift(@_) );
-    }
-    my $path = $self->rel_to_abs( shift(@_) );
     $self->clear_buffer;
-    my $result =
-      $self->interp->run( $self->{orig_request_params}, @extra_request_params, $path, @_ );
-    $self->{go_result} = $result;
+    my %request_params = ( %{ $self->{orig_request_params} } );
+    if ( ref( $_[0] ) eq 'HASH' ) {
+        %request_params = ( %request_params, %{ shift(@_) } );
+    }
+    $self->{go_result} = $self->_run_subrequest( \%request_params, @_ );
     $self->abort();
 }
 
@@ -191,12 +189,12 @@ method scomp () {
 }
 
 method visit () {
-    my @extra_request_params;
-    while ( ref( $_[0] ) eq 'HASH' ) {
-        push( @extra_request_params, shift(@_) );
+    my $buf;
+    my %request_params = ( %{ $self->{orig_request_params} }, out_method => \$buf );
+    if ( ref( $_[0] ) eq 'HASH' ) {
+        %request_params = ( %request_params, %{ shift(@_) } );
     }
-    my $path = $self->rel_to_abs( shift(@_) );
-    my $result = $self->interp->run( { out_method => \my $buf }, @extra_request_params, $path, @_ );
+    my $result = $self->_run_subrequest( \%request_params, @_ );
     $self->print($buf);
     return $result;
 }
@@ -410,6 +408,12 @@ method _reset_next_id () {
     $next_id = 0;
 }
 
+method _run_subrequest () {
+    my $request_params = shift(@_);
+    my $path           = $self->rel_to_abs( shift(@_) );
+    $self->interp->run( $request_params, $path, @_ );
+}
+
 __PACKAGE__->meta->make_immutable();
 
 1;
@@ -434,7 +438,8 @@ Mason::Request represents a single request for a page, and is the access point
 for most Mason features not provided by syntactic tags.
 
 A Mason request is created when you call C<< $interp->run >>, or in a web
-environment, for each new web request.
+environment, for each new web request. A new (sub-)request is also created when
+you call L<visit> or L<go> on the current request.
 
 Inside a component you can access the current request object via the global
 C<$m>.  Outside of a component, you can use the class method
@@ -450,6 +455,9 @@ Component paths are like URL paths, and always use a forward slash (/) as the
 separator, regardless of what your operating system uses.
 
 =head1 PARAMETERS TO THE new() CONSTRUCTOR
+
+These parameters would normally be passed in an initial hashref to  C<<
+$interp->run >>, C<< $m->visit >>, or C<< $m->go >>.
 
 =for html <a name="out_method" />
 
