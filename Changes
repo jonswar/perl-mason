@@ -2,10 +2,11 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.12  Jun 29, 2011
+2.12  Jul 3, 2011
 
 * Fixes
-  - Fix $m->visit under PSGIHandler (Jozef Mojzis) and when initial out_method passed
+  - Fix $m->visit under PSGIHandler (Jozef Mojzis)
+  - Fix $m->visit when initial out_method passed
 
 2.11  Jun 29, 2011
 
