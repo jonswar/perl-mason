@@ -927,7 +927,7 @@ Moose, C<$m> and other required pieces. Empty by default.
 =item process_perl_code ($coderef)
 
 This method is called on each distinct piece of Perl code in the component.
-C<$coderef> is a reference to a string containing the code; the method can
+I<$coderef> is a reference to a string containing the code; the method can
 modify the code as desired. See L<Mason::Plugin::DollarDot> for a sample usage.
 
 =item unnamed_block_types ()

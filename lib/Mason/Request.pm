@@ -138,6 +138,7 @@ method filter () {
 
 method flush_buffer () {
     my $request_buffer = $self->_request_buffer;
+    $self->process_output($request_buffer);
     $self->out_method->( $$request_buffer, $self )
       if length $$request_buffer;
     $$request_buffer = '';
@@ -238,6 +239,10 @@ method catch_abort ($code) {
 
 method match_request_path ($request_path) {
     $self->interp->match_request_path->( $self, $request_path );
+}
+
+method process_output ($outref) {
+                                            # No-op by default
 }
 
 method run () {
@@ -772,11 +777,17 @@ Given a top level I<$request_path>, return a corresponding component path or
 undef if none was found. Search includes dhandlers and index files. See
 L<Mason::Manual::RequestDispatch>.
 
+=item process_output ($outref)
+
+This method is called on the output buffer right before it is sent to its final
+destination. I<$outref> is a reference to the output string; the method can
+modify it as desired.
+
 =for html <a name="run" />
 
-=item run (request_path, args)
+=item run ($request_path, args)
 
-Runs the request with I<request_path> and I<args>, where the latter can be
+Runs the request with I<$request_path> and I<args>, where the latter can be
 either a hashref or a hash. This is generally called via << $interp->run >>.
 
 =for html <a name="with_tied_print" />

@@ -107,4 +107,21 @@ sub test_plugin_specs : Tests {
     throws_ok { $test->( ['Y'] ) } qr/could not load 'Mason::Plugin::Y'/;
 }
 
+{ package Mason::Test::Plugins::Upper; use Moose; with 'Mason::Plugin' }
+{
+    package Mason::Test::Plugins::Upper::Request;
+    use Mason::PluginRole;
+    after 'process_output' => sub {
+        my ( $self, $bufref ) = @_;
+        $$bufref = uc($$bufref);
+    };
+}
+
+sub test_process_output_plugin : Tests {
+    my $self = shift;
+
+    $self->setup_interp( plugins => ['+Mason::Test::Plugins::Upper'] );
+    $self->test_comp( src => 'Hello', expect => 'HELLO' );
+}
+
 1;
