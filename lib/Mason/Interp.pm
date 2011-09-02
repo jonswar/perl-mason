@@ -100,7 +100,7 @@ method _build_autobase_names () {
 }
 
 method _build_code_cache () {
-    return Mason::CodeCache->new();
+    return $self->code_cache_class->new();
 }
 
 method _build_component_class_prefix () {

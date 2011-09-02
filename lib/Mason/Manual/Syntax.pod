@@ -185,11 +185,11 @@ Contains one or more attribute declarations, one per line. Has the same syntax
 as C<< <%args> >>, but the resulting attributes are declared with C<< init_arg
 => undef >>. e.g. this block
 
-    <%args>
+    <%shared>
     a
     b => 'default value'
     c => (isa => 'Str', default => 'something')
-    </%args>
+    </%shared>
 
 is equivalent to
 
