@@ -9,8 +9,7 @@ Revision history for Mason
     TMTOWTDI. Standardize on the <%class> section and Moose 'has' declarations.
 
 * Improvements
-  - Add automatic subclassing of Mason classes by naming convention - see
-    Mason::Manual::Subclassing.
+  - Application-specific subclassing of Mason classes - see Mason::Manual::Subclassing.
 
 * Fixes
   - Respect Mason::CodeCache plugins (bokutin)
