@@ -7,10 +7,11 @@ sub test_lvalue : Tests {
     my $self = shift;
     $self->test_comp(
         src => '
-<%shared>
-$.a => (is => "rw")
-$.b => (is => "ro")
-</%shared>
+<%class>
+has "a" => (is => "rw");
+has "b" => (is => "ro");
+
+</%class>
 
 <%init>
 $.a = 5;

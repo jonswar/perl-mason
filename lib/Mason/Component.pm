@@ -161,15 +161,11 @@ C<wrap> using C<method> instead of C<augment>:
       <% inner() %>
     </%method>
 
-To do no wrapping at all, a component could do:
+To do no wrapping at all, call the component class method L<no_wrap>:
 
-    <%method render>
-    % $.main();
-    </%method>
-
-or for convenience, the equivalent:
-
-    %% CLASS->no_wrap;
+    <%class>
+    CLASS->no_wrap;
+    </%class>
 
 =for html <a name="main" />
 
@@ -192,13 +188,19 @@ A convenience method that redefines L<render|/render> to call L<main|/main>
 instead of L<wrap|/wrap>, thus skipping any content wrapper inherited from
 parent.
 
-    %% CLASS->no_wrap;
+    <%class>
+    CLASS->no_wrap;
+    </%class>
 
 =item allow_path_info
 
 This method is called when the request path has a path_info portion, to
 determine whether the path_info is allowed. Default is false. See
 L<Mason::Manual::RequestDispatch/Partial Paths|Mason::Manual::RequestDispatch>.
+
+    <%class>
+    CLASS->allow_path_info(1);
+    </%class>
 
 =back
 

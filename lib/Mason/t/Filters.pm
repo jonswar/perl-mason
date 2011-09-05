@@ -23,13 +23,13 @@ sub test_filters : Tests {
 method Upper () { sub { uc(shift) } }
 </%class>
 
-% $.Upper {{
+% $.Upper {{   # start Upper
 Hello World.
-% }}
+% }}           # end Upper
 
-% sub { ucfirst(shift) } {{
+% sub { ucfirst(shift) } {{   
 <% "hello world?" %>
-% }}
+% }}   
 
 % sub { tr/A-Z/a-z/; $_ } {{
 Hello World!
@@ -204,10 +204,10 @@ sub test_compcall_filter : Tests {
     $self->add_comp(
         path => '/list_items.mi',
         src  => '
-<%args>
-$.items
-$.yield
-</%args>
+<%class>
+has "items";
+has "yield";
+</%class>
 
 % foreach my $item (@{$.items}) {
 <% $.yield->($item) %>

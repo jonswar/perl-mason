@@ -73,6 +73,8 @@ EOF
     );
 }
 
+# DEPRECATED
+#
 sub test_double_percent : Tests {
     shift->test_comp(
         src => <<'EOF',
@@ -183,12 +185,10 @@ $.baz => ( isa => "Num", default => 5 )
 sub test_dollar_dot : Tests {
     shift->test_comp(
         src => '
-<%args>
-foo => 3
-</%args>
-<%shared>
-bar => 4
-</%shared>
+<%class>
+has ' foo ' => (default => 3)
+has ' bar ' => (default => 4)
+</%class>
 
 <% $self->show %>
 

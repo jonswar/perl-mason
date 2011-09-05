@@ -83,12 +83,12 @@ Content|http://search.cpan.org/perldoc?HTML::Mason::Devel#Component_Calls_with_C
     % }}
 
   In list_items.mi:
-    <%args>
-    $.items
-    $.yield
-    </%args>
+    <%class>
+    has 'items';
+    has 'yield';
+    </%class>
 
-    % foreach my $item (@items) {
+    % foreach my $item (@{$.items}) {
     <% $.yield->($item) %>
     % }
 

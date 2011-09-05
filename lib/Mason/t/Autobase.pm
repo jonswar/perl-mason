@@ -173,7 +173,7 @@ Hello world
     $self->test_comp(
         path => '/wrap/subdir/subdir2/dont_wrap_me.mc',
         src  => '
-%% method wrap { $.main() }
+<%class>method wrap { $.main() }</%class>
 <% $self->hello() %>
 ',
         expect => 'Hello world'
@@ -181,7 +181,7 @@ Hello world
     $self->test_comp(
         path => '/wrap/subdir/subdir2/dont_wrap_me_either.mc',
         src  => '
-%% CLASS->no_wrap;
+<%class>CLASS->no_wrap;</%class>
 <% $self->hello() %>
 ',
         expect => 'Hello world'

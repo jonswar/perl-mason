@@ -19,10 +19,11 @@ Here's the standard way of invoking a filter:
 
    % $.Trim {{
      This string will be trimmed
-   % }}
+   % }}  # end Trim
 
 A double open brace (C<< {{ >>) at the end of a C<< %-line >> denotes a filter
 call.  The filtered content begins just afterwards and ends at the C<< }} >>.
+Both C<< {{ >> and C<< }} >> may be followed by a comment.
 
 The expression C<< $.Trim >>, aka C<< $self->Trim >>, is a method call on the
 component object which returns a filter. In general everything before the C<<
@@ -114,7 +115,9 @@ component class. With this syntax you cannot use anonymous subroutines or
 variables as filters, or pass arguments to filters. However in a pinch you can
 define local filter methods to get around this, e.g.
 
-    %% method Repeat3 { $.Repeat(3); }
+    <%class>
+    method Repeat3 { $.Repeat(3); }
+    </%class>
     ...
     <% $message_body | Repeat3 %>
 

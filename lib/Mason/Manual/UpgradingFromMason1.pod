@@ -114,11 +114,7 @@ additional syntax.
 
 =item *
 
-C<< <%args> >> has changed; it now declares a set of input attributes.
-
-=item *
-
-C<< <%shared> >> has changed; it now declares a set of shared attributes.
+C<< <%args> >> and C<< <%shared> >> are gone. Use Moose attributes instead.
 
 =item *
 
@@ -190,6 +186,12 @@ difficult to implement efficiently.
 C<preprocess>, C<postprocess_perl>, and C<postprocess_text> have been
 eliminated; similar effects can be achieved with plugins targeting
 L<Mason::Compilation|Mason::Compilation>.
+
+=item *
+
+C<default_escape_flags> has been eliminated, but see
+L<Mason::Plugin::DefaultFilter|Mason::Plugin::DefaultFilter> for a third-party
+substitute.
 
 =back
 

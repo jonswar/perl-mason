@@ -20,9 +20,10 @@ sub test_cache_method : Tests {
     $self->test_comp(
         path => '/cache.mc',
         src  => '
-<%shared>
-$.count => 0
-</%shared>
+<%class>
+has ' count ' => ( default => 0 );
+
+</%class>
 
 <%method getset ($key)>
 <%perl>$.count($.count+1);</%perl>

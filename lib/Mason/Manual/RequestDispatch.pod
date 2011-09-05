@@ -62,7 +62,9 @@ Since this isn't always desirable behavior, it must be explicitly enabled for
 the component. Mason will call method C<allow_path_info> on the component
 class, and will only allow the match if it returns true:
 
-    %% method allow_path_info { 1 }
+    <%class>
+    method allow_path_info { 1 }
+    </%class>
 
 The default C<allow_path_info> returns false.
 
@@ -74,7 +76,9 @@ dhandlers is to match partial paths.
 It is possible to use route syntax to more elegantly parse C<< $m->path_info >>
 for dhandlers and partial paths, e.g.
 
-    %% route "{year:[0-9]+}/{month:[0-9]{2}}";
+    <%class>
+    route "{year:[0-9]+}/{month:[0-9]{2}}";
+    </%class>
 
 See L<Mason::Plugin::RouterSimple>.
 

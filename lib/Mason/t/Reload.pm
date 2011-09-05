@@ -48,22 +48,25 @@ sub test_reload_parent : Tests {
     my $interp = $self->interp;
 
     $self->add_comp( path => '/foo/bar/baz.mc', src => '<% $.num1 %> <% $.num2 %>' );
-    $self->add_comp( path => '/foo/Base.mc',    src => '%% method num1 { 5 }' );
-    $self->add_comp( path => '/Base.mc',        src => '%% method num2 { 6 }' );
+    $self->add_comp( path => '/foo/Base.mc',    src => '<%class>method num1 { 5 }</%class>' );
+    $self->add_comp( path => '/Base.mc',        src => '<%class>method num2 { 6 }</%class>' );
 
     $self->test_existing_comp( path => '/foo/bar/baz.mc', expect => '5 6' );
 
     $self->interp->_flush_load_cache();
     sleep(1);
 
-    $self->add_comp( path => '/foo/Base.mc', src => "%% method num1 { 7 }" );
-    $self->add_comp( path => '/Base.mc',     src => "%% method num2 { 8 }" );
+    $self->add_comp( path => '/foo/Base.mc', src => "<%class>method num1 { 7 }</%class>" );
+    $self->add_comp( path => '/Base.mc',     src => "<%class>method num2 { 8 }</%class>" );
     $self->test_existing_comp( path => '/foo/bar/baz.mc', expect => '7 8' );
 
     $self->interp->_flush_load_cache();
     sleep(1);
 
-    $self->add_comp( path => '/Base.mc', src => "%% method num1 { 10 } \n%% method num2 { 11 }\n" );
+    $self->add_comp(
+        path => '/Base.mc',
+        src  => "<%class>method num1 { 10 }\nmethod num2 { 11 }\n</%class>"
+    );
     $self->test_existing_comp( path => '/foo/bar/baz.mc', expect => '7 11' );
 
     $self->interp->_flush_load_cache();

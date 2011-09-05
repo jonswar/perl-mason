@@ -19,7 +19,7 @@ sub test_resolve : Tests {
             $self->add_comp(
                 path => $existing_path,
                 src  => join( "",
-                    ( $allow_path_info ? "%% method allow_path_info { 1 }\n" : "" ),
+                    ( $allow_path_info ? "<%class>method allow_path_info { 1 }</%class>\n" : "" ),
                     "path: <% \$self->cmeta->path %>; path_info: <% \$m->path_info %>" )
             );
         }

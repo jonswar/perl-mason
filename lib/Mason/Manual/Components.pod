@@ -112,74 +112,23 @@ component) on the instance.
 
 You can declare attributes in components and pass them when calling components.
 
-=head2 Components are read-write by default
+=head2 Declaring attributes
+
+Use Moose 'has' syntax to declare attributes within a C<< <%class> >> section:
+
+    <%class>
+    has 'foo';
+    has 'bar' => (required => 1);
+    has 'baz' => (isa => 'Int', default => 17);
+    </%class>
+
+=head2 Attributes are read-write by default
  
 L<Mason::Component::Moose> imports L<MooseX::HasDefaults::RW> into all
 components, which makes attributes read-write unless stated otherwise. This is
 not considered best practice for general OO programming, but component
 instances are short-lived and not usually accessed outside of their class so we
 feel the convenience is warranted.
-
-=head2 Declaring incoming attributes - C<< <%args> >>
-
-The C<< <%args> >> block is the most convenient way to declare incoming
-attributes:
-
-    <%args>
-    $.a
-    $.b => 'default value'
-    $.c => (isa => 'Str', default => 'something')
-    </%args>
-
-The '$.' prefix on each line is optional and harmless. This is equivalent to
-the following Moose syntax:
-
-    <%class>
-    has 'a' => ();
-    has 'b' => (default => 'default value');
-    has 'c' => (isa => 'Str',
-                default => 'something');
-    </%class>
-
-and as mentioned above there is an implicit "is => 'rw'" in each.
-
-=head2 Declaring internal attributes - C<< <%shared> >>
-
-The C<< <%shared> >> block lets you define attributes that are shared between
-all the methods of the component, but cannot be initialized from the outside.
-The syntax is idental:
-
-    <%shared>
-    d
-    e => 'default value'
-    f => (isa => 'Str', default => 'something')
-    </%shared>
-
-and the translation is nearly identical:
-
-    <%class>
-    has 'd' => (init_arg => 1);
-    has 'e' => (init_arg => 1, default => 'default value');
-    has 'f' => (init_arg => 1,
-                isa => 'Str',
-                default => 'something');
-    </%class>
-
-except that all are declared with C<< init_arg => 1 >> (meaning they can't be
-passed in).
-
-=head2 Comments and blank lines in attribute declarations
-
-You may place a '#' comment at the end of an attribute line or on its own line,
-and you may put blank lines in C<< <%args> >> or << <%shared> >> sections. Both
-are ignored.
-
-    <%args>
-    g   # a comment
-    # another comment
-
-    h
-    </%args>
 
 =head2 Accessing attributes
 

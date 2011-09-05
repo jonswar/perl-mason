@@ -53,64 +53,9 @@ by at least one whitespace character.
     <a href="/login">Click here to log in</a>
     % }
 
-=head2 %%-lines
-
-Lines beginning with a double '%%' are treated as Perl and included in the main
-class body, as if they had been placed in a C<< <%class> >> section.
-
-    %% use Data::Dumper;
-
-    %% has 'attr' => ( ... );
-
-    %% method multiply ($x, $y) {
-    %%   return $x * $y;
-    %% }
-
-Warning: this syntax cannot be used to surround content with conditionals or
-loops as can %-lines, because Mason will still treat the intervening lines as
-part of the current method (e.g. 'main').
-
-    <% # WRONG!!! The Copyright notice will be part of the current method. %>
-    %% after 'bottom_nav' => sub {
-    Copyright 2011 McHuffy Inc.
-    %% };
-
 =head1 UNNAMED BLOCKS
 
 Blocks that do not take a name argument.
-
-=head2 <%args>
-
-Contains one or more attribute declarations, one per line. Each line starts
-with the attribute name, followed optionally by a comma operator (C<< => >>)
-and either a scalar value (which becomes the default) or a list (which becomes
-the Moose attribute properties). The line may be prefixed with whitespace and
-followed with a comment; you can also have comments on their own lines. e.g.
-this block
-
-    <%args>
-    a
-    b => 'default value'   # a comment
-    c => (isa => 'Str', default => 'something')
-    # another comment
-    </%args>
-
-is equivalent to
-
-    <%class>
-    has 'a' => ();
-    has 'b' => (default => 'default value');
-    has 'c' => (isa => 'Str', default => 'something');
-    </%class>
-
-If the L<DollarDot|Mason::Plugin::DollarDot> plugin is in use, each argument
-declaration can optionally and harmlessly be prefixed with C<< $. >>:
-
-    <%args>
-    $.a
-    $.b => 'default value'
-    $.c => (isa => 'Str', default => 'something')
-    </%args>
 
 =head2 <%class>
 
@@ -178,26 +123,6 @@ discarded.  May appear anywhere in the text and any number of times.
    my $article = MyApp::Article->find($.article_id);
    my $title = $article->title;
    </%perl>
-
-=head2 <%shared>
-
-Contains one or more attribute declarations, one per line. Has the same syntax
-as C<< <%args> >>, but the resulting attributes are declared with C<< init_arg
-=> undef >>. e.g. this block
-
-    <%args>
-    a
-    b => 'default value'
-    c => (isa => 'Str', default => 'something')
-    </%args>
-
-is equivalent to
-
-    <%class>
-    has 'a' => (init_arg => undef);
-    has 'b' => (init_arg => undef, default => 'default value');
-    has 'c' => (init_arg => undef, isa => 'Str', default => 'something');
-    </%class>
 
 =head2 <%text>
 

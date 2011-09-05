@@ -15,13 +15,10 @@ attribute names
 
 =head1 SYNOPSIS
 
-    <%args>
-    $.name
-    </%args>
-
-    <%shared>
-    $.date
-    </%shared>
+    <%class>
+    has 'name';
+    has 'date';
+    </%class>
 
     <%method greet>
     Hello, <% $.name %>. Today is <% $.date %>.
@@ -45,10 +42,6 @@ referring to attributes and calling methods. The actual regex is
 
     s/ \$\.([^\W\d]\w*) / \$self->$1 /gx;
 
-It also allows attributes in C<< <%args> >> and C<< <%shared> >> sections to be
-harmlessly prefixed with C<< $. >>. The prefix is ignored; this is an optional
-mnemonic to make the attribute's declaration match its use.
-
 =head1 RATIONALE
 
 In Mason 2, components have to write C<< $self-> >> a lot to refer to
@@ -60,3 +53,12 @@ author generally agrees is Evil. That said, this is a very limited filter, and
 seems unlikely to break any legitimate Perl syntax other than use of the C<< $.
 >> special variable (input line number).
 
+=head1 BUGS
+
+Will not interpolate as expected inside double quotes:
+
+    "My name is $.name"   # nope
+
+instead you have to do
+
+    "My name is " . $.name

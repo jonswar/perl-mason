@@ -42,10 +42,10 @@ to want to put your Mason components in files.
 In a test directory, create a directory C<comps> and create a file C<email.mc>
 with the following:
 
-    <%args>
-    $.amount
-    $.name
-    </%args>
+    <%class>
+    has 'amount';
+    has 'name';
+    </%class>
 
     Dear <% $.name %>,
 
@@ -59,8 +59,8 @@ with the following:
     </%init>
 
 In addition to the substitution tag we've seen before, we declare two
-I<attributes>, C<$.amount> and C<$.name>, to be passed into the component; and
-we declare a piece of initialization code to validate the amount.
+I<attributes>, C<amount> and C<name>, to be passed into the component; and we
+declare a piece of initialization code to validate the amount.
 
 In the same test directory, create a script C<test.pl> with the following:
 

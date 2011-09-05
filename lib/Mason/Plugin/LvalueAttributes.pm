@@ -15,10 +15,10 @@ attributes
 
 =head1 SYNOPSIS
 
-    <%shared>
-    $.a => (is => "rw")
-    $.b => (is => "ro")
-    </%shared>
+    <%class>
+    has 'a' => (is => "rw")
+    has 'b' => (is => "ro")
+    </%class>
 
     <%init>
     # set a to 5
