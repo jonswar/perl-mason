@@ -18,7 +18,7 @@ Revision history for Mason
 2.13  Jul 26, 2011
 
 * Improvements
-  - Add process_output, an easy way to modify all Mason output in a plugin
+  - Add process_output, an easy way to modify all Mason output in a plugin or subclass
 
 2.12  Jul 3, 2011
 

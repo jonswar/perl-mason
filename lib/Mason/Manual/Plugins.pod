@@ -73,7 +73,7 @@ or the whole list:
 =head1 CREATING PLUGINS
 
 Note: If you want to modify behavior for a particular application only, it
-might be more convenient to create L<subclasses|Mason::Manual::Subclassing>.
+might be more convenient to create L<subclasses|Mason::Manual::Subclasses>.
 
 A plugin consists of the main plugin class and one or more roles. The main
 class currently looks like this:

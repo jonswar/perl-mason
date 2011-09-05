@@ -750,8 +750,9 @@ See also L<go|/go>.
 =head1 MODIFIABLE METHODS
 
 These methods are not intended to be called externally, but may be useful to
-modify with method modifiers in plugins and subclasses. Their APIs will be kept
-as stable as possible.
+modify with method modifiers in L<plugins|Mason::Manual::Plugins> and
+L<subclasses|<Mason::Manual::Subclasses>. Their APIs will be kept as stable as
+possible.
 
 =for html <a name="cleanup_request" />
 

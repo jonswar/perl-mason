@@ -1,7 +1,7 @@
 
 =head1 NAME
 
-Mason::Manual::Subclassing - Subclassing Mason's classes
+Mason::Manual::Subclasses - Creating custom subclasses of Mason's classes
 
 =head1 DESCRIPTION
 
@@ -21,8 +21,8 @@ and arrange things so that Mason always uses your subclass instead of its
 default class.
 
 Note: if you want to create a general purpose modification to Mason to use in
-multiple applications, you should create a L<Mason::Manual::Plugins|plugin>
-instead. Subclasses are best when specific to a single application.
+multiple applications, you should probably create a
+L<plugin|Mason::Manual::Plugins> instead of a subclass.
 
 =head1 CREATING A SUBCLASS
 
