@@ -1,0 +1,77 @@
+
+=head1 NAME
+
+Mason::Manual::Subclassing - Subclassing Mason's classes
+
+=head1 DESCRIPTION
+
+You can subclass the following Mason classes for your application:
+
+    Mason::CodeCache
+    Mason::Compilation
+    Mason::Component
+    Mason::Component::ClassMeta
+    Mason::Component::Import
+    Mason::Component::Moose
+    Mason::Interp
+    Mason::Request
+    Mason::Result
+
+and arrange things so that Mason always uses your subclass instead of its
+default class.
+
+Note: if you want to create a general purpose modification to Mason to use in
+multiple applications, you should create a L<Mason::Manual::Plugins|plugin>
+instead. Subclasses are best when specific to a single application.
+
+=head1 CREATING A SUBCLASS
+
+A subclass should look something like this:
+
+    package My::Mason::Interp;
+    use Moose;
+    extends 'Mason::Interp';
+
+    # put your modifications here
+
+    1;
+
+=head1 LETTING MASON KNOW ABOUT YOUR SUBCLASSES
+
+There are two ways to let Mason know about your subclasses: by naming
+convention, and by parameters to C<< Mason->new >>.
+
+=head2 By naming convention
+
+First, create a subclass of Mason itself:
+
+    package My::Mason;
+    use Moose;
+    extends 'Mason';
+
+    1;
+
+and use that in place of C<< Mason >> in construction:
+
+    my $interp = My::Mason->new();
+
+Now, you can place any subclasses under 'My::Mason' and they'll automatically
+be picked up. e.g.
+
+    My::Mason::Compilation
+    My::Mason::Interp
+    My::Mason::Request
+
+=head1 By constructor parameter
+
+You can specify your subclasses via "base_*" parameters to C<< Mason->new() >>.
+e.g.
+
+    my $interp = Mason->new(
+         base_compilation_class => 'My::Mason::Compilation',
+         base_interp_class => 'My::Mason::Interp'
+         base_request_class => 'Some::Other::Mason::Request'
+    );
+
+See L<Interp/CUSTOM MASON CLASSES> for a complete list.
+
