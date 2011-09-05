@@ -124,6 +124,7 @@ will be applied to Mason::Interp and Mason::Compilation respectively.
 
 As of this writing the following Mason classes can be modified with plugins:
 
+    Mason::CodeCache
     Mason::Compilation
     Mason::Component
     Mason::Component::ClassMeta

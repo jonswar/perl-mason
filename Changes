@@ -5,10 +5,11 @@ Revision history for Mason
 2.14  Jul 26, 2011
 
 ** Incompatible changes
-  - Deprecate %%-lines, <%args> section and <%shared> section. Standardize on the <%class>
-    section and Moose 'has' declarations.
+  - Deprecate %%-lines, <%args> section and <%shared> section, which represent unnecessary
+    TMTOWTDI. Standardize on the <%class> section and Moose 'has' declarations.
 
 * Fixes
+  - Respect Mason::CodeCache plugins (bokutin)
   - Allow comments after filter markers {{ and }}
 
 2.13  Jul 26, 2011
