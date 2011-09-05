@@ -8,6 +8,10 @@ Revision history for Mason
   - Deprecate %%-lines, <%args> section and <%shared> section, which represent unnecessary
     TMTOWTDI. Standardize on the <%class> section and Moose 'has' declarations.
 
+* Improvements
+  - Add automatic subclassing of Mason classes by naming convention - see
+    Mason::Manual::Subclassing.
+
 * Fixes
   - Respect Mason::CodeCache plugins (bokutin)
   - Allow comments after filter markers {{ and }}
