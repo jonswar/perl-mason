@@ -130,6 +130,7 @@ As of this writing the following Mason classes can be modified with plugins:
     Mason::Component::ClassMeta
     Mason::Component::Import
     Mason::Component::Moose
+    Mason::Interp
     Mason::Request
     Mason::Result
 
