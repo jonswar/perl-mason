@@ -714,9 +714,9 @@ sub _define_class_override_methods {
         code_cache_class           => 'CodeCache',
         compilation_class          => 'Compilation',
         component_class            => 'Component',
-        component_moose_class      => 'Component::Moose',
         component_class_meta_class => 'Component::ClassMeta',
         component_import_class     => 'Component::Import',
+        component_moose_class      => 'Component::Moose',
         request_class              => 'Request',
         result_class               => 'Result',
     );
