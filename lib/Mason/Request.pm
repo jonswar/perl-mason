@@ -242,7 +242,8 @@ method match_request_path ($request_path) {
 }
 
 method process_output ($outref) {
-                                            # No-op by default
+
+    # No-op by default
 }
 
 method run () {
