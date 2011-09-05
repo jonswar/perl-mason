@@ -878,8 +878,9 @@ This class has no public API at this time.
 =head1 MODIFIABLE METHODS
 
 These methods are not intended to be called externally, but may be useful to
-modify with method modifiers in plugins and subclasses. We will attempt to keep
-their APIs stable.
+modify with method modifiers in L<plugins|Mason::Manual::Plugins> and
+L<subclasses|<Mason::Manual::Subclasses>. Their APIs will be kept as stable as
+possible.
 
 =over
 
