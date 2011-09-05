@@ -1,6 +1,7 @@
 package Mason;
 use Mason::Interp;
 use Mason::PluginManager;
+use Mason::Util qw(can_load uniq);
 use strict;
 use warnings;
 
@@ -9,8 +10,8 @@ sub new {
 
     # Extract plugins and base_interp_class
     #
-    my $plugin_specs      = delete( $params{plugins} )           || [];
-    my $base_interp_class = delete( $params{base_interp_class} ) || 'Mason::Interp';
+    my $plugin_specs = delete( $params{plugins} ) || [];
+    my $base_interp_class = $class->determine_base_interp_class;
 
     # Process plugins and determine real interp_class
     #
@@ -20,7 +21,18 @@ sub new {
 
     # Create and return interp
     #
+    die "cannot pass mason_root_class directly" if exists( $params{mason_root_class} );
     return $interp_class->new( mason_root_class => $class, plugins => \@plugins, %params );
+}
+
+sub determine_base_interp_class {
+    my ($class) = @_;
+
+    my @candidates =
+      map { join( '::', $_, 'Interp' ) } ( uniq( $class, 'Mason' ) );
+    my ($base_class) = grep { can_load($_) } @candidates
+      or die sprintf( "cannot load %s for interp", join( ', ', @candidates ) );
+    return $base_class;
 }
 
 1;
