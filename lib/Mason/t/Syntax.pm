@@ -186,8 +186,9 @@ sub test_dollar_dot : Tests {
     shift->test_comp(
         src => '
 <%class>
-has ' foo ' => (default => 3)
-has ' bar ' => (default => 4)
+has "bar" => (default => 4);
+has "foo" => (default => 3);
+
 </%class>
 
 <% $self->show %>

@@ -12,7 +12,7 @@ Helper: <% $.foo %>
     $self->test_comp(
         src => '
 <%class>
-has ' name ' => ( default => "Joe" );
+has "name" => ( default => "Joe" );
 
 </%class>
 
