@@ -193,7 +193,7 @@ as the C<plugins> parameter to C<Mason->new>.
 
 =head1 ACKNOWLEDGEMENTS
 
-Thanks to Ricardo SIGNES <rjbs@cpan.org> for L<Dist::Zilla|Dist::Zilla> and
+Thanks to Ricardo Signes <rjbs@cpan.org> for L<Dist::Zilla|Dist::Zilla> and
 L<Pod::Weaver|Pod::Weaver>, which got me thinking in plugins and lent the
 plugin and bundle name syntax.
 
