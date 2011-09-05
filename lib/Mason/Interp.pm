@@ -10,7 +10,7 @@ use Mason::Request;
 use Mason::Result;
 use Mason::Types;
 use Mason::Util
-  qw(catdir catfile combine_similar_paths find_wanted first_index is_absolute json_decode mason_canon_path read_file taint_is_on touch_file uniq write_file);
+  qw(can_load catdir catfile combine_similar_paths find_wanted first_index is_absolute json_decode mason_canon_path read_file taint_is_on touch_file uniq write_file);
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
@@ -724,14 +724,13 @@ sub _define_class_override_methods {
     # e.g.
     # $method_name        = component_moose_class
     # $base_method_name   = base_component_moose_class
+    # $name               = Component::Moose
     # $default_base_class = Mason::Component::Moose
     #
     while ( my ( $method_name, $name ) = each(%class_overrides) ) {
-        my $base_method_name   = "base_$method_name";
-        my $default_base_class = "Mason::$name";
-        Class::MOP::load_class($default_base_class);
+        my $base_method_name = "base_$method_name";
         has $method_name      => ( init_arg => undef, lazy_build => 1 );
-        has $base_method_name => ( isa      => 'Str', default    => $default_base_class );
+        has $base_method_name => ( isa      => 'Str', lazy_build => 1 );
         __PACKAGE__->meta->add_method(
             "_build_$method_name" => sub {
                 my $self       = shift;
@@ -739,6 +738,17 @@ sub _define_class_override_methods {
                 Class::MOP::load_class($base_class);
                 return Mason::PluginManager->apply_plugins_to_class( $base_class, $name,
                     $self->plugins );
+            }
+        );
+        __PACKAGE__->meta->add_method(
+            "_build_$base_method_name" => sub {
+                my $self = shift;
+                my @candidates =
+                  map { join( '::', $_, $name ) } ( uniq( $self->mason_root_class, 'Mason' ) );
+                my ($base_class) = grep { can_load($_) } @candidates
+                  or die
+                  sprintf( "cannot load %s for %s", join( ', ', @candidates ), $base_method_name );
+                return $base_class;
             }
         );
     }

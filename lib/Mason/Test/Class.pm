@@ -53,8 +53,10 @@ method setup_interp () {
 method create_interp () {
     my (%params) = @_;
     $params{plugins} = $default_plugins if @$default_plugins;
+    my $mason_root_class = delete( $params{mason_root_class} ) || 'Mason';
+    Class::MOP::load_class($mason_root_class);
     rmtree( $self->data_dir );
-    return Mason->new(
+    return $mason_root_class->new(
         comp_root => $self->comp_root,
         data_dir  => $self->data_dir,
         %params,

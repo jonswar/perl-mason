@@ -26,6 +26,36 @@ sub test_notify_plugin : Tests {
     $like->(qr/starting compilation parse - \/test_plugin.mc/);
 }
 
+# Call Mason::Test::RootClass->new, then make base classes like
+# Mason::Test::RootClass::Interp are used automatically
+#
+sub test_notify_root_class : Tests {
+    my $self = shift;
+    my $mrc  = 'Mason::Test::RootClass';
+    $self->setup_interp( mason_root_class => $mrc );
+    is( $self->interp->mason_root_class,       $mrc,                  "mason_root_class" );
+    is( $self->interp->base_compilation_class, "${mrc}::Compilation", "base_compilation_class" );
+    is( $self->interp->base_component_class,   "${mrc}::Component",   "base_component_class" );
+    is( $self->interp->base_request_class,     "${mrc}::Request",     "base_request_class" );
+    is( $self->interp->base_result_class,      "Mason::Result",       "base_result_class" );
+    isa_ok( $self->interp, "${mrc}::Interp", "base_interp_class" );
+
+    $self->add_comp( path => '/test_plugin_support.mi', src => 'hi' );
+    my $output = capture_merged {
+        $self->test_comp(
+            path   => '/test_plugin.mc',
+            src    => '<& test_plugin_support.mi &>',
+            expect => 'hi'
+        );
+    };
+
+    my $like = sub { my $regex = shift; like( $output, $regex, $regex ) };
+    $like->(qr/starting interp run/);
+    $like->(qr/starting request run - \/test_plugin/);
+    $like->(qr/starting request comp - test_plugin_support.mi/);
+    $like->(qr/starting compilation parse - \/test_plugin.mc/);
+}
+
 sub test_strict_plugin : Tests {
     my $self = shift;
 
