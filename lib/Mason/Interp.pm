@@ -21,7 +21,7 @@ my $max_depth   = 16;
 
 # Passed attributes
 #
-has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] }, trigger => sub { shift->allowed_globals_hash } );
+has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] }, trigger => sub { shift->_validate_allow_globals } );
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'autoextend_request_path'  => ( isa => 'Bool', default => 1 );
 has 'comp_root'                => ( required => 1, isa => 'Mason::Types::CompRoot', coerce => 1 );
@@ -381,7 +381,11 @@ method set_global () {
 
 method DEMOLISH () {
     return if in_global_destruction;
-    $self->flush_code_cache();
+
+    # We have to check for code_cache slot directly, in case the object gets
+    # destroyed before it has been fully formed (e.g. missing required attr).
+    #
+    $self->flush_code_cache() if defined( $self->{code_cache} );
 }
 
 method _compile ( $source_file, $path ) {
@@ -692,6 +696,13 @@ method _top_level_not_found ($path, $tried_paths) {
             : "component root '" . $self->comp_root->[0] . "'"
         )
     );
+}
+
+method _validate_allow_globals () {
+
+    # Will build allowed_globals_hash and also validate the param
+    #
+    $self->allowed_globals_hash;
 }
 
 #
