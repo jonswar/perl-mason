@@ -11,7 +11,8 @@ sub new {
     # Extract plugins and base_interp_class
     #
     my $plugin_specs = delete( $params{plugins} ) || [];
-    my $base_interp_class = $class->determine_base_interp_class;
+    my $base_interp_class = delete( $params{base_interp_class} )
+      || $class->default_base_interp_class;
 
     # Process plugins and determine real interp_class
     #
@@ -25,7 +26,7 @@ sub new {
     return $interp_class->new( mason_root_class => $class, plugins => \@plugins, %params );
 }
 
-sub determine_base_interp_class {
+sub default_base_interp_class {
     my ($class) = @_;
 
     my @candidates =
