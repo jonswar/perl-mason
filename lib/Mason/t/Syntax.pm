@@ -73,7 +73,7 @@ EOF
     );
 }
 
-# DEPRECATED
+# Deprecated syntax
 #
 sub test_double_percent : Tests {
     shift->test_comp(
@@ -107,6 +107,8 @@ sub test_pure_perl : Tests {
     );
 }
 
+# Deprecated syntax
+#
 sub test_args : Tests {
     my $self = shift;
     $self->add_comp(
@@ -164,6 +166,8 @@ hi<%
     );
 }
 
+# Deprecated syntax
+#
 sub test_shared : Tests {
     shift->test_parse(
         src => '

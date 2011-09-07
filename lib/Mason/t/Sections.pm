@@ -142,13 +142,11 @@ hi
 <%method foo></%method>
 <%filter bar></%filter>
 <%override allow_path_info></%override>
-<%args></%args>
 <%class></%class>
 <%doc></%doc>
 <%flags></%flags>
 <%init></%init>
 <%perl></%perl>
-<%shared></%shared>
 <%text></%text>
 bye
 ',
