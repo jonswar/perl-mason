@@ -11,7 +11,7 @@ Revision history for Mason
 
 * Improvements
   - Allow applications to specify Mason subclasses by naming convention.
-  - Document subclasses in Mason::Manual::Subclassing.
+  - Document use of Mason subclasses in Mason::Manual::Subclasses.
 
 * Fixes
   - Respect Mason::CodeCache plugins (bokutin)
