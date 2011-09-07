@@ -167,29 +167,29 @@ looks like this:
             '+My::PluginBundle::E',
             );
     }
-
+    
     1;
-
+    
     __END__
-
+    
     =pod
-
+    
     =head1 NAME
-
+    
     Mason::PluginBundle::MyBundle - My plugin bundle
-
+    
     =head1 INCLUDED PLUGINS
-
+    
     =over
-
+    
     =item A
     =item B
     =item +My::Plugin::C
     =item @D
     =item +My::PluginBundle::E
-
+    
     =back
-
+    
     ....
 
 The C<requires_plugins> method returns a list of entries, with the same syntax
