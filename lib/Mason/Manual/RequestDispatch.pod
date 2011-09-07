@@ -13,50 +13,50 @@ Given the request path
 Mason searches for the following components in order, setting $m->path_info as
 noted.
 
-    /news/sports/hockey.{pm,mc}
-    /news/sports/hockey/index.{pm,mc}
-    /news/sports/hockey/dhandler.{pm,mc}
-    /news/sports/dhandler.{pm,mc}  # $m->path_info = hockey
-    /news/sports.{pm,mc}           # $m->path_info = hockey (but see next section)
-    /news/dhandler.{pm,mc}         # $m->path_info = sports/hockey
-    /news.{pm,mc}                  # $m->path_info = sports/hockey (but see next section)
-    /dhandler.{pm,mc}              # $m->path_info = news/sports/hockey
+    /news/sports/hockey.{mp,mc}
+    /news/sports/hockey/index.{mp,mc}
+    /news/sports/hockey/dhandler.{mp,mc}
+    /news/sports/dhandler.{mp,mc}  # $m->path_info = hockey
+    /news/sports.{mp,mc}           # $m->path_info = hockey (but see next section)
+    /news/dhandler.{mp,mc}         # $m->path_info = sports/hockey
+    /news.{mp,mc}                  # $m->path_info = sports/hockey (but see next section)
+    /dhandler.{mp,mc}              # $m->path_info = news/sports/hockey
 
-where C<< {.pm,.mc} >> means either C<.pm> (indicating a I<pure-perl>
-component) or C<.mc> (indicadting a I<top-level> component).
+where C<< .{mp,mc} >> means either C<.mp> (indicating a I<pure-perl>
+component). or C<.mc> (indicating a I<top-level> component).
 
 The following sections describe these elements in more detail.
 
 =head2 Autoextended path
 
-The request path is suffixed with ".pm" and ".mc" to translate it to a
+The request path is suffixed with ".mp" and ".mc" to translate it to a
 component path.
 
-    /news/sports/hockey.{pm,mc}
+    /news/sports/hockey.{mp,mc}
 
 =head2 Index
 
 An index matches its exact directory, nothing underneath.
 
-    /news/sports/hockey/index.{pm,mc}
+    /news/sports/hockey/index.{mp,mc}
 
 =head2 Dhandlers
 
 A dhandler matches its directory as well as anything underneath, setting C<<
 $m->path_info >> to the remainder.
 
-    /news/sports/hockey/dhandler.{pm,mc}
-    /news/sports/dhandler.{pm,mc}  # $m->path_info = hockey
-    /news/dhandler.{pm,mc}         # $m->path_info = sports/hockey
-    /dhandler.{pm,mc}              # $m->path_info = news/sports/hockey
+    /news/sports/hockey/dhandler.{mp,mc}
+    /news/sports/dhandler.{mp,mc}  # $m->path_info = hockey
+    /news/dhandler.{mp,mc}         # $m->path_info = sports/hockey
+    /dhandler.{mp,mc}              # $m->path_info = news/sports/hockey
 
 =head2 Partial paths
 
 A component can match an initial part of the URL, setting C<< $m->path_info >>
 to the remainder:
 
-    /news/sports.{pm,mc}           # $m->path_info = hockey
-    /news.{pm,mc}                  # $m->path_info = sports/hockey
+    /news/sports.{mp,mc}           # $m->path_info = hockey
+    /news.{mp,mc}                  # $m->path_info = sports/hockey
 
 Since this isn't always desirable behavior, it must be explicitly enabled for
 the component. Mason will call method C<allow_path_info> on the component
