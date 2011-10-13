@@ -279,4 +279,31 @@ hello world!
     );
 }
 
+sub test_filter_comment : Tests {
+    my $self = shift;
+    $self->test_comp(
+        src => '
+<%class>
+method LESSp () { sub { uc(shift) } }
+</%class>
+% $.LESSp {{
+#header {
+    text-align: left;
+}
+% }}
+#footer {
+    text-align: right;
+}
+',
+        expect => '
+#HEADER {
+    TEXT-ALIGN: LEFT;
+}
+#footer {
+    text-align: right;
+}
+',
+    );
+}
+
 1;
