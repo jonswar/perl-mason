@@ -49,7 +49,7 @@ with the following:
 
     Dear <% $.name %>,
 
-        We are pleased to inform you that you have won $<% sprintf(".2f", $.amount) %>!
+        We are pleased to inform you that you have won $<% sprintf("%.2f", $.amount) %>!
 
     Sincerely,
     The Lottery Commission
