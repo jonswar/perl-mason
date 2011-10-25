@@ -34,6 +34,7 @@ has 'no_source_line_numbers'   => ( default => 0 );
 has 'object_file_extension'    => ( default => '.mobj' );
 has 'plugins'                  => ( default => sub { [] } );
 has 'pure_perl_extensions'     => ( default => sub { ['.mp'] } );
+has 'role_extensions'          => ( default => sub { ['.mr'] } );
 has 'static_source'            => ();
 has 'static_source_touch_file' => ();
 has 'top_level_extensions'     => ( default => sub { ['.mc', '.mp'] } );
@@ -48,6 +49,7 @@ has 'id'                    => ( init_arg => undef, default => sub { $next_id++ 
 has 'match_request_path'    => ( init_arg => undef, lazy_build => 1 );
 has 'pure_perl_regex'       => ( lazy_build => 1 );
 has 'request_params'        => ( init_arg => undef );
+has 'role_regex'            => ( lazy_build => 1 );
 has 'top_level_regex'       => ( lazy_build => 1 );
 
 # Class overrides
@@ -117,6 +119,17 @@ method _build_dhandler_names () {
 
 method _build_index_names () {
     return [ map { "index" . $_ } @{ $self->top_level_extensions } ];
+}
+
+method _build_role_regex () {
+    my $extensions = $self->role_extensions;
+    if ( !@$extensions ) {
+        return qr/(?!)/;                  # matches nothing
+    }
+    else {
+        my $regex = join( '|', @$extensions ) . '$';
+        return qr/$regex/;
+    }
 }
 
 method _build_pure_perl_regex () {
@@ -421,19 +434,29 @@ method is_pure_perl_comp_path ($path) {
     return ( $path =~ $self->pure_perl_regex ) ? 1 : 0;
 }
 
+method is_role_comp_path ($path) {
+    return ( $path =~ $self->role_regex ) ? 1 : 0;
+}
+
 method is_top_level_comp_path ($path) {
     return ( $path =~ $self->top_level_regex ) ? 1 : 0;
 }
 
 method _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_path ) {
     my $flags = $self->_extract_flags_from_object_file($object_file);
-    my $parent_compc =
-         $self->_determine_parent_compc( $path, $flags )
-      || ( $default_parent_path eq '/' && $self->component_class )
-      || $self->load($default_parent_path);
 
-    my $code = sprintf( 'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
-        $compc, $parent_compc, $object_file );
+    my ($code);
+    if ( $self->is_role_comp_path($path) ) {
+
+    }
+    else {
+        my $parent_compc =
+             $self->_determine_parent_compc( $path, $flags )
+          || ( $default_parent_path eq '/' && $self->component_class )
+          || $self->load($default_parent_path);
+        $code = sprintf( 'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
+            $compc, $parent_compc, $object_file );
+    }
     ($code) = ( $code =~ /^(.*)/s ) if taint_is_on();
     eval($code);
     die $@ if $@;
@@ -911,6 +934,14 @@ L<Pure Perl Components|Mason::Manual::Syntax/Pure_Perl_Components>). Default is
 C<< ['.mp'] >>. If an empty list is specified, then no components will be
 considered pure perl.
 
+=for html <a name="role_extensions" />
+
+=item role_extensions
+
+A listref of file extensions of components to be considered as roles. Default
+is C<< ['.mr'] >>. If an empty list is specified, then no components will be
+considered as roles.
+
 =for html <a name="static_source" />
 
 =item static_source
@@ -1124,6 +1155,13 @@ possible.
 
 Determines whether I<$path> is a pure Perl component - by default, uses
 L<pure_perl_extensions|/pure_perl_extensions>.
+
+=for html <a name="is_role_comp_path" />
+
+=item is_role_comp_path ($path)
+
+Determines whether I<$path> is a role component - by default, uses
+L<role_extensions|/role_extensions>.
 
 =for html <a name="is_top_level_comp_path" />
 

@@ -40,6 +40,7 @@ method BUILD () {
     $self->{methods}        = { main => $self->_new_method_hash( name => 'main' ) };
     $self->{current_method} = $self->{methods}->{main};
     $self->{is_pure_perl}   = $self->interp->is_pure_perl_comp_path( $self->path );
+    $self->{is_role}        = $self->interp->is_role_comp_path( $self->path );
 }
 
 method _build_bad_attribute_hash () {
@@ -141,7 +142,7 @@ method unnamed_block_types () {
 }
 
 method valid_flags () {
-    return [qw(extends)];
+    return [qw(extends with)];
 }
 
 #
@@ -941,3 +942,4 @@ to this list if you want to create your own unnamed blocks.
 An arrayref of valid flags: contains only C<extends> at time of writing. Add to
 this list if you want to create your own flags.
 
+=back
