@@ -451,7 +451,7 @@ method _match_apply_filter () {
     my $pos = pos( $self->{source} );
 
     # Match % ... {{ at beginning of line
-    if ( $self->{source} =~ / \G (?<=^) % ([^\n]*) \{\{ \s* (?:\#.*)? \n /gcmx ) {
+    if ( $self->{source} =~ / \G (?<=^) % ([^\n]*) \{\{ [^\S\n]* (?:\#.*)? \n /gcmx ) {
         my ($filter_expr) = ($1);
         $self->_handle_apply_filter($filter_expr);
         return 1;
@@ -481,7 +481,7 @@ method _match_apply_filter () {
 }
 
 method _match_apply_filter_end () {
-    if ( $self->{source} =~ / \G (?<=^) % [ \t]+ \}\} \s* (?:\#.*)? (?:\n\n?|\z) /gmcx ) {
+    if ( $self->{source} =~ / \G (?<=^) % [ \t]+ \}\} [^\S\n]* (?:\#.*)? (?:\n\n?|\z) /gmcx ) {
         if ( $self->{current_method}->{type} eq 'apply_filter' ) {
             $self->{end_parse} = pos( $self->{source} );
             return 1;
