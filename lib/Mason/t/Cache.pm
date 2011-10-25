@@ -21,7 +21,7 @@ sub test_cache_method : Tests {
         path => '/cache.mc',
         src  => '
 <%class>
-has ' count ' => ( default => 0 );
+has "count" => ( default => 0 );
 
 </%class>
 
