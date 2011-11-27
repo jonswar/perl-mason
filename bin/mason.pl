@@ -12,18 +12,18 @@ __END__
 
 =head1 NAME
 
-mason - evaluate a mason template and output the result
+mason.pl - evaluate a mason template and output the result
 
 =head1 SYNOPSIS
 
    # Evaluate template from STDIN
-   mason [mason options] [--args json-string]
+   mason.pl [mason options] [--args json-string]
 
    # Evaluate template in string
-   mason [mason options] [--args json-string] -e "string"
+   mason.pl [mason options] [--args json-string] -e "string"
 
    # Evaluate template in file
-   mason [mason options] [--args json-string] template-file
+   mason.pl [mason options] [--args json-string] template-file
 
 =head1 DESCRIPTION
 
