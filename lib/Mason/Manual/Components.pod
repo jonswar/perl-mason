@@ -77,16 +77,10 @@ that other components can easily interact with and extend. Some applications
 include: controller logic, web form handlers, and L<autobase
 components|Autobase components>.
 
-=item .mr - role component
-
-A component that compiles to a Moose role, rather than a Moose class.  This
-component has no C<main> method and cannot be called or instantiated like other
-components; instead, see 'with'.
-
 =back
 
-These extensions are configurable via L<Mason::Interp/pure_perl_extensions>,
-L<Mason::Interp/role_extensions> and L<Mason::Interp/top_level_extensions>.
+These extensions are configurable via L<Mason::Interp/pure_perl_extensions> and
+L<Mason::Interp/top_level_extensions>.
 
 =head1 CALLING COMPONENTS
 
