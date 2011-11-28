@@ -5,7 +5,7 @@ Revision history for Mason
 2.15  Nov 27, 2011
 
 ** Incompatible changes
-  - Rename bin/mason to bin/mason.pl, to avoid conflict with the Mason firewall tool.
+  - Rename bin/mason to bin/mason.pl, to avoid conflict with the Mason firewall tool - RT #72497 (Florian)
 
 * Fixes
   - Fix parser bug with filters and comment characters (Tomohiro Hosaka)
