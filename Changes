@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.15  Nov 21, 2011
+2.15  Nov 27, 2011
 
 ** Incompatible changes
   - Rename bin/mason to bin/mason.pl, to avoid conflict with the Mason firewall tool.
