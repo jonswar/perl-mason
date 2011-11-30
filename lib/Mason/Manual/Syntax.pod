@@ -236,7 +236,7 @@ of one or more name/value pairs.
 
 The path may be a literal string (quotes optional) or a Perl expression that
 evaluates to a string. To eliminate the need for quotes in most cases, Mason
-employs some magic parsing: If the first character is one of C<[\w/_.]>,
+employs some magic parsing: If the first character is one of C<[\w/\.]>,
 comp_path is assumed to be a literal string running up to the first comma or
 &>. Otherwise, comp_path is evaluated as an expression.
 
