@@ -323,7 +323,7 @@ use them to comment out code!
 
 =head1 WHITESPACE AND NEWLINES
 
-=head1 Newlines between blocks
+=head2 Newlines between blocks
 
 Mason will ignore a single newline between blocks, so that you can space them
 nicely.  Additional newlines beyond that will be displayed.
