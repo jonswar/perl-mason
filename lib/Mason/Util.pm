@@ -2,6 +2,7 @@ package Mason::Util;
 use Carp;
 use Class::MOP;
 use Class::Unload;
+use Data::Dumper;
 use Fcntl qw( :DEFAULT :seek );
 use File::Find;
 use File::Spec::Functions ();
