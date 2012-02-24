@@ -18,6 +18,7 @@
 ^inc/\.author
 ^lib/Dist
 ^lib/Mason/Plugin/make
+^lib/Mason/Tidy.pm
 ^lib/Pod
 ^localcpan
 ^misc
