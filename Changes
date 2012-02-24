@@ -4,6 +4,9 @@ Revision history for Mason
 
 2.16  Nov 27, 2011
 
+* Documentation
+  - Add Mason::Manual::FAQ, and various documentation improvements/fixes
+
 2.15  Nov 27, 2011
 
 ** Incompatible changes
