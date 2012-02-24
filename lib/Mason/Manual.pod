@@ -16,6 +16,10 @@ script.
 
 Provides a tour of Mason by showing how to build a micro-blog application.
 
+=item L<Mason::Manual::FAQ>
+
+Frequently asked questions.
+
 =item L<Mason::Manual::Admin>
 
 Information for Mason administrators, including how to set up Mason in various

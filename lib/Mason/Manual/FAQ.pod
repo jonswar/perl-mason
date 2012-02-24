@@ -1,0 +1,181 @@
+
+=pod
+
+=head1 NAME
+
+Mason::Manual::FAQ - Frequently asked questions about Mason
+
+=head1 FREQUENTLY ASKED QUESTIONS
+
+=head2 Components
+
+=head3 Can I create global variable(s) that can be seen from all components?
+
+Mason components each run in their own packages, so if you set a regular global
+in one you won't be able to see it in the others.
+
+But you can use L<allow_globals|Mason::Interp/allow_globals> and
+L<set_global|Mason::Interp/set_global> to create globals accessible from all
+components.
+
+=head3 Why does my output have extra newlines/whitespace and how can I get rid of it?
+
+See L<Whitespace And Newlines|Mason::Manual::Syntax/WHITESPACE_AND_NEWLINES> in
+the syntax manual. To suppress extra newlines you can use a backslash at the
+end of each line, or you can use the
+L<NoBlankLines|Mason::Filters::Standard/NoBlankLines> filter.
+
+To emit binary data without the risk of inserting extra whitespace, surround
+your code with L<$m-E<gt>clear_buffer|Mason::Request/clear_buffer> and
+L<$m-E<gt>abort|Mason::Request/abort>:
+
+    <%init>
+    $m->clear_buffer;
+    open(my $fh, '<', 'binary-file') or die $!;
+    my $buffer;
+    while (read $fh, $buffer, 8192) {
+        $m->print($buffer);
+    }
+    $m->abort;
+    </%init>
+
+=head3 I'm trying to generate an image or other binary file, but it seems to be getting corrupted.
+
+This is almost always caused by unwanted whitespace or other output at the
+beginning or end of your binary data. Use
+L<$m-E<gt>clear_buffer|Mason::Request/clear_buffer> and
+L<$m-E<gt>abort|Mason::Request/abort> as in previous answer.
+
+=head3 How do I put comments in components?
+
+See L<Comments|Mason::Manual::Syntax/COMMENTS> section in the syntax manual for
+reference.
+
+=over
+
+=item *
+
+Put general comments in the C<< <%doc> >> section.
+
+=item *
+
+Within code blocks (C<< <%class> >>, C<< <%init> >>, C<< <%perl> >>, etc.), use
+standard Perl comments ('#').
+
+=item *
+
+Use C<< <% # %> >> for single or multi-line comments anywhere outside of Perl
+sections.
+
+=item *
+
+If you are producing HTML, you can use standard HTML comments delimited by <!--
+-->. The difference is that these comments will appear in the final output.
+
+=back
+
+=head3 What's a good way to temporarily comment out code in a component?
+
+For HTML, you might be tempted to surround the section with C<< <!-- --> >>.
+But be careful! Any code inside the section will still execute. Here's a
+example of commenting out a call to an ad server:
+
+    <!-- temporarily comment out
+    <& /shared/fetch_ad.mi &>
+    -->
+
+The ad will still be fetched and counted, but not displayed!
+
+A better way to block out a section is C<if (0)>:
+
+    % if (0) {
+      ...
+    % }
+
+Code blocked out in this way will neither be executed nor displayed, and
+multiple C<if (0)> blocks can be nested inside each other (unlike HTML
+comments).
+
+Another way to block out code is with a C<< <%doc> >> tag, although this not
+cannot be nested.
+
+=head3 How can I capture the output of a component (and modify it, etc.) instead of having it automatically output?
+
+Use L<$m-E<gt>scomp|Mason::Request/scomp>.
+
+=head3 How can I capture the output from arbitrary code that calls components, etc.?
+
+Use L<$m-E<gt>capture|Mason::Request/capture>.
+
+=head3 How can I get a list of components matching a path pattern?
+
+Use L<$m-E<gt>glob_paths|Mason::Interp/glob_paths>, e.g.
+
+    my @paths = $m->glob_paths('/some/comp/path/*');
+
+This will work even with multiple component roots; you'll get a combined list
+of all matching component paths in all component roots.
+
+=head3 How can I access $m (the request object) from outside a component, e.g. inside a regular class?
+
+Use L<Mason::Request-E<gt>current_request|Mason::Request/current_request>:
+
+    package Foo;
+
+    sub bar {
+        my $m = Mason::Request->current_request;
+    }
+
+=head3 When using multiple component roots, is there a way to explicitly call a component in a specific root?
+
+Multiple component roots were designed to work just like Perl's C<@INC>. A
+given component path matches exactly one file, the first file found in an
+ordered search through the roots. There is no way to explicitly ask for a file
+in a specific root.
+
+=head2 HTTP and HTML
+
+=head3 How do I use Mason with mod_perl / FastCGI / (insert backend here)?
+
+With L<Mason::Plugin::PSGIHandler|Mason::Plugin::PSGIHandler>, Mason becomes a
+standard PSGI application, so it can be used with any of the L<Plack|Plack>
+handlers. See L<Plack::Handler::Apache1>, L<Plack::Handler::Apache2>,
+L<Plack::Handler::FCGI>, and L<Plack::Handler::CGI>.
+
+=head3 Why is Mason so slow with standard CGI?
+
+Under standard CGI you must load all modules and initialize your environment
+with every request. Mason's startup cost (mostly due to L<Moose|Moose>) will
+make this particularly sub-optimal. Ask yourself whether you absolutely have to
+use CGI, and if not, switch to a persistent solution like mod_perl or Fast CGI
+or L<Starman|Starman>.
+
+=head3 How do I access GET or POST arguments?
+
+GET and POST arguments are automatically parsed and passed to the page
+component. So you can get at GET/POST data by declaring the appropriate
+attributes and/or consulting C<< $.args >>. See L<Run
+parameters|Mason::Plugin::PSGIHandler/Run_parameters> in the PSGIHandler
+documentation.
+
+=head3 I'm passing multiple values for a key in a query string, why is only one value showing up?
+
+You need to declare the corresponding attribute as an ArrayRef. See L<Run
+parameters|Mason::Plugin::PSGIHandler/Run_parameters> in the PSGIHandler
+documentation.
+
+=head3 What happens if I include query args in a POST?
+
+Query string and POST arguments are combined (via Plack::Request's
+L<parameters|Plack::Request/parameters>).
+
+=head3 How do I do an external redirect?
+
+Use L<$m-E<gt>redirect|Mason::Plugin::PSGIHandler/redirect>, which is added by
+PSGIHandler.
+
+=head3 How do I return a not found/404 result?
+
+Use L<$m-E<gt>not_found|Mason::Plugin::PSGIHandler/not_found>, which is added
+by PSGIHandler.
+

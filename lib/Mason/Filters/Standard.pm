@@ -94,7 +94,20 @@ Content|http://search.cpan.org/perldoc?HTML::Mason::Devel#Component_Calls_with_C
 
 =item NoBlankLines
 
-Remove lines with only whitespace from content.
+Remove lines with only whitespace from content. This
+
+    % $.NoBlankLines {{
+
+    hello
+
+
+    world    
+    % }}
+
+yields
+
+    hello
+    world
 
 =item Repeat ($count)
 

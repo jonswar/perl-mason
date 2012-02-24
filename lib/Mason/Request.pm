@@ -730,6 +730,8 @@ Returns the original path passed to the request, e.g. in C<< $interp->run >>.
 Like L<comp|Mason::Request/item_comp>, but returns the component output as a
 string instead of printing it. (Think sprintf versus printf.)
 
+See also L<capture|/capture>.
+
 =for html <a name="visit" />
 
 =item visit ([request params], path, args...)
