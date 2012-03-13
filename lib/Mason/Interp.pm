@@ -432,7 +432,7 @@ method _load_class_from_object_file ( $compc, $object_file, $path, $default_pare
       || ( $default_parent_path eq '/' && $self->component_class )
       || $self->load($default_parent_path);
 
-    my $code = sprintf( 'package %s; use Moose; extends "%s"; do("%s"); die $@ if $@',
+    my $code = sprintf( 'package %s; use Moose; extends \'%s\'; do(\'%s\'); die $@ if $@',
         $compc, $parent_compc, $object_file );
     ($code) = ( $code =~ /^(.*)/s ) if taint_is_on();
     eval($code);
