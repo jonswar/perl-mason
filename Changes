@@ -5,6 +5,7 @@ Revision history for Mason
 2.17  Feb 24, 2012
 
 * Fixes
+  - Use make_immutable on generated Mason subclasses (Tomohiro Hosaka)
   - Properly quote paths when generating component class (Peter Franke)
 
 2.16  Feb 24, 2012
