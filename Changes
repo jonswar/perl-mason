@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.17  Feb 24, 2012
+2.17  Mar 27, 2012
 
 * Fixes
   - Use make_immutable on generated Mason subclasses (Tomohiro Hosaka)
