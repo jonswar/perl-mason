@@ -79,6 +79,8 @@ method apply_plugins_to_class ($class: $base_subclass, $name, $plugins) {
         $base_subclass, $name, $plugins, \@roles, $final_subclass )
       if $log->is_debug;
 
+    $final_subclass->meta->make_immutable if $final_subclass->can('meta');
+
     $apply_plugins_cache{$key} = $final_subclass;
     return $final_subclass;
 }
