@@ -753,7 +753,7 @@ See also L<go|/go>.
 
 These methods are not intended to be called externally, but may be useful to
 modify with method modifiers in L<plugins|Mason::Manual::Plugins> and
-L<subclasses|<Mason::Manual::Subclasses>. Their APIs will be kept as stable as
+L<subclasses|<Mason::Manual::Subclassing>. Their APIs will be kept as stable as
 possible.
 
 =for html <a name="cleanup_request" />

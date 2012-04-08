@@ -1,7 +1,7 @@
 
 =head1 NAME
 
-Mason::Manual::Subclasses - Creating custom subclasses of Mason's classes
+Mason::Manual::Subclassing - Creating custom subclasses of Mason's classes
 
 =head1 DESCRIPTION
 
