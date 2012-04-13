@@ -449,7 +449,7 @@ you call L<visit> or L<go> on the current request.
 
 Inside a component you can access the current request object via the global
 C<$m>.  Outside of a component, you can use the class method
-C<Mason::Request->current_request>.
+C<Mason::Request-E<gt>current_request>.
 
 =head1 COMPONENT PATHS
 
