@@ -4,6 +4,10 @@ Revision history for Mason
 
 2.18  Mar 27, 2012
 
+* Documentation
+  - Add references to Poet, Mason's new companion web framework
+  - Move Admin.pod to Setup.pod
+
 2.17  Mar 27, 2012
 
 * Documentation
