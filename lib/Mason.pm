@@ -65,9 +65,11 @@ Unlike many templating systems, Mason does not attempt to invent an alternate,
 specific to template creation, but underneath it is still clearly and proudly
 recognizable as Perl.
 
-Mason is most often used for generating web pages. It can handle web requests
-directly via PSGI, or act as the view layer for a web framework such as
-Catalyst or Dancer.
+Mason is most often used for generating web pages. It has a companion web
+framework, L<Poet|Poet>, designed to take maximum advantage of its routing and
+content generation features.  It can also be used as the templating layer for
+web frameworks such as L<Catalyst|Catalyst> and L<Dancer|Dancer>, e.g. as a
+drop-in replacement for L<Template::Toolkit|Template::Toolkit>.
 
 All documentation is indexed at L<Mason::Manual>.
 
