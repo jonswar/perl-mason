@@ -445,7 +445,7 @@ for most Mason features not provided by syntactic tags.
 
 A Mason request is created when you call C<< $interp->run >>, or in a web
 environment, for each new web request. A new (sub-)request is also created when
-you call L<visit> or L<go> on the current request.
+you call L<visit|/visit> or L<go|/go> on the current request.
 
 Inside a component you can access the current request object via the global
 C<$m>.  Outside of a component, you can use the class method
@@ -453,9 +453,10 @@ C<Mason::Request-E<gt>current_request>.
 
 =head1 COMPONENT PATHS
 
-The methods L<comp>, L<comp_exists>, L<construct>, L<go>, L<load>, and L<visit>
-take a component path argument. If the path does not begin with a '/', then it
-is made absolute based on the current component path (using L<rel_to_abs>).
+The methods L<comp|/comp>, L<comp_exists|/comp_exists>,
+L<construct|/construct>, L<go|/go>, L<load|/load>, and L<visit|/visit> take a
+component path argument. If the path does not begin with a '/', then it is made
+absolute based on the current component path (using L<rel_to_abs|/rel_to_abs>).
 
 Component paths are like URL paths, and always use a forward slash (/) as the
 separator, regardless of what your operating system uses.
@@ -753,7 +754,7 @@ See also L<go|/go>.
 
 These methods are not intended to be called externally, but may be useful to
 modify with method modifiers in L<plugins|Mason::Manual::Plugins> and
-L<subclasses|<Mason::Manual::Subclassing>. Their APIs will be kept as stable as
+L<subclasses|Mason::Manual::Subclasses>. Their APIs will be kept as stable as
 possible.
 
 =for html <a name="cleanup_request" />

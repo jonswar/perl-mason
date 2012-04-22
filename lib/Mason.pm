@@ -68,8 +68,8 @@ recognizable as Perl.
 Mason is most often used for generating web pages. It has a companion web
 framework, L<Poet|Poet>, designed to take maximum advantage of its routing and
 content generation features.  It can also be used as the templating layer for
-web frameworks such as L<Catalyst|Catalyst> and L<Dancer|Dancer>, e.g. as a
-drop-in replacement for L<Template::Toolkit|Template::Toolkit>.
+web frameworks such as L<Catalyst|Catalyst::View::Mason2> and
+L<Dancer|Dancer::Template::Mason2>.
 
 All documentation is indexed at L<Mason::Manual>.
 
@@ -78,7 +78,7 @@ L<HTML::Mason>.
 
 =head1 SUPPORT
 
-The mailing list is L<mason-users@lists.sourceforge.net>. You must be
+The mailing list is C<mason-users@lists.sourceforge.net>. You must be
 subscribed to send a message. To subscribe, visit
 L<https://lists.sourceforge.net/lists/listinfo/mason-users>.
 

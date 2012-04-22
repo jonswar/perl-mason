@@ -73,5 +73,5 @@ e.g.
          base_request_class => 'Some::Other::Mason::Request'
     );
 
-See L<Interp/CUSTOM MASON CLASSES> for a complete list.
+See L<Mason::Interp/CUSTOM MASON CLASSES> for a complete list.
 

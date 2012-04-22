@@ -75,7 +75,7 @@ need to (and are not allowed to) include Mason tags in this component, and it
 will not produce any output if called. This is just a way of defining a class
 that other components can easily interact with and extend. Some applications
 include: controller logic, web form handlers, and L<autobase
-components|Autobase components>.
+components|/Autobase components>.
 
 =back
 
@@ -86,7 +86,7 @@ L<Mason::Interp/top_level_extensions>.
 
 The initial component in a request, called the page component, is called from
 L<run|Mason::Interp/run>, which in turn may be called from a PSGI handler or an
-MVC framework view depending on your setup. See
+web framework view depending on your setup. See
 L<Mason::Manual::RequestDispatch> for more information about how the page
 component is chosen.
 
@@ -124,11 +124,12 @@ Use Moose 'has' syntax to declare attributes within a C<< <%class> >> section:
 
 =head2 Attributes are read-write by default
  
-L<Mason::Component::Moose> imports L<MooseX::HasDefaults::RW> into all
-components, which makes attributes read-write unless stated otherwise. This is
-not considered best practice for general OO programming, but component
-instances are short-lived and not usually accessed outside of their class so we
-feel the convenience is warranted.
+L<Mason::Component::Moose> imports
+L<MooseX::HasDefaults::RW|MooseX::HasDefaults> into all components, which makes
+attributes read-write unless stated otherwise. This is not considered best
+practice for general OO programming, but component instances are short-lived
+and not usually accessed outside of their class so we feel the convenience is
+warranted.
 
 =head2 Accessing attributes
 
@@ -379,8 +380,7 @@ L<Method::Signatures::Simple> and other things into the current package.
 
 Lines 2-4 defines two dynamic globals, C<$m> (the current request) and
 C<$_m_buffer> (the current output buffer). These are aliased so that they can
-be changed for every component from a single place. See also
-L<Mason::Manual::ComponentGlobals>.
+be changed for every component from a single place.
 
 Lines 6-19 create the L<Mason::Component::ClassMeta> object returned from
 L<cmeta|Mason::Component/cmeta>.

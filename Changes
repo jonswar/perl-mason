@@ -7,6 +7,7 @@ Revision history for Mason
 * Documentation
   - Add references to Poet, Mason's new companion web framework
   - Move Admin.pod to Setup.pod
+  - Fix lots of broken links
 
 2.17  Mar 27, 2012
 

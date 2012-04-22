@@ -161,7 +161,7 @@ C<wrap> using C<method> instead of C<augment>:
       <% inner() %>
     </%method>
 
-To do no wrapping at all, call the component class method L<no_wrap>:
+To do no wrapping at all, call the component class method L</no_wrap>:
 
     <%class>
     CLASS->no_wrap;
@@ -213,7 +213,7 @@ L<Mason::Manual::RequestDispatch/Partial Paths|Mason::Manual::RequestDispatch>.
 =item args
 
 Returns the hashref of arguments passed to this component's constructor, e.g.
-the arguments passed in a L<component call|CALLING COMPONENTS>.
+the arguments passed in a L<component call|/CALLING COMPONENTS>.
 
 =for html <a name="cmeta" />
 

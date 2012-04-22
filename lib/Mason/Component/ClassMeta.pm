@@ -73,7 +73,7 @@ a component '/foo/bar', the dir_path is '/foo'.
 =item is_top_level
 
 Whether the component is considered "top level", accessible directly from C<<
-$interp->run >> or a web request. See L<Interp/top_level_extensions>.
+$interp->run >> or a web request. See L<Mason::Interp/top_level_extensions>.
 
 =item name
 

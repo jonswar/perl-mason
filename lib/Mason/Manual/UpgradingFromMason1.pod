@@ -56,9 +56,11 @@ are now in plugins. See L<Mason::Manual::Plugins|Mason::Manual::Plugins>.
 =item *
 
 B<Web integration> in Mason 1 was centered around mod_perl and was part of the
-core. In Mason 2 it is implemented in a few plugins, most notably
-L<PSGIHandler|Mason::Plugin::PSGIHandler>. There is nothing web-specific in the
-Mason core.
+core. In Mason 2 all web integration has been split out into a companion web
+framework, L<Poet>, which in turn uses L<PSGI> to integrate with any server
+backend.  You can also use Mason as the templating layer in popular web
+frameworks such as L<Catalyst> and L<Dancer>.  There is no longer anything
+web-specific in the Mason core.
 
 =item *
 
@@ -67,9 +69,9 @@ B<Subcomponents> have been eliminated, replaced with class methods.
 =item *
 
 B<Error processing/formatting> has been eliminated. Mason now simply throws
-fatal errors to the caller.  In a L<PSGI|Mason::Plugin::PSGIHandler>
-environment, L<Plack::Middleware::StackTrace|Plack::Middleware::StackTrace>
-will catch the error and format it nicely.
+fatal errors to the caller.  In a L<Plack|Plack> environment,
+L<Plack::Middleware::StackTrace|Plack::Middleware::StackTrace> will catch the
+error and format it nicely.
 
 =item *
 

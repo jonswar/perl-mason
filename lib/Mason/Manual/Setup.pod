@@ -19,7 +19,7 @@ set up a Poet/Mason site in great detail.
 Mason can also be used in the popular web frameworks L<Catalyst|Catalyst> and
 L<Dancer|Dancer>, as a drop-in replacement for their default template engines.
 See L<Catalyst::View::Mason2|Catalyst::View::Mason2> and
-L<Dancer::View::Mason2|Dancer::View::Mason2>.
+L<Dancer::Template::Mason2|Dancer::Template::Mason2>.
 
 =head2 Non-web development
 

@@ -900,7 +900,7 @@ See L<Mason::Manual::Plugins>.
 
 =item out_method
 
-Default L<out_method|Request/out_method> passed to each new request.
+Default L<out_method|Mason::Request/out_method> passed to each new request.
 
 =for html <a name="pure_perl_extensions" />
 
@@ -1113,7 +1113,7 @@ See also L<set_global|Mason::Request/set_global>.
 
 These methods are not intended to be called externally, but may be useful to
 modify with method modifiers in L<plugins|Mason::Manual::Plugins> and
-L<subclasses|<Mason::Manual::Subclassing>. Their APIs will be kept as stable as
+L<subclasses|Mason::Manual::Subclasses>. Their APIs will be kept as stable as
 possible.
 
 =for html <a name="is_pure_perl_comp_path" />

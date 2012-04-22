@@ -133,12 +133,11 @@ in a specific root.
 
 =head1 HTTP and HTML
 
-=head2 How do I use Mason with mod_perl / FastCGI / (insert backend here)?
+=head2 How do I use Mason to process web requests?
 
-With L<Mason::Plugin::PSGIHandler|Mason::Plugin::PSGIHandler>, Mason becomes a
-standard PSGI application, so it can be used with any of the L<Plack|Plack>
-handlers. See L<Plack::Handler::Apache1>, L<Plack::Handler::Apache2>,
-L<Plack::Handler::FCGI>, and L<Plack::Handler::CGI>.
+You need to use Mason in conjunction with a web framework. L<Poet> is a web
+framework designed specially for Mason.  L<Catalyst> and L<Dancer> can also use
+Mason for their templating layer. See L<Mason::Manual::Setup>.
 
 =head2 Why is Mason so slow with standard CGI?
 
@@ -147,33 +146,4 @@ with every request. Mason's startup cost (mostly due to L<Moose|Moose>) will
 make this particularly sub-optimal. Ask yourself whether you absolutely have to
 use CGI, and if not, switch to a persistent solution like mod_perl or Fast CGI
 or L<Starman|Starman>.
-
-=head2 How do I access GET or POST arguments?
-
-GET and POST arguments are automatically parsed and passed to the page
-component. So you can get at GET/POST data by declaring the appropriate
-attributes and/or consulting C<< $.args >>. See L<Run
-parameters|Mason::Plugin::PSGIHandler/Run_parameters> in the PSGIHandler
-documentation.
-
-=head2 I'm passing multiple values for a key in a query string, why is only one value showing up?
-
-You need to declare the corresponding attribute as an ArrayRef. See L<Run
-parameters|Mason::Plugin::PSGIHandler/Run_parameters> in the PSGIHandler
-documentation.
-
-=head2 What happens if I include query args in a POST?
-
-Query string and POST arguments are combined (via Plack::Request's
-L<parameters|Plack::Request/parameters>).
-
-=head2 How do I do an external redirect?
-
-Use L<$m-E<gt>redirect|Mason::Plugin::PSGIHandler/redirect>, which is added by
-PSGIHandler.
-
-=head2 How do I return a not found/404 result?
-
-Use L<$m-E<gt>not_found|Mason::Plugin::PSGIHandler/not_found>, which is added
-by PSGIHandler.
 

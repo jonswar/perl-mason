@@ -196,11 +196,10 @@ and returns the output.  Your filter method should return this code ref. e.g.
         }
     }
 
-A I<dynamic filter> is an object of class
-L<Mason::DynamicFilter|Mason::DynamicFilter>. It contains a code ref which
-takes a I<yield block> and returns the output. A yield block is a zero-argument
-code ref that returns a content string. e.g.  this is functionally identical to
-the above:
+A I<dynamic filter> is an object of class C<Mason::DynamicFilter>. It contains
+a code ref which takes a I<yield block> and returns the output. A yield block
+is a zero-argument code ref that returns a content string. e.g.  this is
+functionally identical to the above:
 
     method Rot13 () {
         return Mason::DynamicFilter->new(
