@@ -9,21 +9,11 @@ Mason::Manual - Index of Mason documentation
 
 =item L<Mason::Manual::Intro>
 
-Getting a "hello world" Mason template working on the command-line and from a
-script.
+A quick introduction to get your feet wet.
 
-=item L<Mason::Manual::Tutorial>
+=item L<Mason::Manual::Setup>
 
-Provides a tour of Mason by showing how to build a micro-blog application.
-
-=item L<Mason::Manual::FAQ>
-
-Frequently asked questions.
-
-=item L<Mason::Manual::Admin>
-
-Information for Mason administrators, including how to set up Mason in various
-environments.
+How to set up Mason in a web environment and a non-web environment.
 
 =item L<Mason::Manual::Components>
 
@@ -40,6 +30,10 @@ How request paths get mapped to page components.
 =item L<Mason::Manual::Cookbook>
 
 Recipes for common Mason tasks.
+
+=item L<Mason::Manual::FAQ>
+
+Frequently asked questions.
 
 =item L<Mason::Manual::Filters>
 
