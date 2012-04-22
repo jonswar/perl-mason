@@ -295,8 +295,8 @@ assuming that no components have C<extends> flags,
 
 If C<Base.mp> and C<Base.mc> appear in the same directory, they will both be
 recognized; everything below will inherit from C<Base.mc>, and C<Base.mc> will
-inherit from C<Base.mp>. This might be useful for separating L<Content
-wrapping> from shared method definitions, for example.
+inherit from C<Base.mp>. This might be useful for separating L<content
+wrapping|Mason::Component/wrap> from shared method definitions, for example.
 
 =head1 GENERATED CLASS
 

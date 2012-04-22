@@ -6,8 +6,7 @@ Mason::Manual::Intro - Getting started with Mason
 =head1 DESCRIPTION
 
 A few quick examples to get your feet wet with Mason.  See
-L<Mason::Manual::Tutorial> for a more expansive tour of building a web site
-with Mason.
+L<Mason::Manual::Setup> for how to use Mason to generate web sites.
 
 =head1 EXAMPLE 1
 

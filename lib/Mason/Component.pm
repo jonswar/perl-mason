@@ -110,11 +110,11 @@ throw an error (e.g. permission denied)
 
 =item *
 
-defer to another component via C<< $m->go >>
+take some action and redirect (e.g. if handling a form in a web environment)
 
 =item *
 
-redirect to another URL (if in a web environment)
+defer to another component via C<< $m->go >>
 
 =item *
 
