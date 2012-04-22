@@ -1,0 +1,55 @@
+
+=head1 NAME
+
+Mason::Manual::Setup - Setting up Mason
+
+=head1 SETUP
+
+=head2 Web development
+
+The most common use of Mason is to generate dynamic web content.
+
+L<Poet> is a web framework designed specifically to work with Mason. Given an
+HTTP request, Poet generates a corresponding Mason request, and uses the output
+from Mason to form the HTTP response. Poet takes care of the web development
+details that are outside of Mason's domain, such as server integration and
+configuration. L<Poet::Manual::Tutorial|Poet::Manual::Tutorial> shows how to
+set up a Poet/Mason site in great detail.
+
+Mason can also be used in the popular web frameworks L<Catalyst|Catalyst> and
+L<Dancer|Dancer>, as a drop-in replacement for their default template engines.
+See L<Catalyst::View::Mason2|Catalyst::View::Mason2> and
+L<Dancer::View::Mason2|Dancer::View::Mason2>.
+
+=head2 Non-web development
+
+Mason can be used to generate any kind of dynamic content. I have personally
+used it to generate Apache configuration files, emails, and C++ code.
+
+To use Mason from a script or library, use the L<Mason::Interp> API:
+
+    my $interp = Mason->new(
+        comp_root => '/path/to/comps',
+        data_dir  => '/path/to/data',
+        ...
+    );
+    my $output = $interp->run( '/request/path', foo => 5 )->output();
+
+If you want to process a directory with a mix of Mason templates and static
+files, check out L<Any::Template::ProcessDir|Any::Template::ProcessDir>.
+
+To try out Mason syntax from the command line, use the L<mason> script:
+
+    % mason
+    2 + 2 = <% 2+2 %>
+    ^D
+    2 + 2 = 4
+
+=head1 LOGGING
+
+Mason uses L<Log::Any|Log::Any> to log various events, such as the start and
+end of each request. You can direct thesse logs to the output of your choice;
+see L<Log::Any::Adapter|Log::Any::Adapter>. If you don't specify anything then
+the logs will go into the void.
+
+=cut
