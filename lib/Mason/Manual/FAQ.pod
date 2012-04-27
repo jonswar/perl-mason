@@ -139,6 +139,13 @@ You need to use Mason in conjunction with a web framework. L<Poet> is a web
 framework designed specially for Mason.  L<Catalyst> and L<Dancer> can also use
 Mason for their templating layer. See L<Mason::Manual::Setup>.
 
+=head2 How can I HTML-escape the output of C<< <% %> >> tags?
+
+See the C<H> filter in
+L<Mason::Plugin::HTMLFilters|Mason::Plugin::HTMLFilters>. If you want to do
+this automatically for all C<< <% %> >> tags, see
+L<Mason::Plugin::DefaultFilter|Mason::Plugin::DefaultFilter>.
+
 =head2 Why is Mason so slow with standard CGI?
 
 Under standard CGI you must load all modules and initialize your environment

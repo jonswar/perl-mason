@@ -125,9 +125,16 @@ For consistency with other syntax, multiple names are applied in reverse order
 with the rightmost applied first.
 
 One common use of this form is to escape HTML strings in web content, using the
-C<HTML> filter in L<Mason::Plugin::HTMLFilters|Mason::Plugin::HTMLFilters>:
+C<H> filter in L<Mason::Plugin::HTMLFilters|Mason::Plugin::HTMLFilters>:
 
-    <% $message_body | HTML %>
+    <% $message_body | H %>
+
+=head2 Default filters
+
+L<Mason::Plugin::DefaultFilter|Mason::Plugin::DefaultFilter> allows you to
+define default filters that will automatically apply to all substitution tags.
+It is analagous to L<HTML::Mason's
+default_escape_flags|HTML::Mason::Compiler/default_escape_flags> setting.
 
 =head2 Manual invocation
 
