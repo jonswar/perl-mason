@@ -12,7 +12,7 @@ sub init_meta {
     my %params    = @_;
     my $for_class = $params{for_class};
     Method::Signatures::Simple->import( into => $for_class );
-    MooseX::HasDefaults::RW->import({ into => $for_class });
+    MooseX::HasDefaults::RW->import( { into => $for_class } );
     {
         no strict 'refs';
         *{ $for_class . '::CLASS' } = sub () { $for_class };    # like CLASS.pm

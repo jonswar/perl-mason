@@ -36,6 +36,10 @@ method Repeat ($times) {
     );
 }
 
+method Tee ($outref) {
+    sub { $$outref = $_[0]; return $_[0] }
+}
+
 method Trim () {
     sub { Mason::Util::trim( $_[0] ) }
 }
@@ -61,7 +65,8 @@ L<Mason::Component|Mason::Component>.
 
 =item Capture ($ref)
 
-Uses C<< $m->capture >> to capture the content in I<$ref>.
+Uses C<< $m->capture >> to capture the content in I<$ref> instead of outputting
+it.
 
     % $.Capture(\my $content) {{
       <!-- this will end up in $content -->
@@ -119,6 +124,19 @@ each time, which may result in different content.
     % $.Repeat(5) {{
        <% $i++ %><br>
     % }}
+
+=item Tee ($ref)
+
+Uses C<< $m->capture >> to capture the content in I<$ref>, and also output it.
+
+    % $.Tee(\my $content) {{
+      <!-- this will end up in $content and also be output -->
+    % }}
+
+    ...
+
+    <!-- output content again down here -->
+    <% $content %>
 
 =item Trim
 

@@ -173,6 +173,11 @@ sub test_misc_standard_filters : Tests {
 % }}
 <% reverse($buf) %>
 
+% $.Tee(\my $buf2) {{
+3 + 3 = <% 3+3 %>
+% }}
+<% reverse($buf2) %>
+
 ---
 % $.NoBlankLines {{
 
@@ -188,6 +193,10 @@ two
 ',
         expect => '
 4 = 2 + 2
+
+3 + 3 = 6
+
+6 = 3 + 3
 
 ---
 one

@@ -4,6 +4,12 @@ Revision history for Mason
 
 2.19  Apr 22, 2012
 
+* Improvements
+  - Add $.Tee standard filter, like $.Capture but outputs at same time
+
+* Fixes
+  - Fix for Moose 2.06 - RT #76793 (doy)
+
 2.18  Apr 22, 2012
 
 * Documentation
