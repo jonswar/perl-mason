@@ -10,6 +10,9 @@ Revision history for Mason
 * Fixes
   - Fix for Moose 2.06 - RT #76793 (doy)
 
+* Documentation
+  - Mention Mason::Plugin::DefaultFilter more prominently
+
 2.18  Apr 22, 2012
 
 * Documentation
