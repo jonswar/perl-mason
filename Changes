@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.19  Apr 22, 2012
+2.19  May 2, 2012
 
 * Improvements
   - Add $.Tee standard filter, like $.Capture but outputs at same time
