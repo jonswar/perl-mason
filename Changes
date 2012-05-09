@@ -4,6 +4,12 @@ Revision history for Mason
 
 2.20  May 2, 2012
 
+* Fixes
+  - Coerce undefined filter argument to the empty string - Tomohiro Hosaka
+
+* Documentation
+  - Moved eg/blog to Poet
+
 2.19  May 2, 2012
 
 * Improvements

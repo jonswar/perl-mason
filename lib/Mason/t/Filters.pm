@@ -1,4 +1,5 @@
 package Mason::t::Filters;
+use Test::Warn;
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_basic : Tests {
@@ -313,6 +314,51 @@ method LESSp () { sub { uc(shift) } }
 }
 ',
     );
+}
+
+sub test_no_undef_warning : Tests {
+    my $self = shift;
+    warnings_are {
+        $self->test_comp(
+            src => '
+<%class>
+method Upper () { sub { uc(shift) } }
+method Upper2 () {
+    return Mason::DynamicFilter->new(
+        filter => sub {
+            my $yield = $_[0];
+            return uc($yield->());
+        }
+    );
+}
+</%class>
+
+<%filter Upper3>
+<% uc($yield->()) %>
+</%filter>
+
+a = <% "a" | Upper %>.
+undef = <% undef | Upper %>.
+
+a = <% "a" | Upper2 %>.
+undef = <% undef | Upper2 %>.
+
+a = <% "a" | Upper3 %>.
+undef = <% undef | Upper3 %>.
+',
+            expect => '
+a = A.
+undef = .
+
+a = A.
+undef = .
+
+a = A.
+undef = .
+',
+        );
+    }
+    [], "no warnings on undef";
 }
 
 1;

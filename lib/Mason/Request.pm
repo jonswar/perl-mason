@@ -343,11 +343,12 @@ method with_tied_print ($code) {
 method _apply_one_filter ($filter, $yield) {
     my $filtered_output;
     if ( ref($yield) ne 'CODE' ) {
-        my $orig_yield = $yield;
+        my $orig_yield = defined($yield) ? $yield : '';
         $yield = sub { $orig_yield };
     }
     if ( ref($filter) eq 'CODE' ) {
         local $_ = $yield->();
+        $_ = '' if !defined($_);
         $filtered_output = $filter->($_);
     }
     elsif ( blessed($filter) && $filter->can('apply_filter') ) {
@@ -362,7 +363,7 @@ method _apply_one_filter ($filter, $yield) {
 method _apply_filters () {
     my $yield = pop(@_);
     if ( ref($yield) ne 'CODE' ) {
-        my $orig_yield = $yield;
+        my $orig_yield = defined($yield) ? $yield : '';
         $yield = sub { $orig_yield };
     }
     if ( !@_ ) {

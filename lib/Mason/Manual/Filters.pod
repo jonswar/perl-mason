@@ -195,12 +195,14 @@ subclass.
 A I<simple filter> is a code ref which takes a string (via either $_[0] and $_)
 and returns the output.  Your filter method should return this code ref. e.g.
 
+    # Uses $_[0]
+    method Upper () {
+        return sub { uc($_[0]) };
+    }
+
+    # Uses $_
     method Rot13 () {
-        return sub {
-            my $text = $_[0];
-            $text =~ tr/a-zA-Z/n-za-mN-ZA-M/;
-            return $text;
-        }
+        return sub { tr/a-zA-Z/n-za-mN-ZA-M/; $_ };
     }
 
 A I<dynamic filter> is an object of class C<Mason::DynamicFilter>. It contains
