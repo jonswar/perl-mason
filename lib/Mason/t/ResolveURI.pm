@@ -26,13 +26,14 @@ sub test_resolve : Tests {
         }
         my $desc = sprintf( "run %s against %s", $run_path, join( ",", @$existing_paths ) );
         if ( defined($resolve_path) ) {
+            my $good = "path: $resolve_path; path_info: $path_info";
             is( $self->interp->run($run_path)->output,
-                "path: $resolve_path; path_info: $path_info", $desc );
+                $good, "$desc = matched $good" );
         }
         else {
             throws_ok { $self->interp->run($run_path)->output }
             qr/could not resolve request path/,
-              $desc;
+              "$desc = failed to match";
         }
     };
 
