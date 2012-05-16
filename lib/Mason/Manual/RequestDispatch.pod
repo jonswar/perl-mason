@@ -71,6 +71,32 @@ The default C<allow_path_info> returns false.
 C<allow_path_info> is not checked on dhandlers, since the whole point of
 dhandlers is to match partial paths.
 
+=head2 Trailing slash
+
+If the request URL has a trailing slash (ends with C</>), we remove it
+before the match process begins and add it to the
+C<< $m->path_info >>. Components that should match must have
+C<allow_path_info> return true.
+
+For example:
+
+    ## request URL /news/
+    /news/index.{mp,mc}     # $m->path_info = / if index.{mp,mc} has
+                            # allow_path_info => true
+    /news/dhandler.{mp,mc}  # $m->path_info = /
+    /news.{mp,mc}           # $m->path_info = / if news.{mp,mc} has
+                            # allow_path_info => true
+
+    ## request URL /news/sports/
+    /news/sports/index.{mp,mc}     # $m->path_info = / if index.{mp,mc} has
+                                   # allow_path_info => true
+    /news/sports/dhandler.{mp,mc}  # $m->path_info = /
+    /news/sports.{mp,mc}           # $m->path_info = / if sports.{mp,mc}
+                                   # has allow_path_info => true
+    /news/dhandler.{mp,mc}         # $m->path_info = sports/
+    /news.{mp,mc}                  # $m->path_info = /sports/ if news.{mp,mc}
+                                   # has allow_path_info => true
+
 =head2 Routes
 
 It is possible to use route syntax to more elegantly parse C<< $m->path_info >>
