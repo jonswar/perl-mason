@@ -93,8 +93,6 @@ of a request).
 
 In many cases only C<main> will actually do anything.
 
-=for html <a name="handle" />
-
 =over
 
 =item handle
@@ -125,15 +123,11 @@ render the page
 It should not output any content itself. By default, it simply calls
 L<render|/render>.
 
-=for html <a name="render" />
-
 =item render
 
 This method is invoked from L<handle|/handle> on the page component. Its job is
 to output the full content of the page. By default, it simply calls
 L<wrap|/wrap>.
-
-=for html <a name="wrap" />
 
 =item wrap
 
@@ -166,8 +160,6 @@ To do no wrapping at all, call the component class method L</no_wrap>:
     <%class>
     CLASS->no_wrap;
     </%class>
-
-=for html <a name="main" />
 
 =item main
 
@@ -206,16 +198,12 @@ L<Mason::Manual::RequestDispatch/Partial Paths|Mason::Manual::RequestDispatch>.
 
 =head1 OTHER METHODS
 
-=for html <a name="args" />
-
 =over
 
 =item args
 
 Returns the hashref of arguments passed to this component's constructor, e.g.
 the arguments passed in a L<component call|/CALLING COMPONENTS>.
-
-=for html <a name="cmeta" />
 
 =item cmeta
 
@@ -224,8 +212,6 @@ component class, containing information such as the component's path and source
 file.
 
     my $path = $self->cmeta->path;
-
-=for html <a name="m" />
 
 =item m
 
