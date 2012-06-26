@@ -79,6 +79,7 @@ method cache () {
 }
 
 method capture ($code) {
+    croak "capture() expects a code reference" unless defined($code) && ref($code) eq 'CODE';
     my $output;
     {
         $self->_push_buffer;
