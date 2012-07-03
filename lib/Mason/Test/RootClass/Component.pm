@@ -9,4 +9,6 @@ extends 'Mason::Component';
 #      print STDERR "starting component render - " . $self->cmeta->path . "\n";
 #  };
 
+__PACKAGE__->meta->make_immutable();
+
 1;

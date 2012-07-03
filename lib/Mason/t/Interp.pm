@@ -2,7 +2,7 @@ package Mason::t::Interp;
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture);
 
-{ package MyInterp; use Moose; extends 'Mason::Interp' }
+{ package MyInterp; use Moose; extends 'Mason::Interp'; __PACKAGE__->meta->make_immutable() }
 
 sub test_base_interp_class : Tests {
     my $self = shift;

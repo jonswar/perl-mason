@@ -2,6 +2,8 @@ package Mason::Plugin::LvalueAttributes;
 use Moose;
 with 'Mason::Plugin';
 
+__PACKAGE__->meta->make_immutable();
+
 1;
 
 __END__

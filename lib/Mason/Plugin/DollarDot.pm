@@ -2,6 +2,8 @@ package Mason::Plugin::DollarDot;
 use Moose;
 with 'Mason::Plugin';
 
+__PACKAGE__->meta->make_immutable();
+
 1;
 
 __END__
@@ -36,9 +38,10 @@ attribute names
 
 =head1 DESCRIPTION
 
-This plugin substitutes C<< $.I<identifier> >> for C<< $self->I<identifier> >>
-in all Perl code inside components, so that C<< $. >> can be used when
-referring to attributes and calling methods. The actual regex is
+This plugin substitutes C<< $.I<identifier> >> for C<<
+$self->I<identifier> >> in all Perl code inside components, so that C<< $.
+>> can be used when referring to attributes and calling methods. The actual
+regex is
 
     s/ \$\.([^\W\d]\w*) / \$self->$1 /gx;
 
@@ -50,8 +53,8 @@ C<< $. >> was chosen because of its similar use in Perl 6.
 
 This plugin falls under the heading of gratuitous source filtering, which the
 author generally agrees is Evil. That said, this is a very limited filter, and
-seems unlikely to break any legitimate Perl syntax other than use of the C<< $.
->> special variable (input line number).
+seems unlikely to break any legitimate Perl syntax other than use of the C<<
+$. >> special variable (input line number).
 
 =head1 BUGS
 

@@ -22,8 +22,13 @@ method new ($class: %params) {
 
     # Create and return interp
     #
-    die "cannot pass mason_root_class directly" if exists( $params{mason_root_class} );
-    return $interp_class->new( mason_root_class => $class, plugins => \@plugins, %params );
+    die "cannot pass mason_root_class directly"
+      if exists( $params{mason_root_class} );
+    return $interp_class->new(
+        mason_root_class => $class,
+        plugins          => \@plugins,
+        %params
+    );
 }
 
 method default_base_interp_class ($class:) {
