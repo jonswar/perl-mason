@@ -94,7 +94,7 @@ method output_class_footer () {
 }
 
 method output_class_header () {
-    return "";
+    return $self->interp->class_header;
 }
 
 method parse () {
@@ -917,7 +917,8 @@ Perl code to be added at the bottom of the class. Empty by default.
 =item output_class_header ()
 
 Perl code to be added at the top of the class, just after initialization of
-Moose, C<$m> and other required pieces. Empty by default.
+Moose, C<$m> and other required pieces. The default is the value of Mason::Interp::class_header
+or an empty string.
 
     # Add to the top of every component class:
     #   use Foo;

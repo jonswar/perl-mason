@@ -37,6 +37,8 @@ has 'pure_perl_extensions'     => ( default => sub { ['.mp'] } );
 has 'static_source'            => ();
 has 'static_source_touch_file' => ();
 has 'top_level_extensions'     => ( default => sub { ['.mc', '.mp'] } );
+has 'class_header'             => ( default => '' );
+
 
 # Derived attributes
 #
@@ -946,6 +948,18 @@ A listref of file extensions of components to be considered "top level",
 accessible directly from C<< $interp->run >> or a web request. Default is C<<
 ['.mp', '.mc'] >>. If an empty list is specified, then there will be I<no>
 restriction; that is, I<all> components will be considered top level.
+
+=item class_header
+
+The default content of Mason::Compilation::output_class_header method. For more advanced features you can overwrite it.
+
+    my $mason = Mason->new(
+            comp_root => '.',
+            class_header => qq(
+                use Foo::Bar;
+                use Baz;
+            ),
+        );
 
 =back
 
