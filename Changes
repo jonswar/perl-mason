@@ -7,6 +7,7 @@ Revision history for Mason
 * Fixes
   - Coerce undefined filter argument to the empty string (Tomohiro Hosaka)
   - Eliminate "=for html" POD entries, which were mangling metacpan.org output (Pedro Melo)
+  - Fix some tests for Windows - perl-mason/pull/9 (Tomasz Konojacki)
 
 * Documentation
   - Moved eg/blog to Poet

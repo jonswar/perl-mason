@@ -14,7 +14,7 @@ sub test_cmeta : Tests {
                 is( $cmeta->dir_path,     '/component',         'dir_path' );
                 is( $cmeta->is_top_level, 1,                    'is_top_level' );
                 is( $cmeta->source_file,  $source_file,         'source_file' );
-                like( $cmeta->object_file, qr|meta.mc.mobj|, 'object_file' );
+                like( $cmeta->object_file, qr|meta\.mc\.mobj|, 'object_file' );
             }
             my $args = $comp->args;
             delete( $args->{_test} );
