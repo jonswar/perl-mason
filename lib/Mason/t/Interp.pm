@@ -129,4 +129,11 @@ sub test_no_source_line_numbers : Tests {
     $self->test_parse( src => "hi\n<%init>my \$d = 0</%init>", expect => [qr/^(?!(?s:.*)\#line)/] );
 }
 
+sub test_class_header : Tests {
+    my $self = shift;
+
+    $self->setup_interp( class_header => '# header' );
+    $self->test_parse( src => "hi", expect => [qr/\# header/] );
+}
+
 1;

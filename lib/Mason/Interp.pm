@@ -24,6 +24,7 @@ my $max_depth   = 16;
 has 'allow_globals'            => ( isa => 'ArrayRef[Str]', default => sub { [] }, trigger => sub { shift->_validate_allow_globals } );
 has 'autobase_names'           => ( isa => 'ArrayRef[Str]', lazy_build => 1 );
 has 'autoextend_request_path'  => ( isa => 'Bool', default => 1 );
+has 'class_header'             => ( default => '' );
 has 'comp_root'                => ( required => 1, isa => 'Mason::Types::CompRoot', coerce => 1 );
 has 'component_class_prefix'   => ( lazy_build => 1 );
 has 'data_dir'                 => ( lazy_build => 1 );
@@ -37,8 +38,6 @@ has 'pure_perl_extensions'     => ( default => sub { ['.mp'] } );
 has 'static_source'            => ();
 has 'static_source_touch_file' => ();
 has 'top_level_extensions'     => ( default => sub { ['.mc', '.mp'] } );
-has 'class_header'             => ( default => '' );
-
 
 # Derived attributes
 #
@@ -819,6 +818,28 @@ Whether to automatically add the L<top level extensions|/top_level_extensions>
 (by default ".mp" and ".mc") to the request path when searching for a matching
 page component. Defaults to true.
 
+=item class_header
+
+Perl code to be added at the top of the compiled class for every component,
+e.g. to bring in common features or import common methods. Default is the empty
+string.
+
+    # Add to the top of every component class:
+    #   use Modern::Perl;
+    #   use JSON::XS qw(encode_json decode_json);
+    #
+    my $mason = Mason->new(
+        ...
+        class_header => qq(
+            use Modern::Perl;
+            use JSON::XS qw(encode_json decode_json);
+        ),
+    );
+
+This is used by
+L<Mason::Compilation::output_class_header|Mason::Compilation/output_class_header>.
+For more advanced usage you can override that method in a subclass or plugin.
+
 =item comp_root
 
 Required. The component root marks the top of your component hierarchy and
@@ -922,18 +943,6 @@ A listref of file extensions of components to be considered "top level",
 accessible directly from C<< $interp->run >> or a web request. Default is C<<
 ['.mp', '.mc'] >>. If an empty list is specified, then there will be I<no>
 restriction; that is, I<all> components will be considered top level.
-
-=item class_header
-
-The default content of Mason::Compilation::output_class_header method. For more advanced features you can overwrite it.
-
-    my $mason = Mason->new(
-            comp_root => '.',
-            class_header => qq(
-                use Foo::Bar;
-                use Baz;
-            ),
-        );
 
 =back
 

@@ -921,15 +921,18 @@ Perl code to be added at the bottom of the class. Empty by default.
 =item output_class_header ()
 
 Perl code to be added at the top of the class, just after initialization of
-Moose, C<$m> and other required pieces. The default is the value of Mason::Interp::class_header
-or an empty string.
+Moose, C<$m> and other required pieces. By default it consults the
+L<class_header parameter|Mason::Interp/class_header>.
 
     # Add to the top of every component class:
-    #   use Foo;
-    #   use Bar qw(baz);
+    #   use Modern::Perl;
+    #   use JSON::XS qw(encode_json decode_json);
     #
     override 'output_class_header' => sub {
-        return join("\n", super(), 'use Foo;', 'use Bar qw(baz);');
+        return join( "\n",
+            super(),
+            'use Modern::Perl;',
+            'use JSON::XS qw(encode_json decode_json);' );
     };
 
 =item process_perl_code ($coderef)

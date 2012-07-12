@@ -4,6 +4,10 @@ Revision history for Mason
 
 2.21  Jul 12, 2012
 
+* Improvements
+  - Add class_header shortcut to add to each component class header - perl-mason/pull/14
+    (jomo666)
+
 2.20  Jul 12, 2012
 
 * Improvements
