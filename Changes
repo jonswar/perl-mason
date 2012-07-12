@@ -4,6 +4,9 @@ Revision history for Mason
 
 2.20  May 2, 2012
 
+* Improvements
+  - Implement and document trailing slash policy - perl-mason/pull/11 (Pedro Melo)
+
 * Fixes
   - Coerce undefined filter argument to the empty string (Tomohiro Hosaka)
   - Eliminate "=for html" POD entries, which were mangling metacpan.org output (Pedro Melo)
