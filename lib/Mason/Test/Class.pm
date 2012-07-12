@@ -22,7 +22,7 @@ sub temp_root { $_[0]->{temp_root} }
 
 # RW class accessors
 my $default_plugins = [];
-sub default_plugins { $default_plugins = $_[1] if defined( $_[1] ); $default_plugins }
+sub default_plugins { $default_plugins = $_[1] if defined( $_[1] ); $default_plugins; }
 
 my $gen_path_count = 0;
 my $parse_count    = 0;

@@ -4,6 +4,9 @@ use MooseX::StrictConstructor ();
 use strict;
 use warnings;
 use base qw(Mason::Component::Moose);
+use strict;
+use warnings;
+
 Moose::Exporter->setup_import_methods();
 
 sub init_meta {

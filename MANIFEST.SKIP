@@ -22,9 +22,11 @@
 ^lib/Pod
 ^localcpan
 ^misc
+^perlcritic
 ^profile
 ^release
 ^t/make
+^tidyall.ini
 ^tmp
 ^weaver.ini
 ^wiki
