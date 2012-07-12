@@ -73,10 +73,9 @@ dhandlers is to match partial paths.
 
 =head2 Trailing slash
 
-If the request URL has a trailing slash (ends with C</>), we remove it
-before the match process begins and add it to the
-C<< $m->path_info >>. Components that should match must have
-C<allow_path_info> return true.
+If the request URL has a trailing slash (ends with C</>), we remove it before
+the match process begins and add it to the C<< $m->path_info >>. Components
+that should match must have C<allow_path_info> return true.
 
 For example:
 

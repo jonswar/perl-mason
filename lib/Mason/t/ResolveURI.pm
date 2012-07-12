@@ -101,8 +101,8 @@ sub test_resolve : Tests {
     $try->( '/foo/', ['/foo/index'], undef );
     $try->( '/foo/', ['/foo/index=1'], '/foo/index', '/' );
     @interp_params = ( dhandler_names => ['dhandler'], index_names => ['index'] );
-    $try->( '/foo/', ['/foo/dhandler', '/foo/index'], '/foo/dhandler', '/' );
-    $try->( '/foo/', ['/foo/dhandler', '/foo/index=1'], '/foo/index', '/' );
+    $try->( '/foo/', [ '/foo/dhandler', '/foo/index' ],   '/foo/dhandler', '/' );
+    $try->( '/foo/', [ '/foo/dhandler', '/foo/index=1' ], '/foo/index',    '/' );
 }
 
 sub test_decline : Tests {

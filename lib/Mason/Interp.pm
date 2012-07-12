@@ -478,7 +478,9 @@ method _build_match_request_path ($interp:) {
         my $path           = $request_path;
         my @tried_paths;
 
-        $path_info = chop($path) if $path ne '/' && substr($path, -1) eq '/';
+        # Deal with trailing slash
+        #
+        $path_info = chop($path) if $path ne '/' && substr( $path, -1 ) eq '/';
 
         while (1) {
             my @candidate_paths =
@@ -507,10 +509,11 @@ method _build_match_request_path ($interp:) {
             $interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
             my $name = basename($path);
             $path_info =
-                $path_info eq '/'  ? "$name/" :
-                length($path_info) ? "$name/$path_info" : $name;
-            $path = dirname($path);
-            @index_subpaths = ();    # only match index file in same directory
+                $path_info eq '/' ? "$name/"
+              : length($path_info) ? "$name/$path_info"
+              :                      $name;
+            $path           = dirname($path);
+            @index_subpaths = ();               # only match index file in same directory
         }
     };
 }
