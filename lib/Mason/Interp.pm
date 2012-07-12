@@ -465,7 +465,6 @@ method _build_match_request_path ($interp:) {
     my $ignore_file_regex =
       '(/' . join( "|", @{ $interp->autobase_names }, @{ $interp->dhandler_names } ) . ')$';
     $ignore_file_regex = qr/$ignore_file_regex/;
-    my %is_dhandler_name = map { ( $_, 1 ) } @{ $interp->dhandler_names };
     my @autoextensions = $interp->autoextend_request_path ? @{ $interp->top_level_extensions } : ();
     my @index_names = @{ $interp->index_names };
     undef $interp;    # So this doesn't end up in closure and cause cycle
