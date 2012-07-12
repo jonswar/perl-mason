@@ -1,4 +1,4 @@
-package Mason::t::Plugins;
+package Mason::t::Plugins;    ## no critic (Moose::RequireMakeImmutable)
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture_merged);
 use Mason::Util qw(dump_one_line);

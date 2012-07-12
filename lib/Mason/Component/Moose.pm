@@ -1,4 +1,4 @@
-package Mason::Component::Moose;
+package Mason::Component::Moose;    ## no critic (Moose::RequireMakeImmutable)
 use Moose                      ();
 use MooseX::HasDefaults::RW    ();
 use Method::Signatures::Simple ();

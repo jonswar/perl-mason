@@ -25,9 +25,9 @@ A double open brace (C<< {{ >>) at the end of a C<< %-line >> denotes a filter
 call.  The filtered content begins just afterwards and ends at the C<< }} >>.
 Both C<< {{ >> and C<< }} >> may be followed by a comment.
 
-The expression C<< $.Trim >>, aka C<< $self->Trim >>, is a method call on the
-component object which returns a filter. In general everything before the C<<
-{{ >> is evaluated and is expected to return a filter or list of filters.
+The expression C<< $.Trim >>, aka C<< $self->Trim >>, is a method call on
+the component object which returns a filter. In general everything before the
+C<< {{ >> is evaluated and is expected to return a filter or list of filters.
 
 By convention, and to avoid name clashes with other component methods, filters
 use CamelCase rather than traditional underscore names.
@@ -42,7 +42,8 @@ Filters can take arguments:
           There's no place like home.
           There's no place like home.
 
-Since the expression C<< $.Repeat(3) >> returns a filter, it can be curried:
+Since the expression C<< $.Repeat(3) >> returns a filter, it can be
+curried:
 
    % my $repeat_three = $.Repeat(3);
    % $repeat_three {{

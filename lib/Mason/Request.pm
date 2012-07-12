@@ -82,7 +82,7 @@ method capture ($code) {
     my $output;
     {
         $self->_push_buffer;
-        scope_guard { $output = ${ $self->_current_buffer }; $self->_pop_buffer };
+        scope_guard { $output = ${ $self->_current_buffer }; $self->_pop_buffer; };
         $code->();
     }
     return $output;

@@ -27,5 +27,6 @@ sub weave_section {
     );
 }
 
-no Moose;
+__PACKAGE__->meta->make_immutable();
+
 1;

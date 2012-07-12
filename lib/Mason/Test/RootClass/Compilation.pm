@@ -7,4 +7,6 @@ before 'parse' => sub {
     print STDERR "starting compilation parse - " . $self->path . "\n";
 };
 
+__PACKAGE__->meta->make_immutable();
+
 1;

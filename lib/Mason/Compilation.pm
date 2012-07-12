@@ -735,14 +735,18 @@ method _output_cmeta () {
         class        => 'CLASS',
         interp       => '$interp',
     );
-    return join( "\n",
+    return join(
+        "\n",
         "method _set_class_cmeta (\$interp) {",
         "\$_class_cmeta = \$interp->component_class_meta_class->new(",
-        ( map { sprintf( "'%s' => %s,", $_, $cmeta_info{$_} ) } sort( keys(%cmeta_info) ) ),
-        ');',
-        '}',
+        (
+            map { sprintf( "'%s' => %s,", $_, $cmeta_info{$_} ) }
+            sort( keys(%cmeta_info) )
+        ),
+        ');', '}',
         'sub _unset_class_cmeta { undef $_class_cmeta }',
-        'sub _class_cmeta { $_class_cmeta }' );
+        'sub _class_cmeta { $_class_cmeta }'
+    );
 }
 
 method _output_compiled_component () {
@@ -825,8 +829,8 @@ method _output_methods () {
 
     # Sort methods so that modifiers come after
     #
-    my @sorted_methods_keys = sort { ( index( $a, ' ' ) <=> index( $b, ' ' ) ) || $a cmp $b }
-      keys( %{ $self->{methods} } );
+    my @sorted_methods_keys =
+      sort { ( index( $a, ' ' ) <=> index( $b, ' ' ) ) || $a cmp $b } keys( %{ $self->{methods} } );
     return
       join( "\n", map { $self->_output_method( $self->{methods}->{$_} ) } @sorted_methods_keys );
 }

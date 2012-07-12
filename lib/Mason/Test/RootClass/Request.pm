@@ -12,4 +12,6 @@ before 'comp' => sub {
     print STDERR "starting request comp - $path\n";
 };
 
+__PACKAGE__->meta->make_immutable();
+
 1;
