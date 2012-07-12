@@ -2,7 +2,7 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.20  May 2, 2012
+2.20  Jul 12, 2012
 
 * Improvements
   - Implement and document trailing slash policy - perl-mason/pull/11 (Pedro Melo)
