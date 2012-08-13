@@ -426,7 +426,8 @@ method is_top_level_comp_path ($path) {
     return ( $path =~ $self->top_level_regex ) ? 1 : 0;
 }
 
-method _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_path ) {
+sub _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_path )
+{                                       #__MSS_METHOD
     my $flags = $self->_extract_flags_from_object_file($object_file);
     my $parent_compc =
          $self->_determine_parent_compc( $path, $flags )

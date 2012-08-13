@@ -188,11 +188,14 @@ method _attribute_declaration ($name, $params, $line_number) {
     );
 }
 
-method _handle_after_block ()    { $self->_handle_method_modifier_block( 'after',    @_ ) }
-method _handle_around_block ()   { $self->_handle_method_modifier_block( 'around',   @_ ) }
-method _handle_augment_block ()  { $self->_handle_method_modifier_block( 'augment',  @_ ) }
-method _handle_before_block ()   { $self->_handle_method_modifier_block( 'before',   @_ ) }
-method _handle_override_block () { $self->_handle_method_modifier_block( 'override', @_ ) }
+method _handle_after_block ()   { $self->_handle_method_modifier_block( 'after',   @_ ) }
+method _handle_around_block ()  { $self->_handle_method_modifier_block( 'around',  @_ ) }
+method _handle_augment_block () { $self->_handle_method_modifier_block( 'augment', @_ ) }
+method _handle_before_block ()  { $self->_handle_method_modifier_block( 'before',  @_ ) }
+
+sub _handle_override_block () {
+    $self->_handle_method_modifier_block( 'override', @_ );
+}                                                                                      #__MSS_METHOD
 
 method _handle_method_modifier_block ( $block_type, $contents, $name ) {
     my $modifier = $block_type;
