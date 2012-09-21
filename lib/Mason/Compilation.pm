@@ -193,9 +193,9 @@ method _handle_around_block ()  { $self->_handle_method_modifier_block( 'around'
 method _handle_augment_block () { $self->_handle_method_modifier_block( 'augment', @_ ) }
 method _handle_before_block ()  { $self->_handle_method_modifier_block( 'before',  @_ ) }
 
-sub _handle_override_block () {
+method _handle_override_block () {
     $self->_handle_method_modifier_block( 'override', @_ );
-}                                                                                      #__MSS_METHOD
+}
 
 method _handle_method_modifier_block ( $block_type, $contents, $name ) {
     my $modifier = $block_type;
