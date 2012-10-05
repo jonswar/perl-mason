@@ -194,7 +194,7 @@ determine whether the path_info is allowed. Default is false. See
 L<Mason::Manual::RequestDispatch/Partial Paths|Mason::Manual::RequestDispatch>.
 
     <%class>
-    CLASS->allow_path_info(1);
+    method allow_path_info { 1 }
     </%class>
 
 =back
