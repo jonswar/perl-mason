@@ -120,6 +120,11 @@ C<< <%args> >> and C<< <%shared> >> are gone. Use Moose attributes instead.
 
 =item *
 
+The C<< <%ARGS> >> hash is gone, you can instead use C<< $.args >> or C<<
+$self->args >> to get all the parameters passed to a component.
+
+=item *
+
 C<< <%method> >> and C<< <%def> >> have been replaced with just C<< <%method>
 >>, which creates a true class method rather than a subcomponent.
 
