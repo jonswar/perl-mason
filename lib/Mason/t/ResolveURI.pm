@@ -86,6 +86,8 @@ sub test_resolve : Tests {
     $try->( $run_path, ['/foo/bar/baz/index'],    '/foo/bar/baz/index', '' );
     $try->( $run_path, ['/foo/bar/baz/index2'],   '/foo/bar/baz/index2', '' );
     $try->( $run_path, [ '/foo/bar/baz/index2', '/foo/bar/baz/index' ], '/foo/bar/baz/index', '' );
+    $try->( '/foo', [ '/foo/index' ], '/foo/index', '' );
+    $try->( '/foo/', [ '/foo/index' ], '/foo/index', '' );
 }
 
 sub test_decline : Tests {
