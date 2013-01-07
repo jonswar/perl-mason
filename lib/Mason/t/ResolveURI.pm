@@ -10,7 +10,8 @@ sub test_resolve : Tests {
         $path_info ||= '';
 
         $self->setup_dirs(@interp_params);
-        foreach my $existing_path (@$existing_paths) {
+        foreach (@$existing_paths) {
+            my $existing_path = $_;
             my $allow_path_info = 0;
             if ( $existing_path =~ /=1$/ ) {
                 substr( $existing_path, -2, 2 ) = '';
