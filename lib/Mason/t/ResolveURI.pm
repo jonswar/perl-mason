@@ -89,6 +89,24 @@ sub test_resolve : Tests {
     $try->( $run_path, [ '/foo/bar/baz/index2', '/foo/bar/baz/index' ], '/foo/bar/baz/index', '' );
     $try->( '/foo', [ '/foo/index' ], '/foo/index', '' );
     $try->( '/foo/', [ '/foo/index' ], '/foo/index', '' );
+
+    # trailing slashes + path_info
+    $try->( '/foo',      ['/foo.mc=1'], '/foo.mc', '' );
+    $try->( '/foo/',     ['/foo.mc=1'], '/foo.mc', '/' );
+    $try->( '/foo/bar',  ['/foo.mc=1'], '/foo.mc', 'bar' );
+    $try->( '/foo/bar/', ['/foo.mc=1'], '/foo.mc', 'bar/' );
+    $try->( '/foo/',     ['/foo.mc'],   '/foo.mc', '' );
+    @interp_params = ( dhandler_names => ['dhandler'] );
+    $try->( '/foo/',     ['/foo/dhandler'], '/foo/dhandler', '/' );
+    $try->( '/foo/bar',  ['/foo/dhandler'], '/foo/dhandler', 'bar' );
+    $try->( '/foo/bar/', ['/foo/dhandler'], '/foo/dhandler', 'bar/' );
+    @interp_params = ( index_names => ['index'] );
+    $try->( '/foo/', ['/foo/index=1'], '/foo/index', '/' );
+    @interp_params = ( dhandler_names => ['dhandler'], index_names => ['index'] );
+    $try->( '/foo/', ['/foo/dhandler', '/foo/index'], '/foo/index', '' );
+    $try->( '/foo/', ['/foo/dhandler', '/foo/index=1'], '/foo/index', '/' );
+    $try->( '/foo/more', ['/foo/dhandler', '/foo/index'], '/foo/dhandler', 'more' );
+    $try->( '/foo/more', ['/foo/dhandler', '/foo/index=1'], '/foo/dhandler', 'more' );
 }
 
 sub test_decline : Tests {

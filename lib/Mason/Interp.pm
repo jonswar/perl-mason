@@ -475,10 +475,13 @@ method _build_match_request_path ($interp:) {
         my ( $request, $request_path ) = @_;
         my $interp         = $request->interp;
         my $path_info      = '';
+        my $trailing_slash = '';
         my $declined_paths = $request->declined_paths;
         my @index_subpaths = map { "/$_" } @index_names;
         my $path           = $request_path;
         my @tried_paths;
+
+        $trailing_slash = chop($path) if $path ne '/' && substr($path, -1) eq '/';
 
         while (1) {
             my @candidate_paths =
@@ -492,13 +495,14 @@ method _build_match_request_path ($interp:) {
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
                 if ( my $compc = $interp->load($candidate_path) ) {
+                    my $path_info_ok = $compc->cmeta->is_dhandler || $compc->allow_path_info;
                     if (
                         $compc->cmeta->is_top_level
                         && (   $path_info eq ''
-                            || $compc->cmeta->is_dhandler
-                            || $compc->allow_path_info )
+                            || $path_info_ok )
                       )
                     {
+                        $path_info .= $trailing_slash if $path_info_ok;
                         $request->{path_info} = $path_info;
                         return $compc->cmeta->path;
                     }
