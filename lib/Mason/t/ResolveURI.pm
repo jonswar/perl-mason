@@ -125,6 +125,17 @@ sub test_resolve : Tests {
     $try->( '/news/sports/', ['/news/dhandler'], '/news/dhandler', 'sports/');
     $try->( '/news/sports/', ['/news.mc'], undef);
     $try->( '/news/sports/', ['/news.mc=1'], '/news.mc', 'sports/');    
+    $try->( '/news/sports', ['/news/sports/index','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/sports/index','/news/sports.mc'], '/news/sports/index', '');
+    $try->( '/news/sports/', ['/news/sports/index=1','/news/sports.mc'], '/news/sports/index', '/');
+    $try->( '/news/sports', ['/news/sports/dhandler','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/sports/dhandler','/news/sports.mc'], '/news/sports/dhandler', '/');
+    $try->( '/news/sports', ['/news/dhandler','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/dhandler','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/dhandler','/news/sports.mc=1'], '/news/sports.mc', '/');
+    $try->( '/news/sports', ['/dhandler','/news.mc'], '/dhandler', 'news/sports');
+    $try->( '/news/sports/', ['/dhandler','/news.mc'], '/dhandler', 'news/sports/');
+    $try->( '/news/sports/', ['/dhandler','/news.mc=1'], '/news.mc', 'sports/');
 }
 
 sub test_decline : Tests {

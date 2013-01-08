@@ -487,6 +487,10 @@ method _build_match_request_path ($interp:) {
             my @candidate_paths =
                 ( $path_info eq '' && !@autoextensions ) ? ($path)
               : ( $path eq '/' ) ? ( @index_subpaths, @dhandler_subpaths )
+	      : ( $trailing_slash eq '/' ) ? (
+                ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) ),
+                ( grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions ) 
+		)
               : (
                 ( grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions ),
                 ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
