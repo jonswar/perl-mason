@@ -484,17 +484,23 @@ method _build_match_request_path ($interp:) {
         $trailing_slash = chop($path) if $path ne '/' && substr($path, -1) eq '/';
 
         while (1) {
-            my @candidate_paths =
-                ( $path_info eq '' && !@autoextensions ) ? ($path)
-              : ( $path eq '/' ) ? ( @index_subpaths, @dhandler_subpaths )
-	      : ( $trailing_slash eq '/' ) ? (
-                ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) ),
-                ( grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions ) 
-		)
-              : (
-                ( grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions ),
-                ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
-              );
+            my @candidate_paths;
+            if ($path_info eq '' && !@autoextensions) {
+              @candidate_paths = ($path);
+            }
+            elsif ($path eq '/') {
+              @candidate_paths = (@index_subpaths, @dhandler_subpaths);
+            }
+            else {
+              my @idx_dhandler = map { $path . $_ } (@index_subpaths, @dhandler_subpaths);
+              my @filtered_autoext = grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions;
+              if ($trailing_slash eq '/') {
+                @candidate_paths = (@idx_dhandler, @filtered_autoext);
+              }
+              else {
+                @candidate_paths = (@filtered_autoext, @idx_dhandler);
+              }
+            }
             push( @tried_paths, @candidate_paths );
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
