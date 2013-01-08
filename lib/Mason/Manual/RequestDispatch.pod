@@ -73,28 +73,43 @@ dhandlers is to match partial paths.
 
 =head2 Trailing slash
 
-If the request URL has a trailing slash (ends with C</>), we remove it before
-the match process begins and add it to the C<< $m->path_info >>. Components
-that should match must have C<allow_path_info> return true.
+If the request URL has a trailing slash (ends with C</>), we remove it
+before the match process begins. If your component has
+C<allow_path_info> return true or if it is a dhandler, the slash will be
+part of the C<path_info> information.
 
 For example:
 
     ## request URL /news/
-    /news/index.{mp,mc}     # $m->path_info = / if index.{mp,mc} has
-                            # allow_path_info => true
-    /news/dhandler.{mp,mc}  # $m->path_info = /
-    /news.{mp,mc}           # $m->path_info = / if news.{mp,mc} has
+    /news/index.{mp,mc}     # $m->path_info = '' if allow_path_info => false
+    /news/index.{mp,mc}     # $m->path_info = '/' if allow_path_info => true
+
+    /news/dhandler.{mp,mc}  # $m->path_info = '/'
+
+    /news.{mp,mc}           # $m->path_info = '' if news.{mp,mc} has
+                            # allow_path_info => false
+    /news.{mp,mc}           # $m->path_info = '/' if news.{mp,mc} has
                             # allow_path_info => true
 
     ## request URL /news/sports/
-    /news/sports/index.{mp,mc}     # $m->path_info = / if index.{mp,mc} has
+    /news/sports/index.{mp,mc}     # $m->path_info = '' if index.{mp,mc} has
+                                   # allow_path_info => false
+    /news/sports/index.{mp,mc}     # $m->path_info = '/' if index.{mp,mc} has
                                    # allow_path_info => true
-    /news/sports/dhandler.{mp,mc}  # $m->path_info = /
-    /news/sports.{mp,mc}           # $m->path_info = / if sports.{mp,mc}
+
+    /news/sports/dhandler.{mp,mc}  # $m->path_info = '/'
+
+    /news/sports.{mp,mc}           # $m->path_info = '' if sports.{mp,mc}
+                                   # has allow_path_info => false
+    /news/sports.{mp,mc}           # $m->path_info = '/' if sports.{mp,mc}
                                    # has allow_path_info => true
-    /news/dhandler.{mp,mc}         # $m->path_info = sports/
-    /news.{mp,mc}                  # $m->path_info = /sports/ if news.{mp,mc}
+
+    /news/dhandler.{mp,mc}         # $m->path_info = 'sports/'
+
+    /news.{mp,mc}                  # will not match if allow_path_info => false
+    /news.{mp,mc}                  # $m->path_info = '/sports/' if news.{mp,mc}
                                    # has allow_path_info => true
+
 
 =head2 Routes
 

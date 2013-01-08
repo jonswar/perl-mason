@@ -9,8 +9,11 @@ sub test_resolve : Tests {
         my ( $run_path, $existing_paths, $resolve_path, $path_info ) = @_;
         $path_info ||= '';
 
+        my ($line) = (caller)[2];
+
         $self->setup_dirs(@interp_params);
-        foreach my $existing_path (@$existing_paths) {
+        foreach (@$existing_paths) {
+            my $existing_path = $_;
             my $allow_path_info = 0;
             if ( $existing_path =~ /=1$/ ) {
                 substr( $existing_path, -2, 2 ) = '';
@@ -26,12 +29,12 @@ sub test_resolve : Tests {
         my $desc = sprintf( "run %s against %s", $run_path, join( ",", @$existing_paths ) );
         if ( defined($resolve_path) ) {
             my $good = "path: $resolve_path; path_info: $path_info";
-            is( $self->interp->run($run_path)->output, $good, "$desc = matched $good" );
+            is( $self->interp->run($run_path)->output, $good, "$desc = matched $good ($line)" );
         }
         else {
             throws_ok { $self->interp->run($run_path)->output }
             qr/could not resolve request path/,
-              "$desc = failed to match";
+              "$desc = failed to match ($line)";
         }
     };
 
@@ -86,23 +89,53 @@ sub test_resolve : Tests {
     $try->( $run_path, ['/foo/bar/baz/index'],    '/foo/bar/baz/index', '' );
     $try->( $run_path, ['/foo/bar/baz/index2'],   '/foo/bar/baz/index2', '' );
     $try->( $run_path, [ '/foo/bar/baz/index2', '/foo/bar/baz/index' ], '/foo/bar/baz/index', '' );
+    $try->( '/foo', [ '/foo/index' ], '/foo/index', '' );
+    $try->( '/foo/', [ '/foo/index' ], '/foo/index', '' );
 
-    # trailing slashes
+    # trailing slashes + path_info
     $try->( '/foo',      ['/foo.mc=1'], '/foo.mc', '' );
     $try->( '/foo/',     ['/foo.mc=1'], '/foo.mc', '/' );
     $try->( '/foo/bar',  ['/foo.mc=1'], '/foo.mc', 'bar' );
     $try->( '/foo/bar/', ['/foo.mc=1'], '/foo.mc', 'bar/' );
-    $try->( '/foo/',     ['/foo.mc'],   undef );
+    $try->( '/foo/',     ['/foo.mc'],   '/foo.mc', '' );
     @interp_params = ( dhandler_names => ['dhandler'] );
     $try->( '/foo/',     ['/foo/dhandler'], '/foo/dhandler', '/' );
     $try->( '/foo/bar',  ['/foo/dhandler'], '/foo/dhandler', 'bar' );
     $try->( '/foo/bar/', ['/foo/dhandler'], '/foo/dhandler', 'bar/' );
     @interp_params = ( index_names => ['index'] );
-    $try->( '/foo/', ['/foo/index'], undef );
     $try->( '/foo/', ['/foo/index=1'], '/foo/index', '/' );
     @interp_params = ( dhandler_names => ['dhandler'], index_names => ['index'] );
-    $try->( '/foo/', [ '/foo/dhandler', '/foo/index' ],   '/foo/dhandler', '/' );
-    $try->( '/foo/', [ '/foo/dhandler', '/foo/index=1' ], '/foo/index',    '/' );
+    $try->( '/foo/', ['/foo/dhandler', '/foo/index'], '/foo/index', '' );
+    $try->( '/foo/', ['/foo/dhandler', '/foo/index=1'], '/foo/index', '/' );
+    $try->( '/foo/more', ['/foo/dhandler', '/foo/index'], '/foo/dhandler', 'more' );
+    $try->( '/foo/more', ['/foo/dhandler', '/foo/index=1'], '/foo/dhandler', 'more' );
+    
+    # trailing slashes: cases from Mason::Manual::RequestDispatch
+    @interp_params = ( dhandler_names => ['dhandler'], index_names => ['index'] );
+    $try->( '/news/', ['/news/index'], '/news/index', '');
+    $try->( '/news/', ['/news/index=1'], '/news/index', '/');
+    $try->( '/news/', ['/news/dhandler'], '/news/dhandler', '/');
+    $try->( '/news/', ['/news.mc'], '/news.mc', '');
+    $try->( '/news/', ['/news.mc=1'], '/news.mc', '/');
+    $try->( '/news/sports/', ['/news/sports/index'], '/news/sports/index', '');
+    $try->( '/news/sports/', ['/news/sports/index=1'], '/news/sports/index', '/');
+    $try->( '/news/sports/', ['/news/sports/dhandler'], '/news/sports/dhandler', '/');
+    $try->( '/news/sports/', ['/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/sports.mc=1'], '/news/sports.mc', '/');
+    $try->( '/news/sports/', ['/news/dhandler'], '/news/dhandler', 'sports/');
+    $try->( '/news/sports/', ['/news.mc'], undef);
+    $try->( '/news/sports/', ['/news.mc=1'], '/news.mc', 'sports/');    
+    $try->( '/news/sports', ['/news/sports/index','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/sports/index','/news/sports.mc'], '/news/sports/index', '');
+    $try->( '/news/sports/', ['/news/sports/index=1','/news/sports.mc'], '/news/sports/index', '/');
+    $try->( '/news/sports', ['/news/sports/dhandler','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/sports/dhandler','/news/sports.mc'], '/news/sports/dhandler', '/');
+    $try->( '/news/sports', ['/news/dhandler','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/dhandler','/news/sports.mc'], '/news/sports.mc', '');
+    $try->( '/news/sports/', ['/news/dhandler','/news/sports.mc=1'], '/news/sports.mc', '/');
+    $try->( '/news/sports', ['/dhandler','/news.mc'], '/dhandler', 'news/sports');
+    $try->( '/news/sports/', ['/dhandler','/news.mc'], '/dhandler', 'news/sports/');
+    $try->( '/news/sports/', ['/dhandler','/news.mc=1'], '/news.mc', 'sports/');
 }
 
 sub test_decline : Tests {

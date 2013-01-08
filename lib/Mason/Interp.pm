@@ -475,34 +475,44 @@ method _build_match_request_path ($interp:) {
         my ( $request, $request_path ) = @_;
         my $interp         = $request->interp;
         my $path_info      = '';
+        my $trailing_slash = '';
         my $declined_paths = $request->declined_paths;
         my @index_subpaths = map { "/$_" } @index_names;
         my $path           = $request_path;
         my @tried_paths;
 
-        # Deal with trailing slash
-        #
-        $path_info = chop($path) if $path ne '/' && substr( $path, -1 ) eq '/';
+        $trailing_slash = chop($path) if $path ne '/' && substr($path, -1) eq '/';
 
         while (1) {
-            my @candidate_paths =
-                ( $path_info eq '' && !@autoextensions ) ? ($path)
-              : ( $path eq '/' ) ? ( @index_subpaths, @dhandler_subpaths )
-              : (
-                ( grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions ),
-                ( map { $path . $_ } ( @index_subpaths, @dhandler_subpaths ) )
-              );
+            my @candidate_paths;
+            if ($path_info eq '' && !@autoextensions) {
+              @candidate_paths = ($path);
+            }
+            elsif ($path eq '/') {
+              @candidate_paths = (@index_subpaths, @dhandler_subpaths);
+            }
+            else {
+              my @idx_dhandler = map { $path . $_ } (@index_subpaths, @dhandler_subpaths);
+              my @filtered_autoext = grep { !/$ignore_file_regex/ } map { $path . $_ } @autoextensions;
+              if ($trailing_slash eq '/') {
+                @candidate_paths = (@idx_dhandler, @filtered_autoext);
+              }
+              else {
+                @candidate_paths = (@filtered_autoext, @idx_dhandler);
+              }
+            }
             push( @tried_paths, @candidate_paths );
             foreach my $candidate_path (@candidate_paths) {
                 next if $declined_paths->{$candidate_path};
                 if ( my $compc = $interp->load($candidate_path) ) {
+                    my $path_info_ok = $compc->cmeta->is_dhandler || $compc->allow_path_info;
                     if (
                         $compc->cmeta->is_top_level
                         && (   $path_info eq ''
-                            || $compc->cmeta->is_dhandler
-                            || $compc->allow_path_info )
+                            || $path_info_ok )
                       )
                     {
+                        $path_info .= $trailing_slash if $path_info_ok;
                         $request->{path_info} = $path_info;
                         return $compc->cmeta->path;
                     }
@@ -510,11 +520,8 @@ method _build_match_request_path ($interp:) {
             }
             $interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
             my $name = basename($path);
-            $path_info =
-                $path_info eq '/' ? "$name/"
-              : length($path_info) ? "$name/$path_info"
-              :                      $name;
-            $path           = dirname($path);
+            $path_info = length($path_info) ? "$name/$path_info" : $name;
+            $path = dirname($path);
             @index_subpaths = ();               # only match index file in same directory
         }
     };
