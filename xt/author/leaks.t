@@ -12,7 +12,7 @@ sub testleaks {
     $code->();
     leakguard(
         sub { $code->() },
-        only    => 'Mason*',
+        only    => qr/^(?:Mason|MC)/,
         on_leak => sub { $report = shift; }
     );
     if ($report) {
@@ -34,6 +34,20 @@ testleaks(
         my $interp = Mason->new( comp_root => $comp_root, data_dir => $data_dir );
         foreach my $comp (qw(foo bar)) {
             write_file("$comp_root/$comp.mc", "Hi");
+            $interp->run("/$comp");
+        }
+    }
+);
+
+testleaks(
+    sub {
+        my $interp = Mason->new( comp_root => $comp_root, data_dir => $data_dir );
+        foreach my $comp (qw(foo2 bar2)) {
+            write_file("$comp_root/$comp.mc", <<'MC');
+% $.Defer {{
+Hi
+% }}
+MC
             $interp->run("/$comp");
         }
     }
