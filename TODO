@@ -1,0 +1,38 @@
+TO DO
+
+* Create utf8 plugin
+* In Mason::Plugin, don't rely on die to know whether module is available, can be expensive when combined with automatic stack tracers
+* Create easy way to apply filter to whole page, like old Mason 1 <%filter>
+* make _load_class_from_object_file supported
+* Create easy way to declare private attributes, like "priv"
+* Content wrapping needs to be easier to find in manual
+* Router::Simple does not reload on the fly well
+* If mason_root_class is missing, offer a helpful "are you calling Mason::Interp->new directly?"
+* Better debug logging for what is going on in a request, especially how the first component is dispatched to
+* Add a Page.mc/Page.mp that only top-level components inherit from?
+* Make 'augment wrap' the implicit default for any non-whitespace content in an autobase component.
+* Mailing lists: Shut down all but mason-users; eliminate you-must-be-subscribed from mason-users or its replacement
+* Add call() as wrapper around main(), so that call() can be overriden and wrapped in an autobase
+* Whitespace should be required before/after <%, <&, %>, &>
+* Mention defer in multiple places, maybe take it out of plugin altogether
+* Mention MasonX::ProcessDir somewhere, maybe FAQ and SEE ALSO
+* Default escaping - integrate into core, allow it to be overriden on a per-component or even per-fragment basis (see django - http://bit.ly/JglsGq)
+* Component load errors not showing up properly in plack stack trace, because __DIE__ hook is not called for an eval or do error. Mason 1's custom html errors handled this better (each line mentioned in compile error was highlighted).
+* Release initial Mason tidy, even without html/css/javascript
+* Mason 1 compatibility mode and/or conversion utility
+* Caching entire page
+  * Add back $m->cache_self - return if $m->cache_self($key, '5 min')
+    cache_self($key, $get_set_options, $cache_options)
+    where $get_set_options is passed to compute
+    and $cache_options are used to create the cache
+  * Caching entire page does not work in concert with Defer - either we cache the buffer with the tags still in there, or caching keeps the buffer out of reach of _apply_defers_to_request_buffer
+* Add $m->no_wrap() as another way to turn off wrapping dynamically
+* Doc - mention "$self->page" in more examples and as replacement for REQ:
+* running list of notable available plugins
+* document in admin:
+  * component caching (memory, object files), static source
+* test that cannot resolve to autobase
+* use // in perl 5.10.0 and above for '$$_buffer .= $_'
+* write filter to find link(s) to current page and apply another filter to each instance (e.g. unlink and make bold)
+* put back corrupt object file handling in Interp::load
+* have Mason::App use MooseX::Getopt
