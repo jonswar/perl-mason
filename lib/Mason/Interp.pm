@@ -364,8 +364,9 @@ method run () {
 }
 
 method set_global () {
+    croak "set_global expects a var name and value" unless @_ > 1;
+    croak "set_global only supports scalars not lists at this time" if @_ > 2;
     my ( $spec, $value ) = @_;
-    croak "set_global expects a var name and value" unless $value;
     my ( $sigil, $name ) = $self->_parse_global_spec($spec);
     croak "${sigil}${name} is not in the allowed globals list"
       unless $self->allowed_globals_hash->{"${sigil}${name}"};
