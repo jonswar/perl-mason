@@ -8,6 +8,7 @@ use Mason::Util qw(trim write_file);
 use Method::Signatures::Simple;
 use Test::Class::Most;
 use Test::LongString;
+use Class::Load;
 use strict;
 use warnings;
 
@@ -54,7 +55,7 @@ method create_interp () {
     my (%params) = @_;
     $params{plugins} = $default_plugins if @$default_plugins;
     my $mason_root_class = delete( $params{mason_root_class} ) || 'Mason';
-    Class::MOP::load_class($mason_root_class);
+    Class::Load::load_class($mason_root_class);
     rmtree( $self->data_dir );
     return $mason_root_class->new(
         comp_root => $self->comp_root,
