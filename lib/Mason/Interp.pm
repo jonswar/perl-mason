@@ -11,6 +11,7 @@ use Mason::Result;
 use Mason::Types;
 use Mason::Util
   qw(can_load catdir catfile combine_similar_paths find_wanted first_index is_absolute json_decode mason_canon_path read_file taint_is_on touch_file uniq write_file);
+use Class::Load;
 use Memoize;
 use Moose::Util::TypeConstraints;
 use Mason::Moose;
@@ -743,7 +744,7 @@ sub _define_class_override_methods {
             "_build_$method_name" => sub {
                 my $self       = shift;
                 my $base_class = $self->$base_method_name;
-                Class::MOP::load_class($base_class);
+                Class::Load::load_class($base_class);
                 return Mason::PluginManager->apply_plugins_to_class( $base_class, $name,
                     $self->plugins );
             }

@@ -1,7 +1,7 @@
 package Mason::Util;
 use Carp;
-use Class::MOP;
 use Class::Unload;
+use Class::Load;
 use Data::Dumper;
 use Fcntl qw( :DEFAULT :seek );
 use File::Find;
@@ -33,7 +33,7 @@ sub can_load {
 
     my $result;
     try {
-        Class::MOP::load_class($class_name);
+        Class::Load::load_class($class_name);
         $result = 1;
     }
     catch {
