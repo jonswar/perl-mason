@@ -219,7 +219,7 @@ sub test_dollar_m : Tests {
     $self->test_comp(
         src => '
 <%class>
-method foo  () { $m->print("foo\n") }
+method foo () { $m->print("foo\n") }
 </%class>
 <%method bar><%perl>$m->print("bar\n");</%perl></%method>
 <% $.foo %>

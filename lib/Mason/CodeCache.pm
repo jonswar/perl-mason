@@ -9,7 +9,7 @@ method get ($key) {
     return $self->{datastore}->{$key};
 }
 
-method set ( $key, $data ) {
+method set ($key, $data) {
     $self->{datastore}->{$key} = $data;
 }
 

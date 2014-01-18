@@ -188,16 +188,16 @@ method _attribute_declaration ($name, $params, $line_number) {
     );
 }
 
-method _handle_after_block ()   { $self->_handle_method_modifier_block( 'after',   @_ ) }
-method _handle_around_block ()  { $self->_handle_method_modifier_block( 'around',  @_ ) }
+method _handle_after_block () { $self->_handle_method_modifier_block( 'after',   @_ ) }
+method _handle_around_block () { $self->_handle_method_modifier_block( 'around',  @_ ) }
 method _handle_augment_block () { $self->_handle_method_modifier_block( 'augment', @_ ) }
-method _handle_before_block ()  { $self->_handle_method_modifier_block( 'before',  @_ ) }
+method _handle_before_block () { $self->_handle_method_modifier_block( 'before',  @_ ) }
 
 method _handle_override_block () {
     $self->_handle_method_modifier_block( 'override', @_ );
 }
 
-method _handle_method_modifier_block ( $block_type, $contents, $name ) {
+method _handle_method_modifier_block ($block_type, $contents, $name) {
     my $modifier = $block_type;
 
     $self->_throw_syntax_error("Invalid method modifier name '$name'")
@@ -366,7 +366,7 @@ method _handle_init_block ($contents) {
       $self->_output_line_number_comment . $self->_processed_perl_code($contents);
 }
 
-method _handle_method_block ( $contents, $name, $arglist ) {
+method _handle_method_block ($contents, $name, $arglist) {
     $self->_throw_syntax_error("Invalid method name '$name'")
       if $name !~ /^$identifier$/;
 
@@ -413,7 +413,7 @@ method _handle_shared_block ($contents) {
     $self->_handle_attributes_list( $contents, 'shared' );
 }
 
-method _handle_substitution ( $text, $filter_list ) {
+method _handle_substitution ($text, $filter_list) {
 
     # This is a comment tag if all lines of text contain only whitespace
     # or start with whitespace and a comment marker, e.g.
@@ -808,7 +808,7 @@ method _output_method ($method) {
     my $start =
         $type eq 'apply_filter' ? "sub {"
       : $modifier eq 'around'   ? "around '$name' => sub {\nmy \$orig = shift; my \$self = shift;"
-      : $type     eq 'modifier' ? "$modifier '$name' => sub {\nmy \$self = shift;"
+      : $type eq 'modifier'     ? "$modifier '$name' => sub {\nmy \$self = shift;"
       :                           "method $name $arglist {";
     my $end = $modifier ? "};" : "}";
 

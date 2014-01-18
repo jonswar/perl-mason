@@ -124,7 +124,7 @@ method _build_index_names () {
 method _build_pure_perl_regex () {
     my $extensions = $self->pure_perl_extensions;
     if ( !@$extensions ) {
-        return qr/(?!)/;                  # matches nothing
+        return qr/(?!)/;    # matches nothing
     }
     else {
         my $regex = join( '|', @$extensions ) . '$';
@@ -135,7 +135,7 @@ method _build_pure_perl_regex () {
 method _build_top_level_regex () {
     my $extensions = $self->top_level_extensions;
     if ( !@$extensions ) {
-        return qr/./;                     # matches everything
+        return qr/./;       # matches everything
     }
     else {
         my $regex = join( '|', @$extensions );
@@ -390,7 +390,7 @@ method DEMOLISH () {
     $self->flush_code_cache() if defined( $self->{code_cache} );
 }
 
-method _compile ( $source_file, $path ) {
+method _compile ($source_file, $path) {
     my $compilation = $self->compilation_class->new(
         source_file => $source_file,
         path        => $path,
@@ -399,7 +399,7 @@ method _compile ( $source_file, $path ) {
     return $compilation->compile();
 }
 
-method _compile_to_file ( $source_file, $path, $object_file ) {
+method _compile_to_file ($source_file, $path, $object_file) {
 
     # We attempt to handle several cases in which a file already exists
     # and we wish to create a directory, or vice versa.  However, not
@@ -427,8 +427,7 @@ method is_top_level_comp_path ($path) {
     return ( $path =~ $self->top_level_regex ) ? 1 : 0;
 }
 
-method _load_class_from_object_file ( $compc, $object_file, $path, $default_parent_path )
-{
+method _load_class_from_object_file ($compc, $object_file, $path, $default_parent_path) {
     my $flags = $self->_extract_flags_from_object_file($object_file);
     my $parent_compc =
          $self->_determine_parent_compc( $path, $flags )
@@ -512,7 +511,7 @@ method _build_match_request_path ($interp:) {
             $interp->_top_level_not_found( $request_path, \@tried_paths ) if $path eq '/';
             my $name = basename($path);
             $path_info =
-                $path_info eq '/' ? "$name/"
+                $path_info eq '/'  ? "$name/"
               : length($path_info) ? "$name/$path_info"
               :                      $name;
             $path           = dirname($path);

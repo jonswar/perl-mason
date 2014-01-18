@@ -15,7 +15,7 @@ my $init_message = $self->init_message();
 
 <%class>
 my $class_message = "class message";
-method init_message  () { "init message" }
+method init_message () { "init message" }
 </%class>
 
 <BODY>
@@ -61,17 +61,14 @@ class message
 
 before method call
 
-method call
-
-after method call
+method call after method call
 
 3 - 4
 init message
 </BODY>
 
 end override
-EOF
-    );
+EOF);
 }
 
 sub test_perl_section_newlines : Tests {
