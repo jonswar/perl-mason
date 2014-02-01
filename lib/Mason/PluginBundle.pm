@@ -1,4 +1,5 @@
 package Mason::PluginBundle;
+
 use Mason::PluginRole;
 
 method expand_to_plugins ($bundle_class:) {

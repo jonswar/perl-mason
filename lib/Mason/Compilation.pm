@@ -3,6 +3,7 @@
 # under the same terms as Perl itself.
 
 package Mason::Compilation;
+
 use File::Basename qw(dirname);
 use Guard;
 use Mason::Component::ClassMeta;

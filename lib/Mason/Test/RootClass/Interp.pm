@@ -1,4 +1,5 @@
 package Mason::Test::RootClass::Interp;
+
 use Moose;
 extends 'Mason::Interp';
 

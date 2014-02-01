@@ -1,4 +1,5 @@
 package Mason::t::ComponentMeta;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_cmeta : Tests {

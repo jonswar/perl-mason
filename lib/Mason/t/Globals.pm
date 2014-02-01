@@ -1,4 +1,5 @@
 package Mason::t::Globals;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_globals : Tests {

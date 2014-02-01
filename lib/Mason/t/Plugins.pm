@@ -1,4 +1,5 @@
 package Mason::t::Plugins;    ## no critic (Moose::RequireMakeImmutable)
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Capture::Tiny qw(capture_merged);
 use Mason::Util qw(dump_one_line);
@@ -66,31 +67,60 @@ sub test_strict_plugin : Tests {
     throws_ok { $self->interp->run( '/test_strict_plugin', foo => 5 ) } qr/Found unknown attribute/;
 }
 
-{ package Mason::Test::Plugins::A; use Moose; with 'Mason::Plugin'; }
-{ package Mason::Plugin::B;        use Moose; with 'Mason::Plugin'; }
-{ package Mason::Plugin::C;        use Moose; with 'Mason::Plugin'; }
-{ package Mason::Plugin::D;        use Moose; with 'Mason::Plugin'; }
-{ package Mason::Plugin::E;        use Moose; with 'Mason::Plugin'; }
+{
+    package Mason::Test::Plugins::A;
+
+    use Moose;
+    with 'Mason::Plugin';
+}
+{
+    package Mason::Plugin::B;
+
+    use Moose;
+    with 'Mason::Plugin';
+}
+{
+    package Mason::Plugin::C;
+
+    use Moose;
+    with 'Mason::Plugin';
+}
+{
+    package Mason::Plugin::D;
+
+    use Moose;
+    with 'Mason::Plugin';
+}
+{
+    package Mason::Plugin::E;
+
+    use Moose;
+    with 'Mason::Plugin';
+}
 {
     package Mason::PluginBundle::F;
+
     use Moose;
     with 'Mason::PluginBundle';
     sub requires_plugins { return qw(C D) }
 }
 {
     package Mason::Test::PluginBundle::G;
+
     use Moose;
     with 'Mason::PluginBundle';
     sub requires_plugins { return qw(C E) }
 }
 {
     package Mason::Plugin::H;
+
     use Moose;
     with 'Mason::Plugin';
     sub requires_plugins { return qw(@F) }
 }
 {
     package Mason::PluginBundle::I;
+
     use Moose;
     with 'Mason::PluginBundle';
 
@@ -101,6 +131,7 @@ sub test_strict_plugin : Tests {
 
 {
     package Mason::PluginBundle::J;
+
     use Moose;
     with 'Mason::PluginBundle';
 
@@ -137,9 +168,15 @@ sub test_plugin_specs : Tests {
     throws_ok { $test->( ['Y'] ) } qr/could not load 'Mason::Plugin::Y'/;
 }
 
-{ package Mason::Test::Plugins::Upper; use Moose; with 'Mason::Plugin' }
+{
+    package Mason::Test::Plugins::Upper;
+
+    use Moose;
+    with 'Mason::Plugin'
+}
 {
     package Mason::Test::Plugins::Upper::Request;
+
     use Mason::PluginRole;
     after 'process_output' => sub {
         my ( $self, $bufref ) = @_;

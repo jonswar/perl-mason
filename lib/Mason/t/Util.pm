@@ -1,4 +1,5 @@
 package Mason::t::Util;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Mason::Util qw(combine_similar_paths);
 

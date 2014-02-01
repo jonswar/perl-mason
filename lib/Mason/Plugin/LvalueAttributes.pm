@@ -1,4 +1,5 @@
 package Mason::Plugin::LvalueAttributes;
+
 use Moose;
 with 'Mason::Plugin';
 

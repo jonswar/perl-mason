@@ -1,4 +1,5 @@
 package Mason::Plugin::Defer::Request;
+
 use Mason::PluginRole;
 
 has 'defers' => ( is => 'rw', init_arg => undef, default => sub { [] } );

@@ -1,4 +1,5 @@
 package Mason::Result;
+
 use Mason::Moose;
 
 # Public attributes

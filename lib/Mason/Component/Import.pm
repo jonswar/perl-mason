@@ -1,4 +1,5 @@
 package Mason::Component::Import;
+
 use strict;
 use warnings;
 

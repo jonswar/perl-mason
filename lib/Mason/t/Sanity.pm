@@ -1,4 +1,5 @@
 package Mason::t::Sanity;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_ok : Tests {

@@ -1,4 +1,5 @@
 package Mason::Plugin::DollarDot::Compilation;
+
 use Mason::PluginRole;
 
 after 'process_perl_code' => sub {

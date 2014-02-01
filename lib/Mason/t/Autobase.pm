@@ -1,4 +1,5 @@
 package Mason::t::Autobase;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_autobase : Tests {

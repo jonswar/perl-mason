@@ -1,4 +1,5 @@
 package Mason::DynamicFilter;
+
 use Mason::Moose;
 
 has 'filter' => ( isa => 'CodeRef' );

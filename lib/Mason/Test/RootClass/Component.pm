@@ -1,4 +1,5 @@
 package Mason::Test::RootClass::Component;
+
 use Moose;
 extends 'Mason::Component';
 

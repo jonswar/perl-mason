@@ -1,4 +1,5 @@
 package Mason::Test::RootClass::Compilation;
+
 use Moose;
 extends 'Mason::Compilation';
 

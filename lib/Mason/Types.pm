@@ -1,4 +1,5 @@
 package Mason::Types;
+
 use Moose::Util::TypeConstraints;
 use strict;
 use warnings;

@@ -1,4 +1,5 @@
 package Mason::t::Skel;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_ : Tests {

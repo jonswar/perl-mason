@@ -1,4 +1,5 @@
 package Mason::t::Cache;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 __PACKAGE__->default_plugins( [ '@Default', 'Cache' ] );

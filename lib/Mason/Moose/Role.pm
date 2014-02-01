@@ -1,4 +1,5 @@
 package Mason::Moose::Role;
+
 use Moose::Role                ();
 use Method::Signatures::Simple ();
 use Moose::Exporter;

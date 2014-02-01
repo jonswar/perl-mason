@@ -1,4 +1,5 @@
 package Mason::Plugin;
+
 use Mason::PluginRole;
 use Mason::Util qw(can_load);
 use Class::Load;

@@ -1,4 +1,5 @@
 package Mason::Plugin::TidyObjectFiles;
+
 use Moose;
 with 'Mason::Plugin';
 

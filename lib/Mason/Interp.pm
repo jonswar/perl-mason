@@ -1,4 +1,5 @@
 package Mason::Interp;
+
 use Carp;
 use Devel::GlobalDestruction;
 use File::Basename;

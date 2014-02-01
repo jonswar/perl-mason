@@ -1,4 +1,5 @@
 package Mason::t::Defer;
+
 use Test::More;
 use strict;
 use warnings;

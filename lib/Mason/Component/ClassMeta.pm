@@ -1,4 +1,5 @@
 package Mason::Component::ClassMeta;
+
 use File::Basename;
 use Mason::Moose;
 use Log::Any;

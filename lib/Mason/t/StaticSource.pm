@@ -1,4 +1,5 @@
 package Mason::t::StaticSource;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Mason::Util qw(write_file touch_file);
 

@@ -1,4 +1,5 @@
 package Mason::t::HTMLFilters;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_html_filters : Tests {

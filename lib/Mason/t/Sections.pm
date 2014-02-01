@@ -1,4 +1,5 @@
 package Mason::t::Sections;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_sections : Tests {

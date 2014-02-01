@@ -1,4 +1,5 @@
 package Mason::t::Errors;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_comp_errors : Tests {

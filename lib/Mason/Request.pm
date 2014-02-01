@@ -1,4 +1,5 @@
 package Mason::Request;
+
 use Carp;
 use File::Basename;
 use Guard;

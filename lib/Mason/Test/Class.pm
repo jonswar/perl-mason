@@ -1,4 +1,5 @@
 package Mason::Test::Class;
+
 use Carp;
 use File::Basename;
 use File::Path;

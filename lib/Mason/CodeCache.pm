@@ -1,4 +1,5 @@
 package Mason::CodeCache;
+
 use Devel::GlobalDestruction;
 use Mason::Moose;
 use Mason::Util;

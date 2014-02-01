@@ -1,4 +1,5 @@
 package Mason::t::Request;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 use Log::Any::Test;
 use Log::Any qw($log);

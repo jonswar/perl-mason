@@ -1,4 +1,5 @@
 package Mason::Component;
+
 use Moose;    # no Mason::Moose - don't want StrictConstructor
 use MooseX::HasDefaults::RO;
 use Method::Signatures::Simple;

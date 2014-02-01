@@ -1,4 +1,5 @@
 package Mason::t::Compilation;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_pure_perl : Tests {

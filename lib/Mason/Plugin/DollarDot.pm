@@ -1,4 +1,5 @@
 package Mason::Plugin::DollarDot;
+
 use Moose;
 with 'Mason::Plugin';
 

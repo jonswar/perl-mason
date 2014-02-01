@@ -1,4 +1,5 @@
 package Mason::Test::RootClass::Request;
+
 use Moose;
 extends 'Mason::Request';
 

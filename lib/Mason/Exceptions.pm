@@ -1,4 +1,5 @@
 package Mason::Exceptions;
+
 use strict;
 use warnings;
 

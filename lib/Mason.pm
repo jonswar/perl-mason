@@ -1,4 +1,5 @@
 package Mason;
+
 use Mason::Interp;
 use Mason::PluginManager;
 use Mason::Util qw(can_load uniq);

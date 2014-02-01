@@ -1,4 +1,5 @@
 package Mason::Test::Overrides::Component::StrictMoose;
+
 use Moose::Exporter;
 use MooseX::StrictConstructor ();
 use strict;

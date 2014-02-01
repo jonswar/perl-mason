@@ -1,4 +1,5 @@
 package Mason::Test::Plugins::Notify::Compilation;
+
 use Mason::PluginRole;
 
 before 'parse' => sub {

@@ -1,4 +1,5 @@
 package Mason::Util;
+
 use Carp;
 use Class::Unload;
 use Class::Load;

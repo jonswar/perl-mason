@@ -1,4 +1,5 @@
 package Mason::Filters::Standard;
+
 use Mason::DynamicFilter;
 use Mason::Util;
 use Mason::PluginRole;

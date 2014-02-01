@@ -1,4 +1,5 @@
 package Mason::PluginManager;
+
 use Carp;
 use Log::Any qw($log);
 use Mason::Moose;

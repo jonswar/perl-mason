@@ -1,4 +1,5 @@
 package Mason::t::DollarDot;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_dollardot : Tests {

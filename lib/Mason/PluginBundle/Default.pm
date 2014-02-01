@@ -1,4 +1,5 @@
 package Mason::PluginBundle::Default;
+
 use Mason::PluginRole;
 with 'Mason::PluginBundle';
 

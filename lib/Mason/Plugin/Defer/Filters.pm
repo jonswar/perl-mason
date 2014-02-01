@@ -1,4 +1,5 @@
 package Mason::Plugin::Defer::Filters;
+
 use Mason::PluginRole;
 
 method Defer () {

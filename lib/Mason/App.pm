@@ -1,4 +1,5 @@
 package Mason::App;
+
 use Cwd qw(realpath);
 use File::Basename;
 use File::Temp qw(tempdir);

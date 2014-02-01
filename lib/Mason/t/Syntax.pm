@@ -1,4 +1,5 @@
 package Mason::t::Syntax;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_replace : Tests {

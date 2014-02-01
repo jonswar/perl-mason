@@ -1,4 +1,5 @@
 package Mason::Test::Plugins::Notify::Request;
+
 use Mason::PluginRole;
 
 before 'run' => sub {

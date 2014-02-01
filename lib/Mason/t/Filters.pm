@@ -1,4 +1,5 @@
 package Mason::t::Filters;
+
 use Test::Warn;
 use Test::Class::Most parent => 'Mason::Test::Class';
 

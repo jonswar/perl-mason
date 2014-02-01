@@ -1,4 +1,5 @@
 package Mason::TieHandle;
+
 use strict;
 use warnings;
 

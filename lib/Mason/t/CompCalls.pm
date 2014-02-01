@@ -1,4 +1,5 @@
 package Mason::t::CompCalls;
+
 use Test::Class::Most parent => 'Mason::Test::Class';
 
 sub test_ampersand : Tests {

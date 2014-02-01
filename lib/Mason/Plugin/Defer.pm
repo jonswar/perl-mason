@@ -1,4 +1,5 @@
 package Mason::Plugin::Defer;
+
 use Moose;
 with 'Mason::Plugin';
 
