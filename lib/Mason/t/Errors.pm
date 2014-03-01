@@ -32,6 +32,9 @@ sub test_comp_errors : Tests {
     $try->( '%my $i = 1;',                 qr/% must be followed by whitespace/ );
     $try->( "<%5\n\n%>",                   qr/whitespace required after '<%' at .* line 1/ );
     $try->( "<%\n\n5%>",                   qr/whitespace required before '%>' at .* line 3/ );
+    $try->( "<%%>",                        qr/found empty '<% %>' tag/ );
+    $try->( "<% %>",                       qr/found empty '<% %>' tag/ );
+    $try->( "<%   %>",                     qr/found empty '<% %>' tag/ );
     $try->( "% \$.Upper {{\nHi",           qr/'{{' without matching '}}'/ );
     $try->( "Hi\n% }}",                    qr/'}}' without matching '{{'/ );
     $try->( '<%method 1a>Hi</%method>',    qr/Invalid method name '1a'/ );

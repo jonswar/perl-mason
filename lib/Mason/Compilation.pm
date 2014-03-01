@@ -651,7 +651,7 @@ method _match_substitution () {
         $self->{source} =~ m{
            \G
            (\s*)                # Initial whitespace
-           (.+?)                # Substitution body ($1)
+           (.*?)                # Substitution body ($1)
            (
             \s*
             (?<!\|)             # Not preceded by a '|'
@@ -668,6 +668,7 @@ method _match_substitution () {
       )
     {
         my ( $start_ws, $body, $after_body, $filters, $end_ws ) = ( $1, $2, $3, $4, $5 );
+        $self->_throw_syntax_error("found empty '<% %>' tag") unless $body =~ /\S/;
         $self->_throw_syntax_error("whitespace required after '<%'") unless length($start_ws);
         $self->{line_number} += tr/\n//
           foreach grep defined, ( $start_ws, $body, $after_body, $end_ws );
