@@ -2,10 +2,11 @@ Revision history for Mason
 
 ** marks an incompatible change
 
-2.23  Feb 1, 2014
+2.23  Feb 7, 2015
 
 * Fixes
   - Detect empty <% %> tags (A Kobame)
+  - Eliminate unescaped left brace in regex, deprecated in perl 5.21.x - RT 101637 - SREZIC
 
 2.22  Feb 1, 2014
 
