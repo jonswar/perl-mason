@@ -35,8 +35,8 @@ sub test_comp_errors : Tests {
     $try->( "<%%>",                        qr/found empty '<% %>' tag/ );
     $try->( "<% %>",                       qr/found empty '<% %>' tag/ );
     $try->( "<%   %>",                     qr/found empty '<% %>' tag/ );
-    $try->( "% \$.Upper {{\nHi",           qr/'{{' without matching '}}'/ );
-    $try->( "Hi\n% }}",                    qr/'}}' without matching '{{'/ );
+    $try->( "% \$.Upper {{\nHi",           qr/'\{\{' without matching '}}'/ );
+    $try->( "Hi\n% }}",                    qr/'}}' without matching '\{\{'/ );
     $try->( '<%method 1a>Hi</%method>',    qr/Invalid method name '1a'/ );
     $try->( '<%method cmeta>Hi</%method>', qr/'cmeta' is reserved.*method name/ );
     $try->(
