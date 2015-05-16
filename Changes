@@ -4,6 +4,9 @@ Revision history for Mason
 
 2.24  Feb 7, 2015
 
+* Fixes
+  - Patch for 5.21.6 closure deprecation - RT #100507 (Dave Mitchell)
+
 2.23  Feb 7, 2015
 
 * Fixes

@@ -19,7 +19,8 @@ sub init_meta {
     MooseX::HasDefaults::RO->import( { into => $for_class } );
     {
         no strict 'refs';
-        *{ $for_class . '::CLASS' } = sub () { $for_class };    # like CLASS.pm
+        my $temp = $for_class;
+        *{ $for_class . '::CLASS' } = sub () { $temp };    # like CLASS.pm
     }
 }
 

@@ -16,7 +16,8 @@ sub init_meta {
     MooseX::HasDefaults::RW->import( { into => $for_class } );
     {
         no strict 'refs';
-        *{ $for_class . '::CLASS' } = sub () { $for_class };    # like CLASS.pm
+        my $temp = $for_class;
+        *{ $for_class . '::CLASS' } = sub () { $temp };    # like CLASS.pm
         *{ $for_class . '::CLASS' } = \$for_class;
     }
 }
