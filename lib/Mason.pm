@@ -110,7 +110,7 @@ Thanks to Stevan Little and the L<Moose> team for the awesomeness of Moose,
 which motivated me to create a second version of Mason years after I thought I
 was done.
 
-Thanks to Tatsuhiko Miyagawa and the L<PSGI/Plack|http://plackperl.org/> team,
+Thanks to Tatsuhiko Miyagawa and the L<PSGI-Plack|http://plackperl.org/> team,
 who freed me from ever worrying about server backends again.
 
 =head1 SEE ALSO
