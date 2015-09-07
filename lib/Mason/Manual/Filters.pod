@@ -165,22 +165,22 @@ Here's a filter package that implements two filters, C<Upper> and C<Lower>:
 
     package MyApp::Filters;
     use Mason::PluginRole;
-    
+
     method Upper () {
         return sub { uc($_[0]) }
     }
-    
+
     method Lower () {
         return sub { lc($_[0]) }
     }
-    
+
     1;
 
 To use these in a component:
 
     <%class>
     with 'MyApp::Filters';
-    </%class> 
+    </%class>
 
     % $.Upper {{
     ...
@@ -251,7 +251,7 @@ L<Mason::Filters::Standard|Mason::Filters::Standard> for their implementations.
 
 =head2 <%filter> block
 
-You can use the C<< <%filter> >> block to define filters that output content. 
+You can use the C<< <%filter> >> block to define filters that output content.
 It works just like a C<< <%method> >> block, except that you can call C<<
 $yield->() >> to generate the original content. e.g.
 

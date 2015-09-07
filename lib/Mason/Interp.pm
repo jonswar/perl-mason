@@ -896,7 +896,7 @@ Extension to add to the end of object files. Default is ".mobj".
 A list of plugins and/or plugin bundles:
 
     plugins => [
-      'OnePlugin', 
+      'OnePlugin',
       'AnotherPlugin',
       '+My::Mason::Plugin::AThirdPlugin',
       '@APluginBundle',
