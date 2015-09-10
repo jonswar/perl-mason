@@ -56,7 +56,7 @@ Mason - Powerful, high-performance templating for the web and beyond
     % my $name = "Mason";
     Hello world! Welcome to <% $name %>.
 
-  #!/usr/local/bin/perl
+  #!/usr/bin/env perl
   use Mason;
   my $mason = Mason->new(comp_root => '...');
   print $mason->run('/foo')->output;
