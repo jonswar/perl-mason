@@ -593,7 +593,7 @@ method _collect_paths_for_all_comp_roots ($code) {
 
 method _comp_class_for_path ($path) {
     my $classname = substr( $path, 1 );
-    $classname =~ s/[^\w]/_/g;
+    $classname =~ s/[^\w\/]/_/g;
     $classname =~ s/\//::/g;
     $classname = join( "::", $self->component_class_prefix, $classname );
     return $classname;
