@@ -16,9 +16,9 @@ method defer ($code) {
 }
 
 method _apply_defers_to_request_buffer () {
-    if ( my @defers = @{ $self->{defers} } ) {
+    if ( @{ $self->{defers} } ) {
         my $request_buffer = ${ $self->_request_buffer };
-        foreach my $defer (@defers) {
+        while ( my $defer = shift @{ $self->{defers} } ) {
             my $subst = $defer->{marker};
             my $repl  = $defer->{code}->();
             $request_buffer =~ s/\Q$subst\E/$repl/;
