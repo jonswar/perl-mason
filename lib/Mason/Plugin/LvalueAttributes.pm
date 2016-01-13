@@ -54,5 +54,5 @@ convenience of the Lvalue attributes outweighs the need for setter features.
 =head1 ACKNOWLEDGEMENTS
 
 Inspired by Christopher Brown's
-L<MooseX::Meta::Attribute::Lvalue|MooseX::Meta::Attribute::Lvalue >.
+L<MooseX::Meta::Attribute::Lvalue|MooseX::Meta::Attribute::Lvalue>.
 
