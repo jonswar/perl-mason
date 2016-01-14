@@ -7,10 +7,10 @@ Mason::Manual::Cookbook - Recipes for common Mason tasks
 
 =head2 HTML list formed from array
 
-    <ul> 
-    % foreach $item (@list) { 
-      <li><% $item %></li> 
-    % } 
+    <ul>
+    % foreach $item (@list) {
+      <li><% $item %></li>
+    % }
     </ul>
 
 =head2 HTML table formed from list of objects

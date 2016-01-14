@@ -29,9 +29,9 @@ method Upper () { sub { uc(shift) } }
 Hello World.
 % }}           # end Upper
 
-% sub { ucfirst(shift) } {{   
+% sub { ucfirst(shift) } {{
 <% "hello world?" %>
-% }}   
+% }}
 
 % sub { tr/A-Z/a-z/; $_ } {{
 Hello World!

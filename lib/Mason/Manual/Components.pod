@@ -123,7 +123,7 @@ Use Moose 'has' syntax to declare attributes within a C<< <%class> >> section:
     </%class>
 
 =head2 Attributes are read-write by default
- 
+
 L<Mason::Component::Moose> imports
 L<MooseX::HasDefaults::RW|MooseX::HasDefaults> into all components, which makes
 attributes read-write unless stated otherwise. This is not considered best
@@ -345,7 +345,7 @@ C<TidyObjectFiles>:
      4  *_m_buffer = \$Mason::Request::current_buffer;
      5  sub _inner { inner() }
      6  my $_class_cmeta;
-     7  
+     7
      8  method _set_class_cmeta ($interp) {
      9      $_class_cmeta = $interp->component_class_meta_class->new(
     10          'class'        => CLASS,
@@ -358,7 +358,7 @@ C<TidyObjectFiles>:
     17      );
     18  }
     19  sub _class_cmeta { $_class_cmeta }
-    20  
+    20
     21  method main {
     22  #line 1 "/home/myapp/comps/hi.mc"
     23      $$_m_buffer .= 'Hi there! The time is ';
@@ -367,7 +367,7 @@ C<TidyObjectFiles>:
     26  #line 1 "/home/myapp/comps/hi.mc"
     27      $$_m_buffer .= '.
     28  ';
-    29  
+    29
     30      return;
     31  }
 

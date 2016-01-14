@@ -107,7 +107,7 @@ Remove lines with only whitespace from content. This
     hello
 
 
-    world    
+    world
     % }}
 
 yields
