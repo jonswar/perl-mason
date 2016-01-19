@@ -1,4 +1,8 @@
-#!perl -w
+#!perl
+
+use strict;
+use warnings;
+
 use Devel::LeakGuard::Object qw(leakguard);
 use File::Path qw(mkpath);
 use File::Temp qw(tempdir);
