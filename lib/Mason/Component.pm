@@ -207,7 +207,7 @@ L<Mason::Manual::RequestDispatch|Mason::Manual::RequestDispatch/Partial Paths>.
 =item args
 
 Returns the hashref of arguments passed to this component's constructor, e.g.
-the arguments passed in a L<component call|/CALLING COMPONENTS>.
+the arguments passed in a L<component call|Mason::Manual::Syntax/CALLING COMPONENTS>.
 
 =item cmeta
 
