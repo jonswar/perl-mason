@@ -13,3 +13,4 @@ profile
 release
 tmp
 z-backup
+/.build/
