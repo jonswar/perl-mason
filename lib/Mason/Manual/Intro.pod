@@ -1,4 +1,3 @@
-
 =head1 NAME
 
 Mason::Manual::Intro - Getting started with Mason
